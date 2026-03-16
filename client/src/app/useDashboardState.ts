@@ -40,9 +40,23 @@ import {
   getNavFromHash,
 } from './utils'
 
+type SubjectFilter = 'all' | 'active' | 'archived'
+
+const toEventMeta = (event: CalendarEvent, fallbackTitle: string): EventMeta => {
+  const fallback = getDefaultMetaForTitle(fallbackTitle)
+
+  return {
+    time: event.time ?? fallback.time,
+    location: event.location ?? fallback.location,
+    icon: event.icon ?? fallback.icon,
+    accent: event.accent ?? fallback.accent,
+  }
+}
+
 export function useDashboardState() {
   const [tasks, setTasks] = React.useState<Task[]>(tasksSeed)
   const [events, setEvents] = React.useState<CalendarEvent[]>(eventsSeed)
+  const [subjects, setSubjects] = React.useState(subjectsSeed)
   const [themeMode, setThemeMode] = React.useState<ThemeMode>(() => readThemeFromStorage())
   const [accentPalette, setAccentPalette] = React.useState<AccentPalette>(() => readPaletteFromStorage())
   const [activeMobileNav, setActiveMobileNav] = React.useState<MobileNavItem>(() =>
@@ -55,6 +69,7 @@ export function useDashboardState() {
   const [fileTypeFilter, setFileTypeFilter] = React.useState<'all' | 'folder' | 'pdf' | 'image'>('all')
   const [managedFiles, setManagedFiles] = React.useState<ManagedFile[]>(managedFilesSeed)
   const [subjectSearch, setSubjectSearch] = React.useState('')
+  const [subjectFilter, setSubjectFilter] = React.useState<SubjectFilter>('all')
   const [isDragActive, setIsDragActive] = React.useState(false)
   const [isHydrated, setIsHydrated] = React.useState(false)
   const [profile, setProfile] = React.useState<UserProfile>(() =>
@@ -81,16 +96,16 @@ export function useDashboardState() {
   }, [accentPalette])
 
   React.useEffect(() => {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
-  }, [profile])
-
-  React.useEffect(() => {
     const hydrateData = async () => {
       const localTasks = readTasksFromStorage() ?? tasksSeed
       const localEvents = readEventsFromStorage() ?? eventsSeed
+      const localProfile = readProfileFromStorage() ?? userProfileSeed
 
       let loadedTasks = localTasks
       let loadedEvents = localEvents
+      let loadedSubjects = subjectsSeed
+      let loadedFiles = managedFilesSeed
+      let loadedProfile = localProfile
 
       try {
         const tasksResponse = await fetch('/api/tasks')
@@ -114,8 +129,53 @@ export function useDashboardState() {
       } catch {
       }
 
+      try {
+        const subjectsResponse = await fetch('/api/subjects')
+        if (subjectsResponse.ok) {
+          const serverSubjects: unknown = await subjectsResponse.json()
+          if (Array.isArray(serverSubjects)) {
+            loadedSubjects = serverSubjects as typeof subjectsSeed
+          }
+        }
+      } catch {
+      }
+
+      try {
+        const filesResponse = await fetch('/api/files')
+        if (filesResponse.ok) {
+          const serverFiles: unknown = await filesResponse.json()
+          if (Array.isArray(serverFiles)) {
+            loadedFiles = serverFiles as ManagedFile[]
+          }
+        }
+      } catch {
+      }
+
+      try {
+        const profileResponse = await fetch('/api/profile')
+        if (profileResponse.ok) {
+          const serverProfile: unknown = await profileResponse.json()
+          if (typeof serverProfile === 'object' && serverProfile !== null) {
+            loadedProfile = {
+              ...userProfileSeed,
+              ...(serverProfile as Partial<UserProfile>),
+            }
+          }
+        }
+      } catch {
+      }
+
+      const nextMetaById = loadedEvents.reduce<Record<number, EventMeta>>((acc, event) => {
+        acc[event.id] = toEventMeta(event, event.title)
+        return acc
+      }, {})
+
       setTasks(loadedTasks)
       setEvents(loadedEvents)
+      setSubjects(loadedSubjects)
+      setManagedFiles(loadedFiles)
+      setProfile(loadedProfile)
+      setEventMetaById(Object.keys(nextMetaById).length > 0 ? nextMetaById : eventMetaSeed)
       setIsHydrated(true)
     }
 
@@ -154,6 +214,46 @@ export function useDashboardState() {
     })
   }, [events, isHydrated])
 
+  React.useEffect(() => {
+    if (!isHydrated) {
+      return
+    }
+
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+
+    void fetch('/api/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profile),
+    })
+  }, [profile, isHydrated])
+
+  const refreshSubjects = async () => {
+    const response = await fetch('/api/subjects')
+    if (!response.ok) {
+      return
+    }
+
+    const payload: unknown = await response.json()
+    if (Array.isArray(payload)) {
+      setSubjects(payload as typeof subjectsSeed)
+    }
+  }
+
+  const refreshFiles = async () => {
+    const response = await fetch('/api/files')
+    if (!response.ok) {
+      return
+    }
+
+    const payload: unknown = await response.json()
+    if (Array.isArray(payload)) {
+      setManagedFiles(payload as ManagedFile[])
+    }
+  }
+
   const toggleTask = (taskId: number) => {
     setTasks((prevTasks) =>
       prevTasks.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)),
@@ -167,6 +267,8 @@ export function useDashboardState() {
       delete updatedMeta[eventId]
       return updatedMeta
     })
+
+    void fetch(`/api/events/${eventId}`, { method: 'DELETE' })
   }
 
   const addDesktopEvent = () => {
@@ -180,15 +282,18 @@ export function useDashboardState() {
 
     const newEventId = Date.now()
     const defaultMeta = getDefaultMetaForTitle(title)
+    const nextEvent: CalendarEvent = {
+      id: newEventId,
+      title,
+      date: selectedDateIso,
+      time: time?.trim() || defaultMeta.time,
+      location: location?.trim() || defaultMeta.location,
+      icon: defaultMeta.icon,
+      accent: defaultMeta.accent,
+      subjectId: null,
+    }
 
-    setEvents((prevEvents) => [
-      ...prevEvents,
-      {
-        id: newEventId,
-        title,
-        date: selectedDateIso,
-      },
-    ])
+    setEvents((prevEvents) => [...prevEvents, nextEvent])
 
     setEventMetaById((prevMeta) => ({
       ...prevMeta,
@@ -198,6 +303,14 @@ export function useDashboardState() {
         location: location?.trim() || defaultMeta.location,
       },
     }))
+
+    void fetch('/api/events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(nextEvent),
+    })
   }
 
   const onUploadFiles = (incomingFiles: FileList | null) => {
@@ -215,6 +328,16 @@ export function useDashboardState() {
     }))
 
     setManagedFiles((prevFiles) => [...uploadedFiles, ...prevFiles])
+
+    uploadedFiles.forEach((file) => {
+      void fetch('/api/files', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(file),
+      })
+    })
   }
 
   const onDropToUpload = (event: React.DragEvent<HTMLDivElement>) => {
@@ -266,6 +389,180 @@ export function useDashboardState() {
       ...prevProfile,
       avatarDataUrl: null,
     }))
+  }
+
+  const resetProfile = () => {
+    setProfile(userProfileSeed)
+  }
+
+  const createSubject = () => {
+    const name = window.prompt('Název předmětu')?.trim()
+    if (!name) {
+      return
+    }
+
+    const teacher = window.prompt('Vyučující')?.trim()
+    if (!teacher) {
+      return
+    }
+
+    const code = window.prompt('Kód předmětu (např. PB138)')?.trim().toUpperCase()
+    if (!code) {
+      return
+    }
+
+    void fetch('/api/subjects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, teacher, code }),
+    }).then(() => {
+      void refreshSubjects()
+    })
+  }
+
+  const updateSubject = (subjectId: number) => {
+    const subject = subjects.find((item) => item.id === subjectId)
+    if (!subject) {
+      return
+    }
+
+    const name = window.prompt('Název předmětu', subject.name)?.trim()
+    if (!name) {
+      return
+    }
+
+    const teacher = window.prompt('Vyučující', subject.teacher)?.trim()
+    if (!teacher) {
+      return
+    }
+
+    const code = window.prompt('Kód předmětu', subject.code)?.trim().toUpperCase()
+    if (!code) {
+      return
+    }
+
+    void fetch(`/api/subjects/${subjectId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, teacher, code }),
+    }).then(() => {
+      void refreshSubjects()
+    })
+  }
+
+  const toggleSubjectArchived = (subjectId: number) => {
+    const subject = subjects.find((item) => item.id === subjectId)
+    if (!subject) {
+      return
+    }
+
+    void fetch(`/api/subjects/${subjectId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ archived: !subject.archived }),
+    }).then(() => {
+      void refreshSubjects()
+    })
+  }
+
+  const deleteSubject = (subjectId: number) => {
+    const subject = subjects.find((item) => item.id === subjectId)
+    if (!subject) {
+      return
+    }
+
+    if (!window.confirm(`Opravdu smazat předmět "${subject.name}"?`)) {
+      return
+    }
+
+    void fetch(`/api/subjects/${subjectId}`, { method: 'DELETE' }).then(() => {
+      void refreshSubjects()
+    })
+  }
+
+  const updateFile = (fileId: number, patch: Partial<ManagedFile>) => {
+    void fetch(`/api/files/${fileId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(patch),
+    }).then(() => {
+      void refreshFiles()
+    })
+  }
+
+  const removeFile = (fileId: number) => {
+    const file = managedFiles.find((item) => item.id === fileId)
+    if (!file) {
+      return
+    }
+
+    if (!window.confirm(`Opravdu smazat soubor \"${file.name}\"?`)) {
+      return
+    }
+
+    void fetch(`/api/files/${fileId}`, { method: 'DELETE' }).then(() => {
+      void refreshFiles()
+    })
+  }
+
+  const renameFile = (fileId: number) => {
+    const file = managedFiles.find((item) => item.id === fileId)
+    if (!file) {
+      return
+    }
+
+    const nextName = window.prompt('Nový název souboru', file.name)?.trim()
+    if (!nextName || nextName === file.name) {
+      return
+    }
+
+    updateFile(fileId, { name: nextName })
+  }
+
+  const toggleFileShared = (fileId: number) => {
+    const file = managedFiles.find((item) => item.id === fileId)
+    if (!file) {
+      return
+    }
+
+    updateFile(fileId, { shared: !file.shared })
+  }
+
+  const manageFile = (fileId: number) => {
+    const file = managedFiles.find((item) => item.id === fileId)
+    if (!file) {
+      return
+    }
+
+    const action = window
+      .prompt(
+        `Správa souboru: ${file.name}\nZadej akci: rename | share | delete`,
+        'rename',
+      )
+      ?.trim()
+      .toLowerCase()
+
+    if (action === 'rename') {
+      renameFile(fileId)
+      return
+    }
+
+    if (action === 'share') {
+      toggleFileShared(fileId)
+      return
+    }
+
+    if (action === 'delete') {
+      removeFile(fileId)
+    }
   }
 
   const tasksDone = tasks.filter((task) => task.done).length
@@ -327,15 +624,31 @@ export function useDashboardState() {
 
   const filteredSubjects = React.useMemo(
     () =>
-      subjectsSeed.filter((subject) =>
-        subject.name.toLowerCase().includes(subjectSearch.trim().toLowerCase()),
-      ),
-    [subjectSearch],
+      subjects.filter((subject) => {
+        const matchesSearch = subject.name
+          .toLowerCase()
+          .includes(subjectSearch.trim().toLowerCase())
+
+        if (!matchesSearch) {
+          return false
+        }
+
+        if (subjectFilter === 'active') {
+          return !subject.archived
+        }
+
+        if (subjectFilter === 'archived') {
+          return Boolean(subject.archived)
+        }
+
+        return true
+      }),
+    [subjects, subjectSearch, subjectFilter],
   )
 
   const desktopSubjects = React.useMemo(
     () =>
-      subjectsSeed.map((subject, index) => {
+      filteredSubjects.map((subject, index) => {
         const meta = desktopSubjectMetaByCode[subject.code] ?? {
           icon: '📘',
           tone: 'amber',
@@ -344,10 +657,10 @@ export function useDashboardState() {
         return {
           ...subject,
           meta,
-          deadlineCount: Math.max(0, 3 - index),
+          deadlineCount: Math.max(0, (subject.events ?? 3) - index),
         }
       }),
-    [],
+    [filteredSubjects],
   )
 
   return {
@@ -368,8 +681,11 @@ export function useDashboardState() {
     fileTypeFilter,
     setFileTypeFilter,
     managedFiles,
+    subjects,
     subjectSearch,
     setSubjectSearch,
+    subjectFilter,
+    setSubjectFilter,
     isDragActive,
     setIsDragActive,
     profile,
@@ -396,5 +712,13 @@ export function useDashboardState() {
     onChangeProfile,
     onUploadProfileAvatar,
     onRemoveProfileAvatar,
+    resetProfile,
+    createSubject,
+    updateSubject,
+    toggleSubjectArchived,
+    deleteSubject,
+    manageFile,
+    removeFile,
+    toggleFileShared,
   }
 }

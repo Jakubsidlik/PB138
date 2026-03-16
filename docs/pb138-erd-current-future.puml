@@ -1,5 +1,4 @@
 @startuml PB138_ERD_Current_Future
-' FlowFinder-like clean ERD style
 hide methods
 hide stereotypes
 skinparam linetype ortho
@@ -12,9 +11,6 @@ skinparam class {
   FontColor #0f172a
 }
 
-' =========================
-' CURRENT (AS-IS)
-' =========================
 entity "TASK\n(as-is)" as TASK_ASIS {
   * id : int <<PK>>
   --
@@ -46,6 +42,7 @@ entity "SUBJECT\n(frontend model)" as SUBJECT_ASIS {
   teacher : string
   files : int
   notes : int
+  archived : boolean
 }
 
 entity "MANAGED_FILE\n(frontend model)" as FILE_ASIS {
@@ -70,9 +67,6 @@ entity "USER_PROFILE\n(frontend singleton)" as PROFILE_ASIS {
 
 EVENT_ASIS ||--|| META_ASIS : metadata 1:1
 
-' =========================
-' FUTURE (TO-BE) - BLUE
-' =========================
 entity "SUBJECT\n(to-be)" as SUBJECT {
   * id : int <<PK>>
   --

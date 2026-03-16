@@ -1,6 +1,6 @@
 # PB138 — ERD aktuálního stavu + návrh rozšíření
 
-Níže je ERD podle **aktuálního stavu kódu** (frontend typy + backend API), a pod tím návrh budoucího cílového modelu.
+Níže je ERD podle aktuálního stavu kódu (frontend typy + backend API) a pod ním návrh cílového modelu.
 
 ## 1) Aktuální stav (as-is)
 
@@ -33,6 +33,7 @@ erDiagram
         string code
         int files
         int notes
+        boolean archived
     }
 
     MANAGED_FILE {
@@ -45,8 +46,8 @@ erDiagram
     }
 
     USER_PROFILE {
-        string fullName
         string email PK
+        string fullName
         string school
         string studyMajor
         string studyYear
@@ -56,8 +57,6 @@ erDiagram
 
     CALENDAR_EVENT ||--|| EVENT_META : "detail metadat eventu"
 ```
-
-Poznámka: v aktuální implementaci jsou `TASK` a `CALENDAR_EVENT` persistovány backendem, zatímco `SUBJECT`, `MANAGED_FILE` a `USER_PROFILE` jsou primárně řízené frontend stavem (seed/local state).
 
 ## 2) Budoucí návrh (to-be, modře)
 
@@ -138,12 +137,3 @@ erDiagram
     classDef future fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px
     class SUBJECT,TASK,CALENDAR_EVENT,FILE_RECORD,USER_PROFILE,AUDIT_LOG future
 ```
-
-## 3) Vztahy mezi záložkami/funkcemi (logická mapa)
-
-- **Home**: čte agregace z `TASK`, `CALENDAR_EVENT`, `SUBJECT`, `MANAGED_FILE`.
-- **Calendar**: CRUD nad `CALENDAR_EVENT` + detailní metadata v `EVENT_META`.
-- **Subjects**: katalog `SUBJECT`; v cílovém modelu parent pro tasky, eventy a soubory.
-- **Files**: práce nad `MANAGED_FILE`; v cílovém modelu přechod na `FILE_RECORD` navázaný na `SUBJECT`.
-- **Profile**: úprava singletonu `USER_PROFILE`.
-- **History/Audit (návrh)**: `AUDIT_LOG` zachycuje CREATE/UPDATE/DELETE napříč entitami v kontextu subjectu.

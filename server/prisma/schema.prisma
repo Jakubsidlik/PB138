@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FileCategory {
+  folder
+  pdf
+  image
+  document
+  other
+}
+
+enum AccentType {
+  primary
+  amber
+  emerald
+}
+
+enum EntityType {
+  SUBJECT
+  FILE
+  PROFILE
+  TASK
+  EVENT
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  REPLACE_SYNC
+}
+
+model Subject {
+  id        BigInt    @id @default(autoincrement())
+  name      String
+  teacher   String
+  code      String    @unique
+  archived  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tasks     Task[]
+  events    Event[]
+  files     FileRecord[]
+  audits    AuditLog[]
+}
+
+model Task {
+  id        BigInt    @id @default(autoincrement())
+  title     String
+  done      Boolean   @default(false)
+  subjectId BigInt?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  subject   Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+}
+
+model Event {
+  id         BigInt      @id @default(autoincrement())
+  title      String
+  date       DateTime
+  time       String?
+  location   String?
+  icon       String?
+  accent     AccentType?
+  subjectId  BigInt?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  subject    Subject?    @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+}
+
+model FileRecord {
+  id         BigInt       @id @default(autoincrement())
+  name       String
+  size       String
+  addedLabel String
+  category   FileCategory @default(other)
+  shared     Boolean      @default(false)
+  subjectId  BigInt?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  subject    Subject?     @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+}
+
+model Profile {
+  id            BigInt    @id @default(autoincrement())
+  fullName      String
+  email         String
+  school        String
+  studyMajor    String
+  studyYear     String
+  studyType     String
+  avatarDataUrl String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model AuditLog {
+  id         BigInt      @id @default(autoincrement())
+  entityType EntityType
+  action     AuditAction
+  entityId   BigInt?
+  subjectId  BigInt?
+  payload    Json?
+  createdAt  DateTime    @default(now())
+
+  subject    Subject?    @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, createdAt])
+  @@index([subjectId, createdAt])
+}

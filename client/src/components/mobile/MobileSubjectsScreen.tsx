@@ -6,6 +6,10 @@ type MobileSubjectsScreenProps = {
   setSubjectSearch: React.Dispatch<React.SetStateAction<string>>
   filteredSubjects: Subject[]
   subjectVisualByCode: Record<string, SubjectVisual>
+  onCreateSubject: () => void
+  onEditSubject: (subjectId: number) => void
+  onToggleArchiveSubject: (subjectId: number) => void
+  onDeleteSubject: (subjectId: number) => void
 }
 
 export function MobileSubjectsScreen({
@@ -13,6 +17,10 @@ export function MobileSubjectsScreen({
   setSubjectSearch,
   filteredSubjects,
   subjectVisualByCode,
+  onCreateSubject,
+  onEditSubject,
+  onToggleArchiveSubject,
+  onDeleteSubject,
 }: MobileSubjectsScreenProps) {
   return (
     <section className="mobile-subjects-screen" id="subjects-mobile">
@@ -43,6 +51,13 @@ export function MobileSubjectsScreen({
                 <p>📄 {subject.files} souborů</p>
                 <p>📝 {subject.notes} poznámek</p>
               </div>
+              <div className="desktop-files-tabs">
+                <button type="button" onClick={() => onEditSubject(subject.id)}>Upravit</button>
+                <button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
+                  {subject.archived ? 'Obnovit' : 'Archivovat'}
+                </button>
+                <button type="button" onClick={() => onDeleteSubject(subject.id)}>Smazat</button>
+              </div>
             </article>
           )
         })}
@@ -52,7 +67,7 @@ export function MobileSubjectsScreen({
         <p className="subjects-empty">Nenalezeny žádné předměty.</p>
       ) : null}
 
-      <button type="button" className="subjects-fab" aria-label="Přidat předmět">
+      <button type="button" className="subjects-fab" aria-label="Přidat předmět" onClick={onCreateSubject}>
         +
       </button>
     </section>
