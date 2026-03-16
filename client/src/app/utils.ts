@@ -11,6 +11,10 @@ export const getNavFromHash = (hash: string): MobileNavItem => {
     return 'files'
   }
 
+  if (hash === '#profile') {
+    return 'profile'
+  }
+
   return 'home'
 }
 

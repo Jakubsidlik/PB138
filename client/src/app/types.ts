@@ -61,8 +61,27 @@ export type EventMeta = {
 }
 
 export type ThemeMode = 'light' | 'dark'
-export type AccentPalette = 'blue' | 'emerald' | 'violet' | 'rose'
-export type MobileNavItem = 'home' | 'calendar' | 'subjects' | 'files'
+export type AccentPalette =
+  | 'blue'
+  | 'emerald'
+  | 'violet'
+  | 'rose'
+  | 'red'
+  | 'amber'
+  | 'orange'
+  | 'cyan'
+  | 'mono'
+export type MobileNavItem = 'home' | 'calendar' | 'subjects' | 'files' | 'profile'
+
+export type UserProfile = {
+  fullName: string
+  email: string
+  school: string
+  studyMajor: string
+  studyYear: string
+  studyType: string
+  avatarDataUrl: string | null
+}
 
 export type SubjectVisual = {
   icon: string

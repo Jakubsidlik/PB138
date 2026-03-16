@@ -1,12 +1,35 @@
 import React from 'react'
-import { MobileNavItem } from '../../app/types'
+import { AccentPalette, MobileNavItem, ThemeMode } from '../../app/types'
 
 type SidebarProps = {
   activeMobileNav: MobileNavItem
   setActiveMobileNav: React.Dispatch<React.SetStateAction<MobileNavItem>>
+  accentPalette: AccentPalette
+  setAccentPalette: React.Dispatch<React.SetStateAction<AccentPalette>>
+  themeMode: ThemeMode
+  setThemeMode: React.Dispatch<React.SetStateAction<ThemeMode>>
 }
 
-export function Sidebar({ activeMobileNav, setActiveMobileNav }: SidebarProps) {
+const paletteOptions: Array<{ value: AccentPalette; label: string }> = [
+  { value: 'blue', label: 'Modrá' },
+  { value: 'emerald', label: 'Smaragdová' },
+  { value: 'violet', label: 'Fialová' },
+  { value: 'rose', label: 'Růžová' },
+  { value: 'red', label: 'Červená' },
+  { value: 'amber', label: 'Žlutá' },
+  { value: 'orange', label: 'Oranžová' },
+  { value: 'cyan', label: 'Tyrkysová' },
+  { value: 'mono', label: 'Monochromatická' },
+]
+
+export function Sidebar({
+  activeMobileNav,
+  setActiveMobileNav,
+  accentPalette,
+  setAccentPalette,
+  themeMode,
+  setThemeMode,
+}: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -46,7 +69,48 @@ export function Sidebar({ activeMobileNav, setActiveMobileNav }: SidebarProps) {
         >
           Soubory
         </a>
+        <a
+          className={`menu-item ${activeMobileNav === 'profile' ? 'active' : ''}`}
+          href="#profile"
+          onClick={() => setActiveMobileNav('profile')}
+        >
+          Profil
+        </a>
       </nav>
+
+      <section className="sidebar-theme-panel" aria-label="Motivy">
+        <h3>Motivy</h3>
+
+        <label htmlFor="sidebar-palette-select">Barva motivu</label>
+        <select
+          id="sidebar-palette-select"
+          value={accentPalette}
+          onChange={(event) => setAccentPalette(event.target.value as AccentPalette)}
+        >
+          {paletteOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        <div className="sidebar-theme-mode-switch">
+          <button
+            type="button"
+            className={themeMode === 'light' ? 'active' : ''}
+            onClick={() => setThemeMode('light')}
+          >
+            Světlý
+          </button>
+          <button
+            type="button"
+            className={themeMode === 'dark' ? 'active' : ''}
+            onClick={() => setThemeMode('dark')}
+          >
+            Tmavý
+          </button>
+        </div>
+      </section>
 
       <div className="storage-card">
         <p className="storage-title">Storage Usage</p>

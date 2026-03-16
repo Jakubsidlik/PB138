@@ -9,12 +9,14 @@ import {
   Subject,
   SubjectVisual,
   Task,
+  UserProfile,
 } from './types'
 
 export const TASKS_STORAGE_KEY = 'pb138.tasks'
 export const EVENTS_STORAGE_KEY = 'pb138.events'
 export const THEME_STORAGE_KEY = 'pb138.theme'
 export const PALETTE_STORAGE_KEY = 'pb138.palette'
+export const PROFILE_STORAGE_KEY = 'pb138.profile'
 
 export const subjectsSeed: Subject[] = [
   {
@@ -146,3 +148,13 @@ export const desktopSubjectMetaByCode: Record<string, DesktopSubjectMeta> = {
 }
 
 export const calendarWeekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+export const userProfileSeed: UserProfile = {
+  fullName: 'Jakub Kowalski',
+  email: 'jakub.kowalski@muni.cz',
+  school: 'Masarykova univerzita',
+  studyMajor: 'Informatika',
+  studyYear: '3. ročník',
+  studyType: 'Bakalářské studium',
+  avatarDataUrl: null,
+}

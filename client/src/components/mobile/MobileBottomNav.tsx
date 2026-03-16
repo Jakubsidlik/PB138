@@ -33,6 +33,14 @@ export function MobileBottomNav({ activeMobileNav, setActiveMobileNav }: MobileB
         <span className="nav-icon" aria-hidden="true">📁</span>
         <span className="nav-label">Soubory</span>
       </a>
+      <a
+        className={activeMobileNav === 'profile' ? 'active' : ''}
+        href="#profile"
+        onClick={() => setActiveMobileNav('profile')}
+      >
+        <span className="nav-icon" aria-hidden="true">👤</span>
+        <span className="nav-label">Profil</span>
+      </a>
     </nav>
   )
 }
