@@ -1,0 +1,20 @@
+{
+  "name": "pb138-studijni-plan",
+  "version": "1.0.0",
+  "description": "Webová aplikace pro organizaci lekcí, poznámek a studijních materiálů",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "build": "npm run build -w server && npm run build -w client",
+    "preview": "cd client && npm run preview",
+    "type-check": "npm run type-check -w server && npm run type-check -w client"
+  },
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
