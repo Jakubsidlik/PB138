@@ -1,0 +1,97 @@
+@startuml FlowFinder - ERD PB138
+
+!pragma ratio 0.55
+skinparam linetype ortho
+hide circle
+
+' Entities
+
+entity Subject {
+    Id : bigint <<PK>>
+    ---
+    Name : varchar(255)
+    Teacher : varchar(255)
+    Code : varchar(64)
+    Archived : boolean
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity Task {
+    Id : bigint <<PK>>
+    SubjectId : bigint <<FK>>
+    ---
+    Title : varchar(255)
+    Done : boolean
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity Event {
+    Id : bigint <<PK>>
+    SubjectId : bigint <<FK>>
+    ---
+    Title : varchar(255)
+    Date : date
+    Time : varchar(64)
+    Location : varchar(255)
+    Icon : varchar(64)
+    Accent : varchar(20)
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity FileRecord {
+    Id : bigint <<PK>>
+    SubjectId : bigint <<FK>>
+    ---
+    Name : varchar(255)
+    Size : varchar(64)
+    AddedLabel : varchar(64)
+    Category : varchar(20)
+    Shared : boolean
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity Profile {
+    Id : bigint <<PK>>
+    ---
+    FullName : varchar(255)
+    Email : varchar(255)
+    School : varchar(255)
+    StudyMajor : varchar(255)
+    StudyYear : varchar(100)
+    StudyType : varchar(100)
+    AvatarDataUrl : text
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity AuditLog {
+    Id : bigint <<PK>>
+    SubjectId : bigint <<FK>>
+    EntityId : bigint
+    ---
+    EntityType : varchar(20)
+    Action : varchar(20)
+    Payload : json
+    CreatedAt : timestamp
+}
+
+Subject ||--o{ Task : has >
+Subject ||--o{ Event : has >
+Subject ||--o{ FileRecord : has >
+Subject ||--o{ AuditLog : tracks >
+
+Task }o--|| Subject : belongsTo >
+Event }o--|| Subject : belongsTo >
+FileRecord }o--|| Subject : belongsTo >
+AuditLog }o--o| Subject : relatedTo >
+
+Profile ||--o{ AuditLog : changesTrackedIn >
+Task ||--o{ AuditLog : changesTrackedIn >
+Event ||--o{ AuditLog : changesTrackedIn >
+FileRecord ||--o{ AuditLog : changesTrackedIn >
+
+@enduml
