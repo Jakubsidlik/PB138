@@ -1,0 +1,141 @@
+@startuml
+!pragma ratio 0.58
+skinparam linetype ortho
+hide circle
+
+' --- Current schema entities (Prisma) ---
+entity Subject {
+  id : bigint <<PK>>
+  ---
+  name : string
+  teacher : string
+  code : string <<UQ>>
+  archived : boolean
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity Task {
+  id : bigint <<PK>>
+  subjectId : bigint <<FK>>
+  ---
+  title : string
+  done : boolean
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity Event {
+  id : bigint <<PK>>
+  subjectId : bigint <<FK>>
+  ---
+  title : string
+  date : datetime
+  time : string?
+  location : string?
+  icon : string?
+  accent : enum(AccentType)?
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity FileRecord {
+  id : bigint <<PK>>
+  subjectId : bigint <<FK>>
+  ---
+  name : string
+  size : string
+  addedLabel : string
+  category : enum(FileCategory)
+  shared : boolean
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity Profile {
+  id : bigint <<PK>>
+  ---
+  fullName : string
+  email : string
+  school : string
+  studyMajor : string
+  studyYear : string
+  studyType : string
+  avatarDataUrl : string?
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity AuditLog {
+  id : bigint <<PK>>
+  subjectId : bigint <<FK>>
+  entityId : bigint?
+  ---
+  entityType : enum(EntityType)
+  action : enum(AuditAction)
+  payload : json?
+  createdAt : datetime
+}
+
+' --- Current relations ---
+Subject ||--o{ Task : owns
+Subject ||--o{ Event : schedules
+Subject ||--o{ FileRecord : stores
+Subject ||--o{ AuditLog : hasHistory
+
+' --- Proposed entities (blue) ---
+entity "StudyNote (Návrh)" as StudyNote #DBEAFE {
+  id : bigint <<PK>>
+  subjectId : bigint <<FK>>
+  ---
+  title : string
+  body : text
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "Reminder (Návrh)" as Reminder #DBEAFE {
+  id : bigint <<PK>>
+  eventId : bigint <<FK>>
+  ---
+  remindAt : datetime
+  channel : enum(email|push|inapp)
+  sentAt : datetime?
+}
+
+entity "FileVersion (Návrh)" as FileVersion #DBEAFE {
+  id : bigint <<PK>>
+  fileId : bigint <<FK>>
+  ---
+  versionNo : integer
+  checksum : string
+  createdAt : datetime
+}
+
+entity "SubjectMember (Návrh)" as SubjectMember #DBEAFE {
+  id : bigint <<PK>>
+  subjectId : bigint <<FK>>
+  profileId : bigint <<FK>>
+  ---
+  role : enum(owner|editor|viewer)
+  joinedAt : datetime
+}
+
+entity "SyncCheckpoint (Návrh)" as SyncCheckpoint #DBEAFE {
+  id : bigint <<PK>>
+  profileId : bigint <<FK>>
+  ---
+  cursorEntity : string
+  cursorValue : string
+  syncedAt : datetime
+}
+
+' --- Proposed relations (blue) ---
+Subject ||-[#2563EB,dashed]-o{ StudyNote : hasNotes
+Event ||-[#2563EB,dashed]-o{ Reminder : triggers
+FileRecord ||-[#2563EB,dashed]-o{ FileVersion : versions
+Subject ||-[#2563EB,dashed]-o{ SubjectMember : sharedWith
+Profile ||-[#2563EB,dashed]-o{ SubjectMember : participates
+Profile ||-[#2563EB,dashed]-o{ SyncCheckpoint : incrementalSync
+
+@enduml
