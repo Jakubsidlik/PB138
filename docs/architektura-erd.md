@@ -1,169 +1,139 @@
-# PB138 – ERD a interakce aplikace (aktuální stav + návrhy)
+# PB138 — ERD aktuálního stavu + návrh rozšíření
 
-## 1) ERD aktuálního stavu (data model)
+Níže je ERD podle aktuálního stavu kódu (frontend typy + backend API) a pod ním návrh cílového modelu.
+
+## 1) Aktuální stav (as-is)
 
 ```mermaid
 erDiagram
-  USER_PROFILE {
-    string fullName
-    string email
-    string school
-    string studyMajor
-    string studyYear
-    string studyType
-    string avatarDataUrl
-  }
+    TASK {
+        int id PK
+        string title
+        boolean done
+    }
 
-  SUBJECT {
-    int id
-    string name
-    string teacher
-    string code
-    int files
-    int notes
-  }
+    CALENDAR_EVENT {
+        int id PK
+        string title
+        string date
+    }
 
-  TASK {
-    int id
-    string title
-    boolean done
-  }
+    EVENT_META {
+        int event_id PK, FK
+        string time
+        string location
+        string icon
+        string accent
+    }
 
-  CALENDAR_EVENT {
-    int id
-    string title
-    string date
-  }
+    SUBJECT {
+        int id PK
+        string name
+        string teacher
+        string code
+        int files
+        int notes
+        boolean archived
+    }
 
-  EVENT_META {
-    string time
-    string location
-    string icon
-    string accent
-  }
+    MANAGED_FILE {
+        int id PK
+        string name
+        string size
+        string addedLabel
+        string category
+        boolean shared
+    }
 
-  MANAGED_FILE {
-    int id
-    string name
-    string size
-    string addedLabel
-    string category
-    boolean shared
-  }
+    USER_PROFILE {
+        string email PK
+        string fullName
+        string school
+        string studyMajor
+        string studyYear
+        string studyType
+        string avatarDataUrl
+    }
 
-  FILE_FOLDER {
-    int id
-    string name
-    int filesCount
-    string color
-  }
-
-  STUDY_FILE_SEED {
-    int id
-    string subject
-    string name
-    string size
-  }
-
-  SCHEDULE_ITEM {
-    int id
-    string time
-    string subject
-    string type
-    string location
-  }
-
-  APP_SETTINGS {
-    string themeMode
-    string accentPalette
-    string activeMobileNav
-    string fileTab
-    string fileTypeFilter
-    string subjectSearch
-    string selectedDateIso
-  }
-
-  SUBJECT ||--o{ STUDY_FILE_SEED : "code -> subject"
-  SUBJECT ||--o{ SCHEDULE_ITEM : "name -> subject"
-  SUBJECT ||--o{ MANAGED_FILE : "logická vazba přes UI"
-  CALENDAR_EVENT ||--|| EVENT_META : "event.id -> eventMetaById[event.id]"
-  USER_PROFILE ||--|| APP_SETTINGS : "zobrazení/ovládání"
-  APP_SETTINGS ||--o{ TASK : "filtrace + statistiky"
-  APP_SETTINGS ||--o{ CALENDAR_EVENT : "výběr dne/měsíce"
-  APP_SETTINGS ||--o{ MANAGED_FILE : "taby + filtry"
-  APP_SETTINGS ||--o{ SUBJECT : "vyhledávání"
+    CALENDAR_EVENT ||--|| EVENT_META : "detail metadat eventu"
 ```
 
-## 2) Jak mezisebou interagují záložky a funkce
+## 2) Budoucí návrh (to-be, modře)
 
 ```mermaid
-flowchart LR
-  subgraph UI[React klient]
-    SIDEBAR[Sidebar + MobileBottomNav]
-    TOPBAR[Topbar]
-    HOME[Domů]
-    CAL[Kalendář]
-    SUB[Předměty]
-    FIL[Soubory]
-    PRO[Profil]
-    STATE[useDashboardState]
-  end
+erDiagram
+    SUBJECT {
+        int id PK
+        string code
+        string name
+        string teacher
+        datetime createdAt
+        datetime updatedAt
+    }
 
-  subgraph STORE[Perzistence]
-    LS[(localStorage)]
-    API[/Express API/]
-  end
+    TASK {
+        int id PK
+        int subjectId FK
+        string title
+        boolean done
+        datetime dueAt
+        datetime createdAt
+        datetime updatedAt
+    }
 
-  SIDEBAR -->|setActiveMobileNav + hash| STATE
-  TOPBAR -->|onOpenProfile / theme / palette| STATE
+    CALENDAR_EVENT {
+        int id PK
+        int subjectId FK
+        string title
+        date date
+        string time
+        string location
+        datetime createdAt
+        datetime updatedAt
+    }
 
-  STATE --> HOME
-  STATE --> CAL
-  STATE --> SUB
-  STATE --> FIL
-  STATE --> PRO
+    FILE_RECORD {
+        int id PK
+        int subjectId FK
+        string name
+        string mimeType
+        bigint sizeBytes
+        boolean shared
+        string pathOrUrl
+        datetime createdAt
+        datetime updatedAt
+    }
 
-  HOME -->|toggleTask| STATE
-  CAL -->|addDesktopEvent/removeEvent/setSelectedDateIso| STATE
-  SUB -->|setSubjectSearch| STATE
-  FIL -->|setFileTab/setFileTypeFilter/onUploadFiles| STATE
-  PRO -->|onChangeProfile/onUploadAvatar| STATE
+    USER_PROFILE {
+        int id PK
+        string fullName
+        string email UNIQUE
+        string school
+        string studyMajor
+        string studyYear
+        string studyType
+        string avatarUrl
+        datetime createdAt
+        datetime updatedAt
+    }
 
-  STATE -->|hydratace + ukládání tasks/events| LS
-  STATE -->|GET/PUT tasks/events| API
-  STATE -->|theme/palette/profile| LS
+    AUDIT_LOG {
+        int id PK
+        int subjectId FK
+        string entityType
+        int entityId
+        string action
+        json beforeData
+        json afterData
+        datetime createdAt
+    }
+
+    USER_PROFILE ||--o{ SUBJECT : "owner"
+    SUBJECT ||--o{ TASK : "contains"
+    SUBJECT ||--o{ CALENDAR_EVENT : "plans"
+    SUBJECT ||--o{ FILE_RECORD : "materials"
+    SUBJECT ||--o{ AUDIT_LOG : "history scope"
+
+    classDef future fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px
+    class SUBJECT,TASK,CALENDAR_EVENT,FILE_RECORD,USER_PROFILE,AUDIT_LOG future
 ```
-
-## 3) Návrhy budoucích úprav (modře)
-
-```mermaid
-flowchart TD
-  A[Současný stav: seed data + localStorage + in-memory API]
-
-  B[Databáze: PostgreSQL + Prisma]
-  C[Autentizace uživatele: JWT + refresh token]
-  D[Vazby mezi entitami: Subject-Task-Event-File]
-  E[CRUD endpointy pro Subjects, Files, Profile]
-  F[Skutečný upload souborů: S3/local disk + metadata]
-  G[Notifikace termínů: cron + email/push]
-  H[Sdílení materiálů mezi studenty]
-  I[Audit změn a historie úkolů/událostí]
-  J[Role a oprávnění: student/učitel]
-
-  A --> B
-  A --> C
-  A --> D
-  D --> E
-  D --> F
-  E --> G
-  E --> H
-  E --> I
-  C --> J
-
-  classDef proposal fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px;
-  class B,C,D,E,F,G,H,I,J proposal;
-```
-
-### Co je dnes implementováno vs. co je návrh
-- **Implementováno nyní:** správa úkolů, kalendáře, souborů a profilu v klientovi; synchronizace `tasks/events` s `/api/tasks` a `/api/events`; `theme/palette/profile` v `localStorage`.
-- <span style="color:#2563eb"><strong>Návrh (modře):</strong> relační DB, autentizace, plné CRUD API, reálný upload, notifikace, sdílení, historie změn a role.</span>

@@ -1,141 +1,166 @@
-@startuml
-!pragma ratio 0.58
+@startuml PB138_ERD_Current_Future
+hide methods
+hide stereotypes
 skinparam linetype ortho
-hide circle
-
-' --- Current schema entities (Prisma) ---
-entity Subject {
-  id : bigint <<PK>>
-  ---
-  name : string
-  teacher : string
-  code : string <<UQ>>
-  archived : boolean
-  createdAt : datetime
-  updatedAt : datetime
+skinparam shadowing false
+skinparam defaultFontName Segoe UI
+skinparam class {
+  BackgroundColor White
+  BorderColor #334155
+  ArrowColor #475569
+  FontColor #0f172a
 }
 
-entity Task {
-  id : bigint <<PK>>
-  subjectId : bigint <<FK>>
-  ---
+entity "TASK\n(as-is)" as TASK_ASIS {
+  * id : int <<PK>>
+  --
   title : string
   done : boolean
-  createdAt : datetime
-  updatedAt : datetime
 }
 
-entity Event {
-  id : bigint <<PK>>
-  subjectId : bigint <<FK>>
-  ---
+entity "CALENDAR_EVENT\n(as-is)" as EVENT_ASIS {
+  * id : int <<PK>>
+  --
   title : string
-  date : datetime
-  time : string?
-  location : string?
-  icon : string?
-  accent : enum(AccentType)?
-  createdAt : datetime
-  updatedAt : datetime
+  date : string
 }
 
-entity FileRecord {
-  id : bigint <<PK>>
-  subjectId : bigint <<FK>>
-  ---
+entity "EVENT_META\n(as-is)" as META_ASIS {
+  * event_id : int <<PK, FK>>
+  --
+  time : string
+  location : string
+  icon : string
+  accent : string
+}
+
+entity "SUBJECT\n(frontend model)" as SUBJECT_ASIS {
+  * id : int <<PK>>
+  --
+  code : string
+  name : string
+  teacher : string
+  files : int
+  notes : int
+  archived : boolean
+}
+
+entity "MANAGED_FILE\n(frontend model)" as FILE_ASIS {
+  * id : int <<PK>>
+  --
   name : string
   size : string
-  addedLabel : string
-  category : enum(FileCategory)
+  category : string
   shared : boolean
-  createdAt : datetime
-  updatedAt : datetime
 }
 
-entity Profile {
-  id : bigint <<PK>>
-  ---
+entity "USER_PROFILE\n(frontend singleton)" as PROFILE_ASIS {
+  * email : string <<PK>>
+  --
   fullName : string
-  email : string
   school : string
   studyMajor : string
   studyYear : string
   studyType : string
   avatarDataUrl : string?
+}
+
+EVENT_ASIS ||--|| META_ASIS : metadata 1:1
+
+entity "SUBJECT\n(to-be)" as SUBJECT {
+  * id : int <<PK>>
+  --
+  code : string
+  name : string
+  teacher : string
   createdAt : datetime
   updatedAt : datetime
 }
 
-entity AuditLog {
-  id : bigint <<PK>>
-  subjectId : bigint <<FK>>
-  entityId : bigint?
-  ---
-  entityType : enum(EntityType)
-  action : enum(AuditAction)
-  payload : json?
-  createdAt : datetime
-}
-
-' --- Current relations ---
-Subject ||--o{ Task : owns
-Subject ||--o{ Event : schedules
-Subject ||--o{ FileRecord : stores
-Subject ||--o{ AuditLog : hasHistory
-
-' --- Proposed entities (blue) ---
-entity "StudyNote (Návrh)" as StudyNote #DBEAFE {
-  id : bigint <<PK>>
-  subjectId : bigint <<FK>>
-  ---
+entity "TASK\n(to-be)" as TASK {
+  * id : int <<PK>>
+  --
+  subjectId : int <<FK>>
   title : string
-  body : text
+  done : boolean
+  dueAt : datetime?
   createdAt : datetime
   updatedAt : datetime
 }
 
-entity "Reminder (Návrh)" as Reminder #DBEAFE {
-  id : bigint <<PK>>
-  eventId : bigint <<FK>>
-  ---
-  remindAt : datetime
-  channel : enum(email|push|inapp)
-  sentAt : datetime?
+entity "CALENDAR_EVENT\n(to-be)" as EVENT {
+  * id : int <<PK>>
+  --
+  subjectId : int <<FK>>
+  title : string
+  date : date
+  time : string
+  location : string
+  createdAt : datetime
+  updatedAt : datetime
 }
 
-entity "FileVersion (Návrh)" as FileVersion #DBEAFE {
-  id : bigint <<PK>>
-  fileId : bigint <<FK>>
-  ---
-  versionNo : integer
-  checksum : string
+entity "FILE_RECORD\n(to-be)" as FILE_RECORD {
+  * id : int <<PK>>
+  --
+  subjectId : int <<FK>>
+  name : string
+  mimeType : string
+  sizeBytes : bigint
+  shared : boolean
+  pathOrUrl : string
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "USER_PROFILE\n(to-be)" as PROFILE {
+  * id : int <<PK>>
+  --
+  fullName : string
+  email : string <<UNIQUE>>
+  school : string
+  studyMajor : string
+  studyYear : string
+  studyType : string
+  avatarUrl : string?
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "AUDIT_LOG\n(to-be)" as AUDIT {
+  * id : int <<PK>>
+  --
+  subjectId : int <<FK>>
+  entityType : string
+  entityId : int
+  action : string
+  beforeData : json?
+  afterData : json?
   createdAt : datetime
 }
 
-entity "SubjectMember (Návrh)" as SubjectMember #DBEAFE {
-  id : bigint <<PK>>
-  subjectId : bigint <<FK>>
-  profileId : bigint <<FK>>
-  ---
-  role : enum(owner|editor|viewer)
-  joinedAt : datetime
+PROFILE ||--o{ SUBJECT : owner
+SUBJECT ||--o{ TASK : contains
+SUBJECT ||--o{ EVENT : plans
+SUBJECT ||--o{ FILE_RECORD : materials
+SUBJECT ||--o{ AUDIT : history scope
+
+skinparam class {
+  BackgroundColor<<future>> #dbeafe
+  BorderColor<<future>> #2563eb
+  FontColor<<future>> #1e3a8a
 }
 
-entity "SyncCheckpoint (Návrh)" as SyncCheckpoint #DBEAFE {
-  id : bigint <<PK>>
-  profileId : bigint <<FK>>
-  ---
-  cursorEntity : string
-  cursorValue : string
-  syncedAt : datetime
-}
+SUBJECT <<future>>
+TASK <<future>>
+EVENT <<future>>
+FILE_RECORD <<future>>
+PROFILE <<future>>
+AUDIT <<future>>
 
-' --- Proposed relations (blue) ---
-Subject ||-[#2563EB,dashed]-o{ StudyNote : hasNotes
-Event ||-[#2563EB,dashed]-o{ Reminder : triggers
-FileRecord ||-[#2563EB,dashed]-o{ FileVersion : versions
-Subject ||-[#2563EB,dashed]-o{ SubjectMember : sharedWith
-Profile ||-[#2563EB,dashed]-o{ SubjectMember : participates
-Profile ||-[#2563EB,dashed]-o{ SyncCheckpoint : incrementalSync
+note bottom
+Modrá = navrhované cílové schéma.
+As-is část odráží aktuální implementaci v repozitáři.
+end note
 
 @enduml
