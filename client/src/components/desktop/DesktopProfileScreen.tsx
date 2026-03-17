@@ -6,10 +6,7 @@ type DesktopProfileScreenProps = {
   onChangeProfile: (field: keyof Omit<UserProfile, 'avatarDataUrl'>, value: string) => void
   onUploadAvatar: (files: FileList | null) => void
   onRemoveAvatar: () => void
-<<<<<<< HEAD
   onResetProfile: () => void
-=======
->>>>>>> main
 }
 
 const studyYearOptions = ['1. ročník', '2. ročník', '3. ročník', '4. ročník', '5. ročník']
@@ -20,10 +17,7 @@ export function DesktopProfileScreen({
   onChangeProfile,
   onUploadAvatar,
   onRemoveAvatar,
-<<<<<<< HEAD
   onResetProfile,
-=======
->>>>>>> main
 }: DesktopProfileScreenProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -153,13 +147,8 @@ export function DesktopProfileScreen({
       </section>
 
       <div className="profile-actions-row">
-<<<<<<< HEAD
         <button type="button" className="secondary" onClick={onResetProfile}>Zahodit změny</button>
         <button type="button" className="primary" disabled>Uloženo automaticky</button>
-=======
-        <button type="button" className="secondary">Zahodit změny</button>
-        <button type="button" className="primary">Uloženo automaticky</button>
->>>>>>> main
       </div>
     </section>
   )

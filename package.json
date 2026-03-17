@@ -6,9 +6,14 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "dev:setup": "npm run db:up && npm run prisma:generate -w server && npm run db:push && npm run db:seed",
     "build": "npm run build -w server && npm run build -w client",
     "preview": "cd client && npm run preview",
-    "type-check": "npm run type-check -w server && npm run type-check -w client"
+    "type-check": "npm run type-check -w server && npm run type-check -w client",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:push": "npm exec --workspace server prisma db push",
+    "db:seed": "npm run prisma:seed -w server"
   },
   "workspaces": [
     "server",

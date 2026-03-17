@@ -1652,14 +1652,28 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
 })
 
 const start = async () => {
-  try {
-    await prisma.$connect()
-    app.listen(PORT, () => {
-      console.log(`🚀 Server běží na http://localhost:${PORT}`)
-    })
-  } catch (error) {
-    console.error('❌ Nepodařilo se připojit k databázi:', error)
-    process.exit(1)
+  const maxRetries = Number(process.env.DB_CONNECT_RETRIES ?? 10)
+  const retryDelayMs = Number(process.env.DB_CONNECT_RETRY_DELAY_MS ?? 2000)
+
+  for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
+    try {
+      await prisma.$connect()
+      app.listen(PORT, () => {
+        console.log(`🚀 Server běží na http://localhost:${PORT}`)
+      })
+      return
+    } catch (error) {
+      const isLastAttempt = attempt === maxRetries
+      if (isLastAttempt) {
+        console.error('❌ Nepodařilo se připojit k databázi:', error)
+        process.exit(1)
+      }
+
+      console.warn(
+        `⚠️ Databáze zatím není dostupná (pokus ${attempt}/${maxRetries}). Opakuji za ${retryDelayMs} ms...`
+      )
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
+    }
   }
 }
 

@@ -102,6 +102,29 @@ async function main() {
       },
     })
   }
+
+  const firstNames = ['Anna', 'Jakub', 'Tereza', 'Martin', 'Eliška', 'David', 'Barbora', 'Tomáš', 'Klára', 'Filip']
+  const lastNames = ['Novák', 'Svoboda', 'Dvořák', 'Černý', 'Procházka', 'Kučera', 'Veselý', 'Horák', 'Němec', 'Pokorný']
+  const majors = ['Informatika', 'Umělá inteligence', 'Datová analytika', 'Softwarové inženýrství']
+  const years = ['1. ročník', '2. ročník', '3. ročník']
+
+  const generatedUsers = Array.from({ length: 10 }, (_, index) => {
+    const firstName = firstNames[index % firstNames.length]
+    const lastName = lastNames[index % lastNames.length]
+
+    return {
+      fullName: `${firstName} ${lastName}`,
+      email: `${firstName.toLowerCase()}.${lastName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}${index + 1}@muni.cz`,
+      school: 'Masarykova univerzita',
+      studyMajor: majors[index % majors.length],
+      studyYear: years[index % years.length],
+    }
+  })
+
+  await prisma.user.createMany({
+    data: generatedUsers,
+    skipDuplicates: true,
+  })
 }
 
 main()

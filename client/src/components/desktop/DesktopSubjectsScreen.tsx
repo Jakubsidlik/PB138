@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 import React from 'react'
-=======
->>>>>>> main
 import { DesktopSubjectMeta, DesktopSubjectTone, Subject } from '../../app/types'
 
 type DesktopSubject = Subject & {
@@ -11,7 +8,6 @@ type DesktopSubject = Subject & {
 
 type DesktopSubjectsScreenProps = {
   desktopSubjects: DesktopSubject[]
-<<<<<<< HEAD
   subjectFilter: 'all' | 'active' | 'archived'
   setSubjectFilter: React.Dispatch<React.SetStateAction<'all' | 'active' | 'archived'>>
   onCreateSubject: () => void
@@ -29,11 +25,6 @@ export function DesktopSubjectsScreen({
   onToggleArchiveSubject,
   onDeleteSubject,
 }: DesktopSubjectsScreenProps) {
-=======
-}
-
-export function DesktopSubjectsScreen({ desktopSubjects }: DesktopSubjectsScreenProps) {
->>>>>>> main
   return (
     <section className="desktop-subjects-screen" id="desktop-subjects">
       <div className="desktop-subjects-head">
@@ -42,7 +33,6 @@ export function DesktopSubjectsScreen({ desktopSubjects }: DesktopSubjectsScreen
       </div>
 
       <div className="desktop-subjects-filters">
-<<<<<<< HEAD
         <button
           type="button"
           className={subjectFilter === 'all' ? 'active' : ''}
@@ -64,12 +54,6 @@ export function DesktopSubjectsScreen({ desktopSubjects }: DesktopSubjectsScreen
         >
           Archivované
         </button>
-=======
-        <button type="button" className="active">Všechny</button>
-        <button type="button">Povinné</button>
-        <button type="button">Volitelné</button>
-        <button type="button">Archivované</button>
->>>>>>> main
       </div>
 
       <div className="desktop-subjects-grid">
@@ -96,7 +80,6 @@ export function DesktopSubjectsScreen({ desktopSubjects }: DesktopSubjectsScreen
                   <span className="ok">✅ Hotovo</span>
                 )}
               </div>
-<<<<<<< HEAD
 
               <div className="desktop-files-tabs">
                 <button type="button" onClick={() => onEditSubject(subject.id)}>Upravit</button>
@@ -105,17 +88,11 @@ export function DesktopSubjectsScreen({ desktopSubjects }: DesktopSubjectsScreen
                 </button>
                 <button type="button" onClick={() => onDeleteSubject(subject.id)}>Smazat</button>
               </div>
-=======
->>>>>>> main
             </div>
           </article>
         ))}
 
-<<<<<<< HEAD
         <button type="button" className="desktop-subject-add-card" onClick={onCreateSubject}>
-=======
-        <button type="button" className="desktop-subject-add-card">
->>>>>>> main
           <div>＋</div>
           <span>Zapsat další předmět</span>
         </button>

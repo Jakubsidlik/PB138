@@ -7,12 +7,9 @@ type DesktopFilesScreenProps = {
   filesSeed: StudyFile[]
   fileInputRef: React.RefObject<HTMLInputElement>
   onUploadFiles: (files: FileList | null) => void
-<<<<<<< HEAD
   onManageFile: (fileId: number) => void
   onDeleteFile: (fileId: number) => void
   onToggleFileShared: (fileId: number) => void
-=======
->>>>>>> main
 }
 
 const folderToneByColor: Record<FileFolder['color'], string> = {
@@ -42,12 +39,9 @@ export function DesktopFilesScreen({
   filesSeed,
   fileInputRef,
   onUploadFiles,
-<<<<<<< HEAD
   onManageFile,
   onDeleteFile,
   onToggleFileShared,
-=======
->>>>>>> main
 }: DesktopFilesScreenProps) {
   const rows = managedFiles.slice(0, 4)
 
@@ -123,7 +117,6 @@ export function DesktopFilesScreen({
                     <td>{file.addedLabel}</td>
                     <td>{file.size}</td>
                     <td>
-<<<<<<< HEAD
                       <div className="desktop-view-switch">
                         <button
                           type="button"
@@ -150,9 +143,6 @@ export function DesktopFilesScreen({
                           🗑
                         </button>
                       </div>
-=======
-                      <button type="button" className="desktop-file-download">⤓</button>
->>>>>>> main
                     </td>
                   </tr>
                 )
