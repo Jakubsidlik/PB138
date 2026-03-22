@@ -7,6 +7,12 @@ type DesktopFilesScreenProps = {
   filesSeed: StudyFile[]
   fileInputRef: React.RefObject<HTMLInputElement>
   onUploadFiles: (files: FileList | null) => void
+<<<<<<< HEAD
+  onManageFile: (fileId: number) => void
+  onDeleteFile: (fileId: number) => void
+  onToggleFileShared: (fileId: number) => void
+=======
+>>>>>>> main
 }
 
 const folderToneByColor: Record<FileFolder['color'], string> = {
@@ -36,6 +42,12 @@ export function DesktopFilesScreen({
   filesSeed,
   fileInputRef,
   onUploadFiles,
+<<<<<<< HEAD
+  onManageFile,
+  onDeleteFile,
+  onToggleFileShared,
+=======
+>>>>>>> main
 }: DesktopFilesScreenProps) {
   const rows = managedFiles.slice(0, 4)
 
@@ -111,7 +123,36 @@ export function DesktopFilesScreen({
                     <td>{file.addedLabel}</td>
                     <td>{file.size}</td>
                     <td>
+<<<<<<< HEAD
+                      <div className="desktop-view-switch">
+                        <button
+                          type="button"
+                          className="desktop-file-download"
+                          onClick={() => onToggleFileShared(file.id)}
+                          title={file.shared ? 'Odebrat sdílení' : 'Sdílet'}
+                        >
+                          {file.shared ? '👥' : '🔒'}
+                        </button>
+                        <button
+                          type="button"
+                          className="desktop-file-download"
+                          onClick={() => onManageFile(file.id)}
+                          title="Upravit"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          className="desktop-file-download"
+                          onClick={() => onDeleteFile(file.id)}
+                          title="Smazat"
+                        >
+                          🗑
+                        </button>
+                      </div>
+=======
                       <button type="button" className="desktop-file-download">⤓</button>
+>>>>>>> main
                     </td>
                   </tr>
                 )

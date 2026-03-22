@@ -1,0 +1,264 @@
+@startuml PB138 - Extended ERD with Recommendations
+
+!pragma ratio 0.58
+skinparam linetype ortho
+hide circle
+hide methods
+hide stereotypes
+
+skinparam entity {
+  BorderColor #334155
+  BackgroundColor #ffffff
+  FontColor #0f172a
+}
+
+skinparam note {
+  BorderColor #2563eb
+  BackgroundColor #eff6ff
+  FontColor #1e3a8a
+}
+
+' =========================
+' CORE DATA MODEL (DB)
+' =========================
+entity Subject {
+    Id : bigint <<PK>>
+    ---
+    Name : varchar(255)
+    Teacher : varchar(255)
+    Code : varchar(64) <<UNIQUE>>
+    Archived : boolean
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity Task {
+    Id : bigint <<PK>>
+    SubjectId : bigint <<FK>>
+    ---
+    Title : varchar(255)
+    Done : boolean
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity Event {
+    Id : bigint <<PK>>
+    SubjectId : bigint <<FK>>
+    ---
+    Title : varchar(255)
+    Date : date
+    Time : varchar(64)
+    Location : varchar(255)
+    Icon : varchar(64)
+    Accent : enum(AccentType)
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity FileRecord {
+    Id : bigint <<PK>>
+    SubjectId : bigint <<FK>>
+    ---
+    Name : varchar(255)
+    Size : varchar(64)
+    AddedLabel : varchar(64)
+    Category : enum(FileCategory)
+    Shared : boolean
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity Profile {
+    Id : bigint <<PK>>
+    ---
+    FullName : varchar(255)
+    Email : varchar(255)
+    School : varchar(255)
+    StudyMajor : varchar(255)
+    StudyYear : varchar(100)
+    StudyType : varchar(100)
+    AvatarDataUrl : text
+    CreatedAt : timestamp
+    UpdatedAt : timestamp
+}
+
+entity AuditLog {
+    Id : bigint <<PK>>
+    SubjectId : bigint <<FK>>
+    EntityId : bigint
+    ---
+    EntityType : enum(EntityType)
+    Action : enum(AuditAction)
+    Payload : json
+    CreatedAt : timestamp
+}
+
+entity AccentType {
+    Value : enum <<PK>>
+    ---
+    primary
+    amber
+    emerald
+}
+
+entity FileCategory {
+    Value : enum <<PK>>
+    ---
+    folder
+    pdf
+    image
+    document
+    other
+}
+
+entity EntityType {
+    Value : enum <<PK>>
+    ---
+    SUBJECT
+    FILE
+    PROFILE
+    TASK
+    EVENT
+}
+
+entity AuditAction {
+    Value : enum <<PK>>
+    ---
+    CREATE
+    UPDATE
+    DELETE
+    REPLACE_SYNC
+}
+
+Subject ||--o{ Task : has >
+Subject ||--o{ Event : schedules >
+Subject ||--o{ FileRecord : stores >
+Subject ||--o{ AuditLog : scopes >
+Task }o--|| Subject : belongsTo >
+Event }o--|| Subject : belongsTo >
+FileRecord }o--|| Subject : belongsTo >
+AuditLog }o--o| Subject : relatedTo >
+Event }o--|| AccentType : uses >
+FileRecord }o--|| FileCategory : typedAs >
+AuditLog }o--|| EntityType : tracks >
+AuditLog }o--|| AuditAction : performs >
+
+' =========================
+' UI / TAB LAYER
+' =========================
+entity DashboardTab {
+    Key : string <<PK>>
+    ---
+    Name : string
+    MainGoal : string
+}
+
+entity CalendarTab {
+    Key : string <<PK>>
+    ---
+    Name : string
+    MainGoal : string
+}
+
+entity SubjectsTab {
+    Key : string <<PK>>
+    ---
+    Name : string
+    MainGoal : string
+}
+
+entity FilesTab {
+    Key : string <<PK>>
+    ---
+    Name : string
+    MainGoal : string
+}
+
+entity ProfileTab {
+    Key : string <<PK>>
+    ---
+    Name : string
+    MainGoal : string
+}
+
+DashboardTab ||--o{ Task : reads >
+DashboardTab ||--o{ Event : reads >
+DashboardTab ||--o{ Subject : reads >
+DashboardTab ||--o{ FileRecord : reads >
+
+CalendarTab ||--o{ Event : CRUD >
+CalendarTab ||--o{ Subject : assignsTo >
+CalendarTab ||--o{ AuditLog : history >
+
+SubjectsTab ||--o{ Subject : CRUD >
+SubjectsTab ||--o{ Task : contextTasks >
+SubjectsTab ||--o{ Event : contextEvents >
+SubjectsTab ||--o{ FileRecord : contextFiles >
+SubjectsTab ||--o{ AuditLog : subjectHistory >
+
+FilesTab ||--o{ FileRecord : CRUD >
+FilesTab ||--o{ Subject : categorizesBy >
+FilesTab ||--o{ AuditLog : fileHistory >
+
+ProfileTab ||--|| Profile : CRUD-singleton >
+ProfileTab ||--o{ AuditLog : profileHistory >
+
+' =========================
+' RECOMMENDATIONS (FUNCTION ROADMAP)
+' =========================
+note right of CalendarTab
+Doporučení - Kalendář:
+- opakované události (RRULE)
+- připomínky (email/push)
+- drag&drop přesun termínů
+- filtrovat podle předmětu
+- ICS import/export
+- kolize termínů (conflict detection)
+end note
+
+note right of SubjectsTab
+Doporučení - Předměty:
+- detail předmětu (tabs: úkoly/události/soubory)
+- archivace + obnova
+- cíle předmětu (milníky)
+- průběžný progress score
+- přidat učební plán/sylabus
+- bulk akce nad úkoly/soubory
+end note
+
+note right of FilesTab
+Doporučení - Soubory:
+- verzování souborů
+- fulltext vyhledávání v názvech/tagách
+- tagy + chytré složky
+- náhled PDF/obrázků
+- expirace sdílených odkazů
+- kvóty úložiště a upozornění
+end note
+
+note right of ProfileTab
+Doporučení - Profil:
+- preference notifikací dle typu události
+- timezone + lokalizace formátů
+- bezpečnostní panel (sessions/devices)
+- export dat (GDPR)
+- 2FA (TOTP)
+- personalizace dashboardu
+end note
+
+note right of DashboardTab
+Doporučení - Dashboard:
+- personalizované widgety
+- weekly focus a prioritizace
+- "co dnes" timeline
+- predikce workloadu z deadline
+- rychlé akce (add task/event/file)
+end note
+
+note bottom
+Rozšířený ERD propojuje datový model s UI vrstvou záložek.
+Modré poznámky = doporučené funkce k implementaci v jednotlivých rozhraních.
+end note
+
+@enduml

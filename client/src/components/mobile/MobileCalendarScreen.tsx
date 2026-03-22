@@ -13,6 +13,7 @@ type MobileCalendarScreenProps = {
   getDefaultMetaForTitle: (title: string) => EventMeta
   setDisplayMonth: React.Dispatch<React.SetStateAction<Date>>
   addDesktopEvent: () => void
+  removeEvent: (eventId: number) => void
 }
 
 export function MobileCalendarScreen({
@@ -27,6 +28,7 @@ export function MobileCalendarScreen({
   getDefaultMetaForTitle,
   setDisplayMonth,
   addDesktopEvent,
+  removeEvent,
 }: MobileCalendarScreenProps) {
   return (
     <section className="mobile-calendar-screen" id="calendar-mobile">
@@ -115,6 +117,14 @@ export function MobileCalendarScreen({
                     <p>{meta.location}</p>
                   </div>
                   <div className="mobile-calendar-event-time">{meta.time.split(' - ')[0]}</div>
+                  <button
+                    type="button"
+                    className="recent-file-more"
+                    aria-label="Odstranit událost"
+                    onClick={() => removeEvent(event.id)}
+                  >
+                    ×
+                  </button>
                 </article>
               )
             })

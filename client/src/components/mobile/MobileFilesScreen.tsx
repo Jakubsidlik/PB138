@@ -12,6 +12,7 @@ type MobileFilesScreenProps = {
   setIsDragActive: React.Dispatch<React.SetStateAction<boolean>>
   onDropToUpload: (event: React.DragEvent<HTMLDivElement>) => void
   onUploadFiles: (files: FileList | null) => void
+  onManageFile: (fileId: number) => void
   fileInputRef: React.RefObject<HTMLInputElement>
 }
 
@@ -26,6 +27,7 @@ export function MobileFilesScreen({
   setIsDragActive,
   onDropToUpload,
   onUploadFiles,
+  onManageFile,
   fileInputRef,
 }: MobileFilesScreenProps) {
   return (
@@ -105,7 +107,12 @@ export function MobileFilesScreen({
                   {file.addedLabel} • {file.size}
                 </small>
               </div>
-              <button type="button" className="recent-file-more" aria-label="Více možností">
+              <button
+                type="button"
+                className="recent-file-more"
+                aria-label="Více možností"
+                onClick={() => onManageFile(file.id)}
+              >
                 ⋮
               </button>
             </article>

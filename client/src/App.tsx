@@ -70,6 +70,7 @@ function App() {
             setIsDragActive={state.setIsDragActive}
             onDropToUpload={state.onDropToUpload}
             onUploadFiles={state.onUploadFiles}
+            onManageFile={state.manageFile}
             fileInputRef={fileInputRef}
           />
 
@@ -85,6 +86,7 @@ function App() {
             getDefaultMetaForTitle={getDefaultMetaForTitle}
             setDisplayMonth={state.setDisplayMonth}
             addDesktopEvent={state.addDesktopEvent}
+            removeEvent={state.removeEvent}
           />
 
           <MobileSubjectsScreen
@@ -92,6 +94,10 @@ function App() {
             setSubjectSearch={state.setSubjectSearch}
             filteredSubjects={state.filteredSubjects}
             subjectVisualByCode={subjectVisualByCode}
+            onCreateSubject={state.createSubject}
+            onEditSubject={state.updateSubject}
+            onToggleArchiveSubject={state.toggleSubjectArchived}
+            onDeleteSubject={state.deleteSubject}
           />
 
           <MobileProfileScreen
@@ -130,7 +136,15 @@ function App() {
             addDesktopEvent={state.addDesktopEvent}
           />
 
-          <DesktopSubjectsScreen desktopSubjects={state.desktopSubjects} />
+          <DesktopSubjectsScreen
+            desktopSubjects={state.desktopSubjects}
+            subjectFilter={state.subjectFilter}
+            setSubjectFilter={state.setSubjectFilter}
+            onCreateSubject={state.createSubject}
+            onEditSubject={state.updateSubject}
+            onToggleArchiveSubject={state.toggleSubjectArchived}
+            onDeleteSubject={state.deleteSubject}
+          />
 
           <DesktopFilesScreen
             folders={foldersSeed}
@@ -138,6 +152,9 @@ function App() {
             filesSeed={filesSeed}
             fileInputRef={fileInputRef}
             onUploadFiles={state.onUploadFiles}
+            onManageFile={state.manageFile}
+            onDeleteFile={state.removeFile}
+            onToggleFileShared={state.toggleFileShared}
           />
 
           <DesktopProfileScreen
@@ -145,6 +162,7 @@ function App() {
             onChangeProfile={state.onChangeProfile}
             onUploadAvatar={state.onUploadProfileAvatar}
             onRemoveAvatar={state.onRemoveProfileAvatar}
+            onResetProfile={state.resetProfile}
           />
         </div>
 
