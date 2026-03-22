@@ -12,7 +12,7 @@ type DesktopProfileScreenProps = {
 >>>>>>> main
 }
 
-const studyYearOptions = ['1. ročník', '2. ročník', '3. ročník', '4. ročník', '5. ročník']
+const studyYearOptions = ['1. ročník', '2. ročník', '3. ročník', '4. ročník', '5. ročník', '6. ročník', '7. ročník', '8. ročník']
 const studyTypeOptions = ['Bakalářské studium', 'Magisterské studium', 'Doktorské studium']
 
 export function DesktopProfileScreen({

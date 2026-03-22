@@ -12,14 +12,15 @@ type SidebarProps = {
 
 const paletteOptions: Array<{ value: AccentPalette; label: string }> = [
   { value: 'blue', label: 'Modrá' },
-  { value: 'emerald', label: 'Smaragdová' },
-  { value: 'violet', label: 'Fialová' },
-  { value: 'rose', label: 'Růžová' },
+  { value: 'green', label: 'Zelená' },
+  { value: 'purple', label: 'Fialová' },
+  { value: 'pink', label: 'Růžová' },
   { value: 'red', label: 'Červená' },
-  { value: 'amber', label: 'Žlutá' },
+  { value: 'brown', label: 'Hnědá' },
   { value: 'orange', label: 'Oranžová' },
   { value: 'cyan', label: 'Tyrkysová' },
   { value: 'mono', label: 'Monochromatická' },
+  { value: 'yellow', label: 'Žlutá' },
 ]
 
 export function Sidebar({
