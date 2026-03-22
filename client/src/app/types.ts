@@ -63,14 +63,15 @@ export type EventMeta = {
 export type ThemeMode = 'light' | 'dark'
 export type AccentPalette =
   | 'blue'
-  | 'emerald'
-  | 'violet'
-  | 'rose'
+  | 'green'
+  | 'purple'
+  | 'pink'
   | 'red'
-  | 'amber'
+  | 'brown'
   | 'orange'
   | 'cyan'
   | 'mono'
+  | 'yellow'
 export type MobileNavItem = 'home' | 'calendar' | 'subjects' | 'files' | 'profile'
 
 export type UserProfile = {

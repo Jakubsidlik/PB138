@@ -1,6 +1,6 @@
 .dashboard-root {
-  --bg-main: #f6f6f8;
-  --bg-sidebar: #ffffff;
+  --bg-main: #FCFFFC;
+  --bg-sidebar: #FCFFFC;
   --bg-topbar: rgba(255, 255, 255, 0.92);
   --bg-card: #ffffff;
   --bg-subtle: #f8fafc;
@@ -59,27 +59,27 @@
 }
 
 .dashboard-root.palette-blue {
-  --accent: #1142d4;
+  --accent: #4381C1;
 }
 
-.dashboard-root.palette-emerald {
-  --accent: #0f766e;
+.dashboard-root.palette-green {
+  --accent: #29BF12;
 }
 
-.dashboard-root.palette-violet {
-  --accent: #6d28d9;
+.dashboard-root.palette-purple {
+  --accent: #5B1865;
 }
 
-.dashboard-root.palette-rose {
-  --accent: #be123c;
+.dashboard-root.palette-pink {
+  --accent: #F4ACB7;
 }
 
 .dashboard-root.palette-red {
-  --accent: #b91c1c;
+  --accent: #bf0603;
 }
 
-.dashboard-root.palette-amber {
-  --accent: #d97706;
+.dashboard-root.palette-brown {
+  --accent: #81523F;
 }
 
 .dashboard-root.palette-orange {
@@ -87,11 +87,15 @@
 }
 
 .dashboard-root.palette-cyan {
-  --accent: #0e7490;
+  --accent: #348AA7;
 }
 
 .dashboard-root.palette-mono {
-  --accent: #475569;
+  --accent: #77878B;
+}
+
+.dashboard-root.palette-yellow {
+  --accent: #F7D002;
 }
 
 .sidebar {
