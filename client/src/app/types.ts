@@ -107,3 +107,77 @@ export type CalendarCell = {
 	iso: string
 	inCurrentMonth: boolean
 }
+
+export type UserRole = 'student' | 'registered' | 'public'
+
+export type AppScreen = 'overview' | 'subjects' | 'calendar' | 'users'
+
+export type SubjectAccess = 'private' | 'registered' | 'public'
+
+export type LessonFormat = 'lecture' | 'seminar' | 'lab'
+
+export type EventKind = 'deadline' | 'exam' | 'consultation' | 'meeting'
+
+export type PlannerUser = {
+	id: number
+	name: string
+	email: string
+	role: UserRole
+	institution: string
+	bio: string
+	avatarDataUrl: string | null
+	lastSeenLabel: string
+}
+
+export type PlannerSubject = Subject & {
+	ownerId: number
+	access: SubjectAccess
+	description: string
+	color: 'indigo' | 'emerald' | 'amber' | 'rose'
+	lessonsCount: number
+	eventsCount: number
+	studentsCount: number
+}
+
+export type Lesson = {
+	id: number
+	subjectId: number
+	title: string
+	startsAt: string
+	endsAt: string
+	room: string
+	format: LessonFormat
+	shared: boolean
+	notes: string
+}
+
+export type Event = {
+	id: number
+	subjectId: number | null
+	title: string
+	startsAt: string
+	endsAt: string
+	kind: EventKind
+	shared: boolean
+	location: string
+	description: string
+}
+
+export type PlannerCalendarItem = {
+	id: number
+	title: string
+	start: Date
+	end: Date
+	kind: 'lesson' | 'event'
+	subjectTitle: string
+	subjectCode: string
+	shared: boolean
+	location: string
+	description: string
+	color: string
+}
+
+export type RoleCapability = {
+	label: string
+	description: string
+}

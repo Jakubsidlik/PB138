@@ -1,13 +1,72 @@
-* {
-  box-sizing: border-box;
-}
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 
-html,
-body,
-#root {
-  margin: 0;
-  width: 100%;
-  min-height: 100%;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  color: #0f172a;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 33 40% 96%;
+    --foreground: 29 15% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 29 15% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 29 15% 11%;
+    --primary: 222 85% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 33 27% 92%;
+    --secondary-foreground: 29 15% 11%;
+    --muted: 33 20% 91%;
+    --muted-foreground: 25 10% 44%;
+    --accent: 24 100% 68%;
+    --accent-foreground: 29 15% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 28 14% 84%;
+    --input: 28 14% 84%;
+    --ring: 222 85% 55%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    @apply min-h-full w-full;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Manrope', 'Segoe UI', sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: 'Fraunces', Georgia, serif;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+  }
 }

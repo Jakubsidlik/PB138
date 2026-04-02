@@ -36,7 +36,7 @@ export function DashboardHomeContent({
     <div className="mobile-dashboard-content desktop-dashboard-content">
       <section className="welcome">
         <div>
-          <h2>Dobré ráno, Jakube!</h2>
+          <h2>Dobré ráno, User!</h2>
           <p>Dnes je pondělí. Máš před sebou nabitý studijní den.</p>
         </div>
       </section>

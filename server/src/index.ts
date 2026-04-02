@@ -37,8 +37,8 @@ type ApiEvent = {
 }
 
 const defaultProfile = {
-  fullName: 'Jakub Kowalski',
-  email: 'jakub.kowalski@muni.cz',
+  fullName: 'User',
+  email: 'user@example.com',
   school: 'Masarykova univerzita',
   studyMajor: 'Informatika',
   studyYear: '3. ročník',
@@ -1631,6 +1631,359 @@ app.get('/api/subjects/:id/history', async (req, res, next) => {
       ...paginated,
       limit: pagination.limit,
     })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// ============================================================
+// PLANNER MODEL API (NEW ROLE-BASED ENDPOINTS)
+// ============================================================
+
+app.get('/api/users', async (_req, res, next) => {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { role: 'asc' },
+    })
+
+    res.json(
+      users.map((user) => ({
+        id: Number(user.id),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        institution: user.institution,
+        bio: user.bio,
+        avatarDataUrl: user.avatarDataUrl,
+        createdAt: user.createdAt.toISOString(),
+      })),
+    )
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/lessons', async (req, res, next) => {
+  try {
+    const pagination = parseCursorPagination(req, { defaultLimit: 30, maxLimit: 200 })
+    const roleRaw = req.query.role
+    const subjectId = asBigInt(req.query.subjectId)
+
+    const role =
+      roleRaw === 'student' || roleRaw === 'registered' || roleRaw === 'public'
+        ? roleRaw
+        : 'student'
+
+    const findArgs: Prisma.LessonFindManyArgs = {
+      orderBy: { startsAt: 'asc' },
+      include: {
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            access: true,
+          },
+        },
+      },
+    }
+
+    if (subjectId) {
+      findArgs.where = { subjectId }
+    }
+
+    type LessonWithSubject = Prisma.LessonGetPayload<{ include: { subject: true } }>
+
+    const allLessons = (await prisma.lesson.findMany(findArgs)) as LessonWithSubject[]
+
+    // Filter by role access
+    const visibleLessons = allLessons.filter((lesson) => {
+      if (role === 'student') {
+        return true // Student sees all lessons
+      }
+
+      if (role === 'registered') {
+        return lesson.shared || lesson.subject?.access !== 'private'
+      }
+
+      // public role
+      return lesson.shared && lesson.subject?.access === 'public'
+    })
+
+    const mappedLessons = visibleLessons.map((lesson) => ({
+      id: Number(lesson.id),
+      subjectId: lesson.subjectId ? Number(lesson.subjectId) : null,
+      title: lesson.title,
+      startsAt: lesson.startsAt.toISOString(),
+      endsAt: lesson.endsAt.toISOString(),
+      room: lesson.room,
+      format: lesson.format,
+      shared: lesson.shared,
+      notes: lesson.notes,
+      subject: lesson.subject
+        ? {
+            id: Number(lesson.subject.id),
+            name: lesson.subject.name,
+            code: lesson.subject.code,
+            access: lesson.subject.access,
+          }
+        : null,
+      createdAt: lesson.createdAt.toISOString(),
+    }))
+
+    if (!pagination.enabled) {
+      res.json(mappedLessons)
+      return
+    }
+
+    const paginated = toPaginatedPayload(mappedLessons, pagination.limit)
+    res.json({
+      ...paginated,
+      limit: pagination.limit,
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/lessons', async (req, res, next) => {
+  try {
+    const { title, subjectId, startsAt, endsAt, room, format, shared, notes } = req.body as {
+      title?: string
+      subjectId?: number | null
+      startsAt?: string
+      endsAt?: string
+      room?: string
+      format?: string
+      shared?: boolean
+      notes?: string
+    }
+
+    if (!title?.trim() || !startsAt || !endsAt) {
+      res.status(400).json({ error: 'Pole title, startsAt a endsAt jsou povinná.' })
+      return
+    }
+
+    const startDate = new Date(startsAt)
+    const endDate = new Date(endsAt)
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      res.status(400).json({ error: 'Neplatný formát data/času.' })
+      return
+    }
+
+    const validFormat =
+      format === 'lecture' || format === 'seminar' || format === 'lab' ? format : 'lecture'
+
+    const created = await prisma.lesson.create({
+      data: {
+        title: title.trim(),
+        subjectId: asBigInt(subjectId) ?? null,
+        startsAt: startDate,
+        endsAt: endDate,
+        room: typeof room === 'string' ? room.trim() : 'A1.01',
+        format: validFormat,
+        shared: typeof shared === 'boolean' ? shared : false,
+        notes: typeof notes === 'string' ? notes : '',
+      },
+      include: {
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            access: true,
+          },
+        },
+      },
+    })
+
+    res.status(201).json({
+      id: Number(created.id),
+      subjectId: created.subjectId ? Number(created.subjectId) : null,
+      title: created.title,
+      startsAt: created.startsAt.toISOString(),
+      endsAt: created.endsAt.toISOString(),
+      room: created.room,
+      format: created.format,
+      shared: created.shared,
+      notes: created.notes,
+      subject: created.subject
+        ? {
+            id: Number(created.subject.id),
+            name: created.subject.name,
+            code: created.subject.code,
+            access: created.subject.access,
+          }
+        : null,
+      createdAt: created.createdAt.toISOString(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.patch('/api/lessons/:id', async (req, res, next) => {
+  try {
+    const lessonId = asBigInt(req.params.id)
+    if (!lessonId) {
+      res.status(400).json({ error: 'Neplatné ID lekce.' })
+      return
+    }
+
+    const existing = await prisma.lesson.findUnique({ where: { id: lessonId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Lekce nebyla nalezena.' })
+      return
+    }
+
+    const payload = req.body as {
+      title?: string
+      startsAt?: string
+      endsAt?: string
+      room?: string
+      format?: string
+      shared?: boolean
+      notes?: string
+    }
+
+    const startDate =
+      typeof payload.startsAt === 'string' ? new Date(payload.startsAt) : undefined
+    const endDate = typeof payload.endsAt === 'string' ? new Date(payload.endsAt) : undefined
+
+    if ((startDate && Number.isNaN(startDate.getTime())) || (endDate && Number.isNaN(endDate.getTime()))) {
+      res.status(400).json({ error: 'Neplatný formát data/času.' })
+      return
+    }
+
+    const updated = await prisma.lesson.update({
+      where: { id: lessonId },
+      data: {
+        title: typeof payload.title === 'string' ? payload.title.trim() : undefined,
+        startsAt: startDate,
+        endsAt: endDate,
+        room: typeof payload.room === 'string' ? payload.room.trim() : undefined,
+        format:
+          payload.format === 'lecture' || payload.format === 'seminar' || payload.format === 'lab'
+            ? payload.format
+            : undefined,
+        shared: typeof payload.shared === 'boolean' ? payload.shared : undefined,
+        notes: typeof payload.notes === 'string' ? payload.notes : undefined,
+      },
+      include: {
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            access: true,
+          },
+        },
+      },
+    })
+
+    res.json({
+      id: Number(updated.id),
+      subjectId: updated.subjectId ? Number(updated.subjectId) : null,
+      title: updated.title,
+      startsAt: updated.startsAt.toISOString(),
+      endsAt: updated.endsAt.toISOString(),
+      room: updated.room,
+      format: updated.format,
+      shared: updated.shared,
+      notes: updated.notes,
+      subject: updated.subject
+        ? {
+            id: Number(updated.subject.id),
+            name: updated.subject.name,
+            code: updated.subject.code,
+            access: updated.subject.access,
+          }
+        : null,
+      createdAt: updated.createdAt.toISOString(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/lessons/:id', async (req, res, next) => {
+  try {
+    const lessonId = asBigInt(req.params.id)
+    if (!lessonId) {
+      res.status(400).json({ error: 'Neplatné ID lekce.' })
+      return
+    }
+
+    const existing = await prisma.lesson.findUnique({ where: { id: lessonId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Lekce nebyla nalezena.' })
+      return
+    }
+
+    await prisma.lesson.delete({ where: { id: lessonId } })
+
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/subjects/with-access', async (req, res, next) => {
+  try {
+    const roleRaw = req.query.role
+
+    const role =
+      roleRaw === 'student' || roleRaw === 'registered' || roleRaw === 'public'
+        ? roleRaw
+        : 'student'
+
+    const subjects = await prisma.subject.findMany({
+      orderBy: { createdAt: 'asc' },
+      include: {
+        _count: {
+          select: {
+            files: true,
+            tasks: true,
+            events: true,
+            lessons: true,
+          },
+        },
+      },
+    })
+
+    // Filter by role access
+    const visibleSubjects = subjects.filter((subject) => {
+      if (role === 'student') {
+        return true // Student sees all subjects
+      }
+
+      if (role === 'registered') {
+        return subject.access !== 'private'
+      }
+
+      // public role
+      return subject.access === 'public'
+    })
+
+    res.json(
+      visibleSubjects.map((subject) => ({
+        id: Number(subject.id),
+        name: subject.name,
+        teacher: subject.teacher,
+        code: subject.code,
+        access: subject.access,
+        description: subject.description,
+        color: subject.color,
+        archived: subject.archived,
+        files: subject._count.files,
+        tasks: subject._count.tasks,
+        events: subject._count.events,
+        lessons: subject._count.lessons,
+        ownerId: subject.ownerId ? Number(subject.ownerId) : null,
+        createdAt: subject.createdAt.toISOString(),
+      })),
+    )
   } catch (error) {
     next(error)
   }

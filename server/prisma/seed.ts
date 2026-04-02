@@ -18,6 +18,129 @@ async function main() {
   const subjects = await prisma.subject.findMany()
   const byCode = new Map(subjects.map((subject) => [subject.code, subject.id]))
 
+  const existingPlannerUsers = await prisma.user.count()
+  if (existingPlannerUsers === 0) {
+    await prisma.user.createMany({
+      data: [
+        {
+          name: 'User',
+          email: 'user@example.com',
+          role: 'student',
+          institution: 'Masarykova univerzita',
+          bio: 'Správce studijního prostoru, který publikuje lekce a řídí přístup.',
+        },
+        {
+          name: 'Registrovaný uživatel',
+          email: 'reader@example.com',
+          role: 'registered',
+          institution: 'Fakulta informatiky',
+          bio: 'Sleduje sdílené předměty a ukládá si zajímavé lekce.',
+        },
+        {
+          name: 'Návštěvník',
+          email: 'public@example.com',
+          role: 'public',
+          institution: 'Veřejnost',
+          bio: 'Prohlíží si jen veřejně sdílený obsah.',
+        },
+      ],
+    })
+  }
+
+  const plannerUser = await prisma.user.findUnique({
+    where: { email: 'user@example.com' },
+  })
+
+  if (plannerUser) {
+    await prisma.subject.updateMany({
+      where: { code: 'SE' },
+      data: {
+        ownerId: plannerUser.id,
+        access: 'public',
+        description: 'Základní projekt s rolí správce, veřejným náhledem a sdílenými lekcemi.',
+        color: 'indigo',
+      },
+    })
+
+    await prisma.subject.updateMany({
+      where: { code: 'AI' },
+      data: {
+        ownerId: plannerUser.id,
+        access: 'registered',
+        description: 'Sdílené poznámky, příklady a přednášky pro registrované uživatele.',
+        color: 'emerald',
+      },
+    })
+
+    await prisma.subject.updateMany({
+      where: { code: 'DS' },
+      data: {
+        ownerId: plannerUser.id,
+        access: 'public',
+        description: 'Veřejná ukázka studijního obsahu s omezeným náhledem.',
+        color: 'amber',
+      },
+    })
+  }
+
+  const existingLessons = await prisma.lesson.count()
+  if (existingLessons === 0) {
+    await prisma.lesson.createMany({
+      data: [
+        {
+          subjectId: byCode.get('SE') ?? null,
+          title: 'Role a oprávnění',
+          startsAt: new Date('2026-04-03T09:00:00'),
+          endsAt: new Date('2026-04-03T10:30:00'),
+          room: 'A2.12',
+          format: 'lecture',
+          shared: true,
+          notes: 'Student spravuje sdílení, registrovaní vidí publikovanou část.',
+        },
+        {
+          subjectId: byCode.get('SE') ?? null,
+          title: 'Návrh obrazovek',
+          startsAt: new Date('2026-04-05T13:00:00'),
+          endsAt: new Date('2026-04-05T14:30:00'),
+          room: 'Studio 3',
+          format: 'seminar',
+          shared: true,
+          notes: 'Cvičení na redesign hlavních stránek.',
+        },
+        {
+          subjectId: byCode.get('AI') ?? null,
+          title: 'Normalizace dat',
+          startsAt: new Date('2026-04-04T11:00:00'),
+          endsAt: new Date('2026-04-04T12:30:00'),
+          room: 'B1.08',
+          format: 'lecture',
+          shared: true,
+          notes: 'Pro registrované uživatele.',
+        },
+        {
+          subjectId: byCode.get('DS') ?? null,
+          title: 'Algoritmická soutěž',
+          startsAt: new Date('2026-04-06T15:00:00'),
+          endsAt: new Date('2026-04-06T16:30:00'),
+          room: 'Lab C',
+          format: 'lab',
+          shared: true,
+          notes: 'Veřejně sdílený workshop.',
+        },
+        {
+          subjectId: byCode.get('AI') ?? null,
+          title: 'Interní konzultace',
+          startsAt: new Date('2026-04-07T10:00:00'),
+          endsAt: new Date('2026-04-07T11:00:00'),
+          room: 'Privátní kanál',
+          format: 'seminar',
+          shared: false,
+          notes: 'Vidí jen student.',
+        },
+      ],
+    })
+  }
+
   const existingTasks = await prisma.task.count()
   if (existingTasks === 0) {
     await prisma.task.createMany({
@@ -93,8 +216,8 @@ async function main() {
   if (existingProfile === 0) {
     await prisma.profile.create({
       data: {
-        fullName: 'Jakub Kowalski',
-        email: 'jakub.kowalski@muni.cz',
+        fullName: 'User',
+        email: 'user@example.com',
         school: 'Masarykova univerzita',
         studyMajor: 'Informatika',
         studyYear: '3. ročník',

@@ -36,11 +36,54 @@ enum AuditAction {
   REPLACE_SYNC
 }
 
+enum UserRole {
+  student
+  registered
+  public
+}
+
+enum SubjectAccess {
+  private
+  registered
+  public
+}
+
+enum LessonFormat {
+  lecture
+  seminar
+  lab
+}
+
+enum EventKind {
+  deadline
+  exam
+  consultation
+  meeting
+}
+
+model User {
+  id            BigInt    @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  role          UserRole  @default(student)
+  institution   String
+  bio           String
+  avatarDataUrl String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  subjects      Subject[] @relation("SubjectOwner")
+}
+
 model Subject {
   id        BigInt    @id @default(autoincrement())
   name      String
   teacher   String
   code      String    @unique
+  ownerId   BigInt?
+  access    SubjectAccess @default(registered)
+  description String   @default("")
+  color     String     @default("indigo")
   archived  Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -49,6 +92,24 @@ model Subject {
   events    Event[]
   files     FileRecord[]
   audits    AuditLog[]
+  owner     User?     @relation("SubjectOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  lessons   Lesson[]
+}
+
+model Lesson {
+  id         BigInt      @id @default(autoincrement())
+  subjectId  BigInt?
+  title      String
+  startsAt   DateTime
+  endsAt     DateTime
+  room       String
+  format     LessonFormat @default(lecture)
+  shared     Boolean      @default(false)
+  notes      String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  subject    Subject?     @relation(fields: [subjectId], references: [id], onDelete: SetNull)
 }
 
 model Task {
@@ -71,6 +132,11 @@ model Event {
   icon       String?
   accent     AccentType?
   subjectId  BigInt?
+  kind       EventKind?  
+  shared     Boolean     @default(false)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  description String     @default("")
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 

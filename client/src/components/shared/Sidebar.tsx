@@ -35,7 +35,7 @@ export function Sidebar({
       <div className="brand">
         <div className="brand-icon">🎓</div>
         <div>
-          <h1>StudentHub</h1>
+          <h1>LonelyStudent</h1>
           <p>Academic v2.0</p>
         </div>
       </div>
