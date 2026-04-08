@@ -104,17 +104,20 @@ export const readThemeFromStorage = (): ThemeMode => {
 export const readPaletteFromStorage = (): AccentPalette => {
   const raw = localStorage.getItem(PALETTE_STORAGE_KEY)
 
-  if (
-    raw === 'emerald' ||
-    raw === 'violet' ||
-    raw === 'rose' ||
-    raw === 'red' ||
-    raw === 'amber' ||
-    raw === 'orange' ||
-    raw === 'cyan' ||
-    raw === 'mono'
-  ) {
+  if (raw === 'emerald' || raw === 'rose' || raw === 'amber' || raw === 'mono') {
     return raw
+  }
+
+  if (raw === 'red') {
+    return 'rose'
+  }
+
+  if (raw === 'orange') {
+    return 'amber'
+  }
+
+  if (raw === 'violet' || raw === 'cyan') {
+    return 'blue'
   }
 
   return 'blue'

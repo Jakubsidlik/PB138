@@ -59,39 +59,68 @@
 }
 
 .dashboard-root.palette-blue {
-  --accent: #1142d4;
+  --accent: #0057ff;
+  --accent-soft: #dbe8ff;
+  --accent-soft-strong: #adc8ff;
+  --accent-text: #0b3ea8;
+  --text-contrast: #ffffff;
 }
 
 .dashboard-root.palette-emerald {
-  --accent: #0f766e;
-}
-
-.dashboard-root.palette-violet {
-  --accent: #6d28d9;
+  --accent: #007f5f;
+  --accent-soft: #d6f5ea;
+  --accent-soft-strong: #9fe8ce;
+  --accent-text: #04543f;
+  --text-contrast: #ffffff;
 }
 
 .dashboard-root.palette-rose {
-  --accent: #be123c;
-}
-
-.dashboard-root.palette-red {
-  --accent: #b91c1c;
+  --accent: #c81e5b;
+  --accent-soft: #ffd9e7;
+  --accent-soft-strong: #f7a6c4;
+  --accent-text: #7f1239;
+  --text-contrast: #ffffff;
 }
 
 .dashboard-root.palette-amber {
-  --accent: #d97706;
-}
-
-.dashboard-root.palette-orange {
-  --accent: #ea580c;
-}
-
-.dashboard-root.palette-cyan {
-  --accent: #0e7490;
+  --accent: #b45309;
+  --accent-soft: #fde6cf;
+  --accent-soft-strong: #f8c38b;
+  --accent-text: #7a2e06;
+  --text-contrast: #ffffff;
 }
 
 .dashboard-root.palette-mono {
-  --accent: #475569;
+  --accent: #52525b;
+  --accent-soft: #e5e7eb;
+  --accent-soft-strong: #cfd4da;
+  --accent-text: #27272a;
+  --text-contrast: #ffffff;
+}
+
+.dashboard-root.palette-violet,
+.dashboard-root.palette-cyan {
+  --accent: #0057ff;
+  --accent-soft: #dbe8ff;
+  --accent-soft-strong: #adc8ff;
+  --accent-text: #0b3ea8;
+  --text-contrast: #ffffff;
+}
+
+.dashboard-root.palette-red {
+  --accent: #c81e5b;
+  --accent-soft: #ffd9e7;
+  --accent-soft-strong: #f7a6c4;
+  --accent-text: #7f1239;
+  --text-contrast: #ffffff;
+}
+
+.dashboard-root.palette-orange {
+  --accent: #b45309;
+  --accent-soft: #fde6cf;
+  --accent-soft-strong: #f8c38b;
+  --accent-text: #7a2e06;
+  --text-contrast: #ffffff;
 }
 
 .sidebar {
@@ -3311,5 +3340,290 @@ th {
     padding: 0.5rem 0.65rem;
     font-size: 0.74rem;
     font-weight: 700;
+  }
+}
+
+/* Minimalist visual refinement */
+.dashboard-root {
+  --bg-main: #f5f5f5;
+  --bg-sidebar: #fafafa;
+  --bg-topbar: #fafafa;
+  --bg-card: #ffffff;
+  --bg-subtle: #f8f8f8;
+  --bg-soft: #f3f4f6;
+  --bg-input: #ffffff;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  --border-soft: #eef0f2;
+  --accent: #111827;
+  --accent-soft: #f1f5f9;
+  --accent-soft-strong: #dbe3ea;
+  --accent-text: #111827;
+}
+
+.dashboard-root.theme-dark {
+  --bg-main: #111315;
+  --bg-sidebar: #16181b;
+  --bg-topbar: #16181b;
+  --bg-card: #1a1d21;
+  --bg-subtle: #20242a;
+  --bg-soft: #262b33;
+  --bg-input: #20242a;
+  --text-main: #f3f4f6;
+  --text-muted: #a2acb7;
+  --border-color: #30363d;
+  --border-soft: #2b3138;
+}
+
+.dashboard-root.palette-mono .subject-mobile-visual.blue,
+.dashboard-root.palette-mono .subject-mobile-visual.emerald,
+.dashboard-root.palette-mono .subject-mobile-visual.violet,
+.dashboard-root.palette-mono .subject-mobile-visual.amber,
+.dashboard-root.palette-mono .desktop-subject-icon.blue,
+.dashboard-root.palette-mono .desktop-subject-icon.emerald,
+.dashboard-root.palette-mono .desktop-subject-icon.violet,
+.dashboard-root.palette-mono .desktop-subject-icon.amber,
+.dashboard-root.palette-mono .desktop-subject-icon.cyan {
+  background: #e5e7eb;
+  color: #27272a;
+}
+
+.dashboard-root.palette-mono .subject-strip.blue,
+.dashboard-root.palette-mono .subject-strip.emerald,
+.dashboard-root.palette-mono .subject-strip.violet,
+.dashboard-root.palette-mono .subject-strip.amber,
+.dashboard-root.palette-mono .subject-strip.cyan,
+.dashboard-root.palette-mono .desktop-event-item.accent-primary,
+.dashboard-root.palette-mono .desktop-event-item.accent-amber,
+.dashboard-root.palette-mono .desktop-event-item.accent-emerald {
+  border-left-color: #52525b;
+  background: #f5f5f5;
+}
+
+.dashboard-root.palette-mono .deadline-priority.high,
+.dashboard-root.palette-mono .deadline-priority.medium,
+.dashboard-root.palette-mono .deadline-priority.low,
+.dashboard-root.palette-mono .deadline-progress-fill.high,
+.dashboard-root.palette-mono .deadline-progress-fill.medium,
+.dashboard-root.palette-mono .deadline-progress-fill.low,
+.dashboard-root.palette-mono .desktop-subject-stats .warning,
+.dashboard-root.palette-mono .desktop-subject-stats .ok,
+.dashboard-root.palette-mono .folder-icon.amber,
+.dashboard-root.palette-mono .folder-icon.emerald,
+.dashboard-root.palette-mono .folder-icon.primary,
+.dashboard-root.palette-mono .folder-icon.slate,
+.dashboard-root.palette-mono .desktop-file-type-icon.red,
+.dashboard-root.palette-mono .desktop-file-type-icon.blue,
+.dashboard-root.palette-mono .desktop-file-type-icon.green,
+.dashboard-root.palette-mono .desktop-file-type-icon.slate {
+  color: #52525b;
+  background: #e5e7eb;
+  border-color: #d4d4d8;
+}
+
+.dashboard-root.palette-mono .recent-file-icon.pdf,
+.dashboard-root.palette-mono .recent-file-icon.document,
+.dashboard-root.palette-mono .recent-file-icon.image,
+.dashboard-root.palette-mono .desktop-folder-icon.blue,
+.dashboard-root.palette-mono .desktop-folder-icon.emerald,
+.dashboard-root.palette-mono .desktop-folder-icon.amber,
+.dashboard-root.palette-mono .desktop-folder-icon.violet {
+  background: #e5e7eb;
+  color: #52525b;
+}
+
+.dashboard-root.theme-dark.palette-mono .subject-mobile-visual.blue,
+.dashboard-root.theme-dark.palette-mono .subject-mobile-visual.emerald,
+.dashboard-root.theme-dark.palette-mono .subject-mobile-visual.violet,
+.dashboard-root.theme-dark.palette-mono .subject-mobile-visual.amber,
+.dashboard-root.theme-dark.palette-mono .desktop-subject-icon.blue,
+.dashboard-root.theme-dark.palette-mono .desktop-subject-icon.emerald,
+.dashboard-root.theme-dark.palette-mono .desktop-subject-icon.violet,
+.dashboard-root.theme-dark.palette-mono .desktop-subject-icon.amber,
+.dashboard-root.theme-dark.palette-mono .desktop-subject-icon.cyan,
+.dashboard-root.theme-dark.palette-mono .recent-file-icon.pdf,
+.dashboard-root.theme-dark.palette-mono .recent-file-icon.document,
+.dashboard-root.theme-dark.palette-mono .recent-file-icon.image {
+  background: #2f343b;
+  color: #e5e7eb;
+}
+
+.dashboard-root.theme-dark.palette-mono .subject-strip.blue,
+.dashboard-root.theme-dark.palette-mono .subject-strip.emerald,
+.dashboard-root.theme-dark.palette-mono .subject-strip.violet,
+.dashboard-root.theme-dark.palette-mono .subject-strip.amber,
+.dashboard-root.theme-dark.palette-mono .subject-strip.cyan {
+  background: #a1a1aa;
+}
+
+.topbar {
+  background: var(--bg-topbar);
+  backdrop-filter: none;
+}
+
+.brand-icon {
+  border: 1px solid var(--border-color);
+  border-radius: 0.55rem;
+  background: var(--bg-subtle);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.menu-item,
+.mobile-header-icon,
+.mobile-notification,
+.profile,
+.subjects-search,
+.upload-area,
+.desktop-files-upload,
+.mobile-profile-action-row,
+.desktop-calendar-controls > button,
+.desktop-calendar-controls .month-switch {
+  border-radius: 0.55rem;
+}
+
+.menu-item.active {
+  background: var(--bg-subtle);
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+
+.dashboard-root.theme-dark .menu-item.active,
+.dashboard-root.theme-dark .menu-item.active:hover {
+  background: var(--bg-soft);
+  color: var(--text-main);
+}
+
+.progress-card,
+.deadlines-card,
+.card,
+.profile-card,
+.mobile-profile-section,
+.mobile-calendar-panel,
+.mobile-calendar-event-card,
+.subject-mobile-card,
+.recent-file-item,
+.desktop-subject-card,
+.desktop-files-table-wrap,
+.desktop-files-upload,
+.desktop-month-grid,
+.events-card,
+.upload-area {
+  box-shadow: none !important;
+  border-radius: 0.75rem;
+}
+
+.progress-card {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.progress-card p,
+.eyebrow {
+  color: var(--text-muted);
+}
+
+.progress-ring {
+  width: 78px;
+  height: 78px;
+  border-width: 5px;
+  color: var(--text-main);
+}
+
+.desktop-subject-card,
+.desktop-folder-card,
+.month-cell,
+.desktop-files-table tbody tr,
+.mobile-month-cell,
+.recent-file-item,
+.file-list li {
+  transition: none;
+}
+
+.desktop-subject-card:hover,
+.desktop-folder-card:hover,
+.month-cell:hover,
+.desktop-files-table tbody tr:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.mobile-calendar-fab,
+.subjects-fab {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.45rem;
+  box-shadow: none;
+}
+
+.mobile-bottom-nav {
+  background: var(--bg-card);
+  backdrop-filter: none;
+  padding: 0.52rem 0.75rem 0.9rem;
+}
+
+.mobile-bottom-nav a {
+  border-radius: 0.45rem;
+  padding: 0.52rem 0.28rem;
+}
+
+.mobile-bottom-nav .nav-label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.7rem;
+}
+
+.mobile-bottom-nav a.active {
+  background: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+.desktop-file-subject-badge,
+.subject-code,
+.desktop-subject-code {
+  border-radius: 0.3rem;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    background: var(--bg-main);
+    padding: 0.95rem 1rem 0.65rem;
+  }
+
+  .dashboard-root.mobile-nav-calendar .topbar,
+  .dashboard-root.mobile-nav-profile .topbar {
+    box-shadow: none;
+  }
+
+  .mobile-avatar {
+    border-width: 1px;
+    border-radius: 0.6rem;
+  }
+
+  .progress-card {
+    background: var(--bg-card);
+    color: var(--text-main);
+    border-color: var(--border-color);
+  }
+
+  .progress-card p,
+  .eyebrow {
+    color: var(--text-muted);
+  }
+}
+
+@media (min-width: 769px) {
+  .welcome,
+  .stats-grid,
+  .main-grid {
+    padding: 1.25rem;
+  }
+
+  .desktop-calendar-grid-wrap {
+    gap: 0.85rem;
   }
 }

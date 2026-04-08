@@ -1,12 +1,9 @@
 import React from 'react'
-import { FileTab, FileFolder, ManagedFile } from '../../app/types'
+import { FileTab, ManagedFile } from '../../app/types'
 
 type MobileFilesScreenProps = {
   fileTab: FileTab
   setFileTab: React.Dispatch<React.SetStateAction<FileTab>>
-  fileTypeFilter: 'all' | 'folder' | 'pdf' | 'image'
-  setFileTypeFilter: React.Dispatch<React.SetStateAction<'all' | 'folder' | 'pdf' | 'image'>>
-  folders: FileFolder[]
   displayedRecentFiles: ManagedFile[]
   isDragActive: boolean
   setIsDragActive: React.Dispatch<React.SetStateAction<boolean>>
@@ -19,9 +16,6 @@ type MobileFilesScreenProps = {
 export function MobileFilesScreen({
   fileTab,
   setFileTab,
-  fileTypeFilter,
-  setFileTypeFilter,
-  folders,
   displayedRecentFiles,
   isDragActive,
   setIsDragActive,
@@ -34,66 +28,27 @@ export function MobileFilesScreen({
     <section className="mobile-files-screen" id="files-mobile">
       <div className="file-tabs">
         <button type="button" className={fileTab === 'all' ? 'active' : ''} onClick={() => setFileTab('all')}>
-          All Files
+          Všechny
         </button>
         <button
           type="button"
           className={fileTab === 'recent' ? 'active' : ''}
           onClick={() => setFileTab('recent')}
         >
-          Recent
+          Nedávné
         </button>
         <button
           type="button"
           className={fileTab === 'shared' ? 'active' : ''}
           onClick={() => setFileTab('shared')}
         >
-          Shared
-        </button>
-      </div>
-
-      <div className="file-filters no-scrollbar">
-        <button
-          type="button"
-          className={fileTypeFilter === 'folder' ? 'active' : ''}
-          onClick={() => setFileTypeFilter((prev) => (prev === 'folder' ? 'all' : 'folder'))}
-        >
-          Folders ▾
-        </button>
-        <button
-          type="button"
-          className={fileTypeFilter === 'pdf' ? 'active' : ''}
-          onClick={() => setFileTypeFilter((prev) => (prev === 'pdf' ? 'all' : 'pdf'))}
-        >
-          PDFs ▾
-        </button>
-        <button
-          type="button"
-          className={fileTypeFilter === 'image' ? 'active' : ''}
-          onClick={() => setFileTypeFilter((prev) => (prev === 'image' ? 'all' : 'image'))}
-        >
-          Images ▾
+          Sdílené
         </button>
       </div>
 
       <section className="files-section">
         <h3>
-          Folders <span>({folders.length})</span>
-        </h3>
-        <div className="folders-grid">
-          {folders.map((folder) => (
-            <article key={folder.id} className="folder-card">
-              <span className={`folder-icon ${folder.color}`}>📁</span>
-              <p>{folder.name}</p>
-              <small>{folder.filesCount} files</small>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="files-section">
-        <h3>
-          Recent Files <span>({displayedRecentFiles.length})</span>
+          Soubory <span>({displayedRecentFiles.length})</span>
         </h3>
         <div className="recent-files-list">
           {displayedRecentFiles.map((file) => (
@@ -104,7 +59,7 @@ export function MobileFilesScreen({
               <div className="recent-file-content">
                 <p>{file.name}</p>
                 <small>
-                  {file.addedLabel} • {file.size}
+                  {file.shared ? 'Sdílený' : 'Soukromý'} • {file.size}
                 </small>
               </div>
               <button
@@ -118,6 +73,7 @@ export function MobileFilesScreen({
             </article>
           ))}
         </div>
+        {displayedRecentFiles.length === 0 ? <p>V této záložce nejsou žádné soubory.</p> : null}
       </section>
 
       <section className="upload-area-wrap">

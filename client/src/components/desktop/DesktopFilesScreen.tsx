@@ -1,22 +1,13 @@
 import React from 'react'
-import { FileFolder, ManagedFile, StudyFile } from '../../app/types'
+import { ManagedFile } from '../../app/types'
 
 type DesktopFilesScreenProps = {
-  folders: FileFolder[]
   managedFiles: ManagedFile[]
-  filesSeed: StudyFile[]
   fileInputRef: React.RefObject<HTMLInputElement>
   onUploadFiles: (files: FileList | null) => void
   onManageFile: (fileId: number) => void
   onDeleteFile: (fileId: number) => void
   onToggleFileShared: (fileId: number) => void
-}
-
-const folderToneByColor: Record<FileFolder['color'], string> = {
-  amber: 'amber',
-  emerald: 'emerald',
-  primary: 'blue',
-  slate: 'violet',
 }
 
 const getFileIcon = (category: ManagedFile['category']) => {
@@ -34,9 +25,7 @@ const getFileIcon = (category: ManagedFile['category']) => {
 }
 
 export function DesktopFilesScreen({
-  folders,
   managedFiles,
-  filesSeed,
   fileInputRef,
   onUploadFiles,
   onManageFile,
@@ -49,48 +38,12 @@ export function DesktopFilesScreen({
     <section className="desktop-files-screen" id="desktop-files">
       <div className="desktop-files-head">
         <h2>Moje soubory</h2>
-        <p>Spravujte studijní materiály a dokumenty na jednom místě.</p>
+        <p>Správa studijních materiálů a sdílení souborů.</p>
       </div>
-
-      <div className="desktop-files-tabs">
-        <button type="button" className="active">
-          Všechny soubory
-        </button>
-        <button type="button">Sdílené se mnou</button>
-        <button type="button">Archiv</button>
-      </div>
-
-      <section className="desktop-files-folders">
-        <div className="desktop-files-section-head">
-          <h3>Složky předmětů</h3>
-          <button type="button">Zobrazit vše</button>
-        </div>
-
-        <div className="desktop-folders-grid">
-          {folders.map((folder) => (
-            <article key={folder.id} className="desktop-folder-card">
-              <div className="desktop-folder-top">
-                <div className={`desktop-folder-icon ${folderToneByColor[folder.color]}`}>📁</div>
-                <button type="button" className="desktop-folder-more" aria-label="Více možností">
-                  ⋮
-                </button>
-              </div>
-              <h4>{folder.name}</h4>
-              <p>{folder.filesCount} souborů</p>
-            </article>
-          ))}
-        </div>
-      </section>
 
       <section className="desktop-files-list-section">
         <div className="desktop-files-section-head">
-          <h3>Nedávné soubory</h3>
-          <div className="desktop-view-switch">
-            <button type="button">▦</button>
-            <button type="button" className="active">
-              ☰
-            </button>
-          </div>
+          <h3>Přehled souborů</h3>
         </div>
 
         <div className="desktop-files-table-wrap">
@@ -105,9 +58,9 @@ export function DesktopFilesScreen({
               </tr>
             </thead>
             <tbody>
-              {rows.map((file, index) => {
+              {rows.map((file) => {
                 const { icon, tone } = getFileIcon(file.category)
-                const subjectCode = filesSeed[index]?.subject ?? 'GEN'
+                const subjectCode = file.subjectId ? `SUB-${file.subjectId}` : 'N/A'
 
                 return (
                   <tr key={file.id}>
@@ -156,6 +109,7 @@ export function DesktopFilesScreen({
             </tbody>
           </table>
         </div>
+        {rows.length === 0 ? <p>Zatím nejsou dostupné žádné soubory.</p> : null}
       </section>
 
       <section className="desktop-files-upload">

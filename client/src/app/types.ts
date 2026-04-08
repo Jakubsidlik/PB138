@@ -149,12 +149,8 @@ export type ThemeMode = 'light' | 'dark'
 export type AccentPalette =
 	| 'blue'
 	| 'emerald'
-	| 'violet'
 	| 'rose'
-	| 'red'
 	| 'amber'
-	| 'orange'
-	| 'cyan'
 	| 'mono'
 export type MobileNavItem = 'home' | 'calendar' | 'subjects' | 'files' | 'profile'
 
