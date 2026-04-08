@@ -1,0 +1,4 @@
+/// <reference types="vite/client" />
+
+declare module '*.css'
+declare module 'react-big-calendar/lib/css/react-big-calendar.css'

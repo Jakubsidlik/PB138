@@ -1,5 +1,7 @@
 export type Subject = {
 	id: number
+	userId?: number | null
+	studyPlanId?: number | null
 	name: string
 	teacher: string
 	code: string
@@ -7,6 +9,20 @@ export type Subject = {
 	notes: number
 	archived?: boolean
 	events?: number
+	deletedAt?: string | null
+}
+
+export type StudyPlan = {
+	id: number
+	userId: number
+	name: string
+	description: string | null
+	startDate: string
+	endDate: string | null
+	isActive: boolean
+	subjectsCount?: number
+	tasksCount?: number
+	lessonsCount?: number
 }
 
 export type ScheduleItem = {
@@ -29,11 +45,16 @@ export type FileTab = 'all' | 'recent' | 'shared'
 
 export type ManagedFile = {
 	id: number
+	userId?: number
+	subjectId?: number | null
 	name: string
 	size: string
+	sizeBytes?: number
 	addedLabel: string
 	category: FileCategory
 	shared: boolean
+	isShared?: boolean
+	deletedAt?: string | null
 }
 
 export type FileFolder = {
@@ -45,12 +66,38 @@ export type FileFolder = {
 
 export type Task = {
 	id: number
+	userId?: number
+	subjectId?: number | null
+	studyPlanId?: number | null
 	title: string
 	done: boolean
+	favorite?: boolean
+	priority?: TaskPriority
+	deadline?: string | null
+	deletedAt?: string | null
+}
+
+export type TaskPriority = 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+
+export type TaskArchive = {
+	id: number
+	taskId: number
+	userId: number
+	subjectId: number | null
+	studyPlanId: number | null
+	title: string
+	done: boolean
+	favorite: boolean
+	priority: TaskPriority
+	deadline: string | null
+	completedAt: string
+	archivedAt: string
+	deletedAt?: string | null
 }
 
 export type CalendarEvent = {
 	id: number
+	userId?: number
 	title: string
 	date: string
 	time?: string
@@ -58,6 +105,37 @@ export type CalendarEvent = {
 	icon?: string
 	accent?: 'primary' | 'amber' | 'emerald'
 	subjectId?: number | null
+	deletedAt?: string | null
+}
+
+export type Lesson = {
+	id: number
+	subjectId: number | null
+	studyPlanId: number | null
+	title: string
+	content: string | null
+	orderIndex: number
+	notesCount?: number
+	deletedAt?: string | null
+}
+
+export type LessonNote = {
+	id: number
+	lessonId: number
+	userId: number
+	note: string
+	isPinned: boolean
+	createdAt: string
+	updatedAt: string
+}
+
+export type FileComment = {
+	id: number
+	fileId: number
+	userId: number
+	comment: string
+	createdAt: string
+	updatedAt: string
 }
 
 export type EventMeta = {
@@ -100,6 +178,35 @@ export type DesktopSubjectTone = 'blue' | 'emerald' | 'violet' | 'amber' | 'cyan
 export type DesktopSubjectMeta = {
 	icon: string
 	tone: DesktopSubjectTone
+}
+
+export type UserRole = 'student' | 'registered' | 'public'
+
+export type AuthRole = 'REGISTERED' | 'ADMIN'
+
+export type AuthSession = {
+	userId: number
+	role: AuthRole
+	fullName: string
+	email: string
+}
+
+export type PlannerCalendarKind = 'lesson' | 'event'
+
+export type PlannerCalendarColor = 'blue' | 'emerald' | 'violet' | 'amber' | 'cyan' | 'rose'
+
+export type PlannerCalendarItem = {
+	id: number
+	title: string
+	subjectCode: string
+	subjectTitle: string
+	start: Date
+	end: Date
+	kind: PlannerCalendarKind
+	color: PlannerCalendarColor
+	shared: boolean
+	location: string
+	description: string
 }
 
 export type CalendarCell = {

@@ -102,9 +102,13 @@ function App() {
 
           <MobileProfileScreen
             profile={state.profile}
+            authSession={state.authSession}
             onChangeProfile={state.onChangeProfile}
             onUploadAvatar={state.onUploadProfileAvatar}
             onRemoveAvatar={state.onRemoveProfileAvatar}
+            onLogin={state.login}
+            onRegister={state.register}
+            onLogout={state.logout}
           />
 
           <DashboardHomeContent
@@ -159,10 +163,14 @@ function App() {
 
           <DesktopProfileScreen
             profile={state.profile}
+            authSession={state.authSession}
             onChangeProfile={state.onChangeProfile}
             onUploadAvatar={state.onUploadProfileAvatar}
             onRemoveAvatar={state.onRemoveProfileAvatar}
             onResetProfile={state.resetProfile}
+            onLogin={state.login}
+            onRegister={state.register}
+            onLogout={state.logout}
           />
         </div>
 

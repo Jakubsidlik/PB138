@@ -1,11 +1,15 @@
 import React from 'react'
-import { UserProfile } from '../../app/types'
+import { AuthSession, UserProfile } from '../../app/types'
 
 type MobileProfileScreenProps = {
   profile: UserProfile
+  authSession: AuthSession | null
   onChangeProfile: (field: keyof Omit<UserProfile, 'avatarDataUrl'>, value: string) => void
   onUploadAvatar: (files: FileList | null) => void
   onRemoveAvatar: () => void
+  onLogin: (email: string, password: string) => Promise<string | null>
+  onRegister: (fullName: string, email: string, password: string) => Promise<string | null>
+  onLogout: () => void
 }
 
 const initialsFromName = (fullName: string) =>
@@ -19,13 +23,49 @@ const initialsFromName = (fullName: string) =>
 
 export function MobileProfileScreen({
   profile,
+  authSession,
   onChangeProfile,
   onUploadAvatar,
   onRemoveAvatar,
+  onLogin,
+  onRegister,
+  onLogout,
 }: MobileProfileScreenProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = React.useState(true)
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = React.useState(false)
+  const [authFullName, setAuthFullName] = React.useState(profile.fullName)
+  const [authEmail, setAuthEmail] = React.useState(profile.email)
+  const [authPassword, setAuthPassword] = React.useState('')
+  const [authMessage, setAuthMessage] = React.useState<string | null>(null)
+  const [isAuthBusy, setIsAuthBusy] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!authSession) {
+      setAuthFullName(profile.fullName)
+      setAuthEmail(profile.email)
+    }
+  }, [authSession, profile.email, profile.fullName])
+
+  const handleLogin = async () => {
+    setIsAuthBusy(true)
+    const error = await onLogin(authEmail, authPassword)
+    setIsAuthBusy(false)
+    setAuthMessage(error ?? 'Přihlášení proběhlo úspěšně.')
+    if (!error) {
+      setAuthPassword('')
+    }
+  }
+
+  const handleRegister = async () => {
+    setIsAuthBusy(true)
+    const error = await onRegister(authFullName, authEmail, authPassword)
+    setIsAuthBusy(false)
+    setAuthMessage(error ?? 'Registrace proběhla úspěšně.')
+    if (!error) {
+      setAuthPassword('')
+    }
+  }
 
   return (
     <section className="mobile-profile-screen" id="mobile-profile">
@@ -67,6 +107,67 @@ export function MobileProfileScreen({
           Odebrat fotku
         </button>
       </div>
+
+      <section className="mobile-profile-section">
+        <h3>Přihlášení</h3>
+
+        {authSession ? (
+          <>
+            <p>
+              Přihlášen: <strong>{authSession.fullName}</strong>
+            </p>
+            <p>
+              Role: <strong>{authSession.role}</strong>
+            </p>
+            <button type="button" className="mobile-profile-action-row" onClick={onLogout}>
+              <span>Odhlásit</span>
+              <span aria-hidden="true">›</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <label>
+              <span>Jméno pro registraci</span>
+              <input
+                type="text"
+                value={authFullName}
+                onChange={(event) => setAuthFullName(event.target.value)}
+              />
+            </label>
+
+            <label>
+              <span>E-mail</span>
+              <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} />
+            </label>
+
+            <label>
+              <span>Heslo</span>
+              <input
+                type="password"
+                value={authPassword}
+                onChange={(event) => setAuthPassword(event.target.value)}
+              />
+            </label>
+
+            <button type="button" className="mobile-profile-action-row" disabled={isAuthBusy} onClick={handleLogin}>
+              <span>Přihlásit</span>
+              <span aria-hidden="true">›</span>
+            </button>
+
+            <button
+              type="button"
+              className="mobile-profile-action-row"
+              disabled={isAuthBusy}
+              onClick={handleRegister}
+            >
+              <span>Registrovat</span>
+              <span aria-hidden="true">›</span>
+            </button>
+          </>
+        )}
+
+        {authMessage ? <small>{authMessage}</small> : null}
+      </section>
 
       <section className="mobile-profile-section">
         <h3>Osobní informace</h3>

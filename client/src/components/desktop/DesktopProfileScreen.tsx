@@ -1,15 +1,16 @@
 import React from 'react'
-import { UserProfile } from '../../app/types'
+import { AuthSession, UserProfile } from '../../app/types'
 
 type DesktopProfileScreenProps = {
   profile: UserProfile
+  authSession: AuthSession | null
   onChangeProfile: (field: keyof Omit<UserProfile, 'avatarDataUrl'>, value: string) => void
   onUploadAvatar: (files: FileList | null) => void
   onRemoveAvatar: () => void
-<<<<<<< HEAD
   onResetProfile: () => void
-=======
->>>>>>> main
+  onLogin: (email: string, password: string) => Promise<string | null>
+  onRegister: (fullName: string, email: string, password: string) => Promise<string | null>
+  onLogout: () => void
 }
 
 const studyYearOptions = ['1. ročník', '2. ročník', '3. ročník', '4. ročník', '5. ročník']
@@ -17,15 +18,48 @@ const studyTypeOptions = ['Bakalářské studium', 'Magisterské studium', 'Dokt
 
 export function DesktopProfileScreen({
   profile,
+  authSession,
   onChangeProfile,
   onUploadAvatar,
   onRemoveAvatar,
-<<<<<<< HEAD
   onResetProfile,
-=======
->>>>>>> main
+  onLogin,
+  onRegister,
+  onLogout,
 }: DesktopProfileScreenProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [authFullName, setAuthFullName] = React.useState(profile.fullName)
+  const [authEmail, setAuthEmail] = React.useState(profile.email)
+  const [authPassword, setAuthPassword] = React.useState('')
+  const [authMessage, setAuthMessage] = React.useState<string | null>(null)
+  const [isAuthBusy, setIsAuthBusy] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!authSession) {
+      setAuthFullName(profile.fullName)
+      setAuthEmail(profile.email)
+    }
+  }, [authSession, profile.email, profile.fullName])
+
+  const handleLogin = async () => {
+    setIsAuthBusy(true)
+    const error = await onLogin(authEmail, authPassword)
+    setIsAuthBusy(false)
+    setAuthMessage(error ?? 'Přihlášení proběhlo úspěšně.')
+    if (!error) {
+      setAuthPassword('')
+    }
+  }
+
+  const handleRegister = async () => {
+    setIsAuthBusy(true)
+    const error = await onRegister(authFullName, authEmail, authPassword)
+    setIsAuthBusy(false)
+    setAuthMessage(error ?? 'Registrace proběhla úspěšně.')
+    if (!error) {
+      setAuthPassword('')
+    }
+  }
 
   return (
     <section className="desktop-profile-screen" id="desktop-profile">
@@ -33,6 +67,62 @@ export function DesktopProfileScreen({
         <h2>Nastavení účtu</h2>
         <p>Spravuj profilové údaje, studium a avatar.</p>
       </div>
+
+      <section className="profile-card">
+        <h3>Přihlášení a role</h3>
+
+        {authSession ? (
+          <div className="profile-grid">
+            <p>
+              Přihlášen: <strong>{authSession.fullName}</strong> ({authSession.email})
+            </p>
+            <p>
+              Role: <strong>{authSession.role}</strong>
+            </p>
+            <button type="button" onClick={onLogout}>
+              Odhlásit
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="profile-grid">
+              <label>
+                <span>Jméno pro registraci</span>
+                <input
+                  type="text"
+                  value={authFullName}
+                  onChange={(event) => setAuthFullName(event.target.value)}
+                />
+              </label>
+
+              <label>
+                <span>E-mail</span>
+                <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} />
+              </label>
+
+              <label>
+                <span>Heslo</span>
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={(event) => setAuthPassword(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="profile-actions-row">
+              <button type="button" onClick={handleLogin} disabled={isAuthBusy}>
+                Přihlásit
+              </button>
+              <button type="button" className="primary" onClick={handleRegister} disabled={isAuthBusy}>
+                Registrovat
+              </button>
+            </div>
+          </>
+        )}
+
+        {authMessage ? <p>{authMessage}</p> : null}
+      </section>
 
       <section className="profile-card">
         <h3>Profilová fotka</h3>
@@ -62,7 +152,9 @@ export function DesktopProfileScreen({
               <button type="button" className="primary" onClick={() => fileInputRef.current?.click()}>
                 Nahrát novou fotku
               </button>
-              <button type="button" onClick={onRemoveAvatar}>Odebrat</button>
+              <button type="button" onClick={onRemoveAvatar}>
+                Odebrat
+              </button>
             </div>
             <input
               ref={fileInputRef}
@@ -124,10 +216,7 @@ export function DesktopProfileScreen({
         <div className="profile-grid">
           <label>
             <span>Ročník</span>
-            <select
-              value={profile.studyYear}
-              onChange={(event) => onChangeProfile('studyYear', event.target.value)}
-            >
+            <select value={profile.studyYear} onChange={(event) => onChangeProfile('studyYear', event.target.value)}>
               {studyYearOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -138,10 +227,7 @@ export function DesktopProfileScreen({
 
           <label>
             <span>Typ studia</span>
-            <select
-              value={profile.studyType}
-              onChange={(event) => onChangeProfile('studyType', event.target.value)}
-            >
+            <select value={profile.studyType} onChange={(event) => onChangeProfile('studyType', event.target.value)}>
               {studyTypeOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -153,13 +239,12 @@ export function DesktopProfileScreen({
       </section>
 
       <div className="profile-actions-row">
-<<<<<<< HEAD
-        <button type="button" className="secondary" onClick={onResetProfile}>Zahodit změny</button>
-        <button type="button" className="primary" disabled>Uloženo automaticky</button>
-=======
-        <button type="button" className="secondary">Zahodit změny</button>
-        <button type="button" className="primary">Uloženo automaticky</button>
->>>>>>> main
+        <button type="button" className="secondary" onClick={onResetProfile}>
+          Zahodit změny
+        </button>
+        <button type="button" className="primary" disabled>
+          Uloženo automaticky
+        </button>
       </div>
     </section>
   )

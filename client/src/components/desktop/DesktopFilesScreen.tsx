@@ -7,12 +7,9 @@ type DesktopFilesScreenProps = {
   filesSeed: StudyFile[]
   fileInputRef: React.RefObject<HTMLInputElement>
   onUploadFiles: (files: FileList | null) => void
-<<<<<<< HEAD
   onManageFile: (fileId: number) => void
   onDeleteFile: (fileId: number) => void
   onToggleFileShared: (fileId: number) => void
-=======
->>>>>>> main
 }
 
 const folderToneByColor: Record<FileFolder['color'], string> = {
@@ -42,12 +39,9 @@ export function DesktopFilesScreen({
   filesSeed,
   fileInputRef,
   onUploadFiles,
-<<<<<<< HEAD
   onManageFile,
   onDeleteFile,
   onToggleFileShared,
-=======
->>>>>>> main
 }: DesktopFilesScreenProps) {
   const rows = managedFiles.slice(0, 4)
 
@@ -59,7 +53,9 @@ export function DesktopFilesScreen({
       </div>
 
       <div className="desktop-files-tabs">
-        <button type="button" className="active">Všechny soubory</button>
+        <button type="button" className="active">
+          Všechny soubory
+        </button>
         <button type="button">Sdílené se mnou</button>
         <button type="button">Archiv</button>
       </div>
@@ -75,7 +71,9 @@ export function DesktopFilesScreen({
             <article key={folder.id} className="desktop-folder-card">
               <div className="desktop-folder-top">
                 <div className={`desktop-folder-icon ${folderToneByColor[folder.color]}`}>📁</div>
-                <button type="button" className="desktop-folder-more" aria-label="Více možností">⋮</button>
+                <button type="button" className="desktop-folder-more" aria-label="Více možností">
+                  ⋮
+                </button>
               </div>
               <h4>{folder.name}</h4>
               <p>{folder.filesCount} souborů</p>
@@ -89,7 +87,9 @@ export function DesktopFilesScreen({
           <h3>Nedávné soubory</h3>
           <div className="desktop-view-switch">
             <button type="button">▦</button>
-            <button type="button" className="active">☰</button>
+            <button type="button" className="active">
+              ☰
+            </button>
           </div>
         </div>
 
@@ -123,7 +123,6 @@ export function DesktopFilesScreen({
                     <td>{file.addedLabel}</td>
                     <td>{file.size}</td>
                     <td>
-<<<<<<< HEAD
                       <div className="desktop-view-switch">
                         <button
                           type="button"
@@ -150,9 +149,6 @@ export function DesktopFilesScreen({
                           🗑
                         </button>
                       </div>
-=======
-                      <button type="button" className="desktop-file-download">⤓</button>
->>>>>>> main
                     </td>
                   </tr>
                 )

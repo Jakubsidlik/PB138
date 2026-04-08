@@ -2,11 +2,12 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
 import {
-  AccentType,
-  AuditAction,
-  EntityType,
-  FileCategory,
+  AnnotationTargetType,
+  CollaborationRole,
+  EventRecurrence,
   Prisma,
+  TaskPriority,
+  UserRole,
 } from '@prisma/client'
 import { prisma } from './prisma.js'
 
@@ -18,11 +19,27 @@ const PORT = Number(process.env.PORT ?? 5000)
 app.use(cors())
 app.use(express.json())
 
+const defaultUserPayload = {
+  fullName: 'Jakub Kowalski',
+  email: 'jakub.kowalski@muni.cz',
+  passwordHash: 'demo-password',
+  role: 'REGISTERED' as UserRole,
+  school: 'Masarykova univerzita' as string | null,
+  faculty: 'FI' as string | null,
+  studyMajor: 'Informatika' as string | null,
+  studyYear: '3. rocnik' as string | null,
+  studyType: 'Bakalarske studium' as string | null,
+  birthDate: null as Date | null,
+  bio: null as string | null,
+  avatarDataUrl: null as string | null,
+}
+
 type ApiTask = {
   id: number
   title: string
   done: boolean
   subjectId: number | null
+  tag?: string | null
 }
 
 type ApiEvent = {
@@ -31,19 +48,17 @@ type ApiEvent = {
   date: string
   time: string | null
   location: string | null
-  icon: string | null
-  accent: AccentType | null
   subjectId: number | null
+  isShared?: boolean
+  recurrence?: EventRecurrence
+  recurrenceGroupId?: string | null
 }
 
-const defaultProfile = {
-  fullName: 'Jakub Kowalski',
-  email: 'jakub.kowalski@muni.cz',
-  school: 'Masarykova univerzita',
-  studyMajor: 'Informatika',
-  studyYear: '3. ročník',
-  studyType: 'Bakalářské studium',
-  avatarDataUrl: null,
+type AuthActor = {
+  id: number
+  fullName: string
+  email: string
+  role: UserRole | 'PUBLIC'
 }
 
 const asBigInt = (value: unknown): bigint | null => {
@@ -73,91 +88,425 @@ const asNumberId = (value: bigint | null | undefined): number | null => {
 
 const toDateOnlyIso = (value: Date) => value.toISOString().slice(0, 10)
 
+const parseOptionalDate = (value: unknown): Date | null | undefined => {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (value === null || value === '') {
+    return null
+  }
+
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed
+}
+
+const parseTaskPriority = (value: unknown): TaskPriority | undefined => {
+  if (value === 'NONE' || value === 'LOW' || value === 'MEDIUM' || value === 'HIGH' || value === 'URGENT') {
+    return value
+  }
+
+  return undefined
+}
+
+const parseUserRole = (value: unknown): UserRole | undefined => {
+  if (value === 'REGISTERED' || value === 'ADMIN') {
+    return value
+  }
+
+  return undefined
+}
+
+const parseEventRecurrence = (value: unknown): EventRecurrence | undefined => {
+  if (value === 'NONE' || value === 'DAILY' || value === 'WEEKLY' || value === 'MONTHLY') {
+    return value
+  }
+
+  return undefined
+}
+
+const parseCollaborationRole = (value: unknown): CollaborationRole | undefined => {
+  if (value === 'VIEWER' || value === 'CONTRIBUTOR') {
+    return value
+  }
+
+  return undefined
+}
+
+const parseAnnotationTargetType = (value: unknown): AnnotationTargetType | undefined => {
+  if (value === 'LESSON' || value === 'LESSON_NOTE' || value === 'FILE_COMMENT') {
+    return value
+  }
+
+  return undefined
+}
+
+const canActorReadLessonTarget = async (
+  lessonId: bigint,
+  actor: AuthActor,
+): Promise<boolean> => {
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: {
+      id: true,
+      deletedAt: true,
+      isShared: true,
+      subject: {
+        select: {
+          userId: true,
+        },
+      },
+      studyPlan: {
+        select: {
+          id: true,
+          userId: true,
+        },
+      },
+    },
+  })
+
+  if (!lesson || lesson.deletedAt) {
+    return false
+  }
+
+  if (lesson.isShared) {
+    return true
+  }
+
+  if (isPublicActor(actor)) {
+    return false
+  }
+
+  if (actor.role === 'ADMIN') {
+    return true
+  }
+
+  if (lesson.subject?.userId === BigInt(actor.id) || lesson.studyPlan?.userId === BigInt(actor.id)) {
+    return true
+  }
+
+  if (!lesson.studyPlan?.id) {
+    return false
+  }
+
+  const collaborator = await prisma.studyPlanCollaborator.findFirst({
+    where: { studyPlanId: lesson.studyPlan.id, userId: BigInt(actor.id) },
+  })
+
+  return collaborator !== null
+}
+
+const canActorReadAnnotationTarget = async (
+  targetType: AnnotationTargetType,
+  targetId: bigint,
+  actor: AuthActor,
+): Promise<boolean> => {
+  if (targetType === 'LESSON') {
+    return canActorReadLessonTarget(targetId, actor)
+  }
+
+  if (targetType === 'LESSON_NOTE') {
+    const note = await prisma.lessonNote.findUnique({
+      where: { id: targetId },
+      select: {
+        lessonId: true,
+      },
+    })
+    if (!note) {
+      return false
+    }
+
+    return canActorReadLessonTarget(note.lessonId, actor)
+  }
+
+  const fileComment = await prisma.fileComment.findUnique({
+    where: { id: targetId },
+    select: {
+      file: {
+        select: {
+          deletedAt: true,
+          isShared: true,
+          userId: true,
+        },
+      },
+    },
+  })
+
+  if (!fileComment || fileComment.file.deletedAt) {
+    return false
+  }
+
+  if (fileComment.file.isShared) {
+    return true
+  }
+
+  if (isPublicActor(actor)) {
+    return false
+  }
+
+  return actor.role === 'ADMIN' || fileComment.file.userId === BigInt(actor.id)
+}
+
+const addDays = (date: Date, days: number) => {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+const addMonths = (date: Date, months: number) => {
+  const next = new Date(date)
+  next.setMonth(next.getMonth() + months)
+  return next
+}
+
+const buildRecurringDates = (baseDate: Date, recurrence: EventRecurrence, repeatCount: number): Date[] => {
+  const safeCount = Math.min(Math.max(repeatCount, 1), 24)
+  const dates: Date[] = []
+
+  for (let index = 0; index < safeCount; index += 1) {
+    if (index === 0) {
+      dates.push(new Date(baseDate))
+      continue
+    }
+
+    if (recurrence === 'DAILY') {
+      dates.push(addDays(baseDate, index))
+      continue
+    }
+
+    if (recurrence === 'WEEKLY') {
+      dates.push(addDays(baseDate, index * 7))
+      continue
+    }
+
+    if (recurrence === 'MONTHLY') {
+      dates.push(addMonths(baseDate, index))
+      continue
+    }
+
+    break
+  }
+
+  return dates
+}
+
+const parseFileSizeToBytes = (value: unknown): number | null | undefined => {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (value === null) {
+    return null
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+    return Math.trunc(value)
+  }
+
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return undefined
+  }
+
+  if (/^\d+$/.test(trimmed)) {
+    return Number.parseInt(trimmed, 10)
+  }
+
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(KB|MB|GB)$/i)
+  if (!match) {
+    return undefined
+  }
+
+  const amount = Number.parseFloat(match[1])
+  const unit = match[2].toUpperCase()
+
+  if (unit === 'KB') {
+    return Math.round(amount * 1024)
+  }
+
+  if (unit === 'MB') {
+    return Math.round(amount * 1024 * 1024)
+  }
+
+  return Math.round(amount * 1024 * 1024 * 1024)
+}
+
+const formatFileSize = (sizeInBytes: number) => {
+  if (sizeInBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(sizeInBytes / 1024))} KB`
+  }
+
+  return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const inferFileCategory = (fileName: string): 'folder' | 'pdf' | 'image' | 'document' | 'other' => {
+  const ext = fileName.split('.').pop()?.toLowerCase()
+
+  if (ext === 'pdf') {
+    return 'pdf'
+  }
+
+  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif' || ext === 'webp') {
+    return 'image'
+  }
+
+  if (ext === 'doc' || ext === 'docx' || ext === 'txt' || ext === 'rtf' || ext === 'ppt' || ext === 'pptx') {
+    return 'document'
+  }
+
+  return 'other'
+}
+
 const mapTask = (task: {
   id: bigint
+  userId: bigint
   title: string
   done: boolean
   subjectId: bigint | null
-}): ApiTask => ({
+  studyPlanId: bigint | null
+  favorite: boolean
+  tag: string | null
+  deadline: Date | null
+  deletedAt: Date | null
+}): ApiTask & {
+  userId: number
+  studyPlanId: number | null
+  favorite: boolean
+  tag: string | null
+  deadline: string | null
+  deletedAt: string | null
+} => ({
   id: Number(task.id),
+  userId: Number(task.userId),
   title: task.title,
   done: task.done,
   subjectId: asNumberId(task.subjectId),
+  studyPlanId: asNumberId(task.studyPlanId),
+  favorite: task.favorite,
+  tag: task.tag,
+  deadline: task.deadline ? task.deadline.toISOString() : null,
+  deletedAt: task.deletedAt ? task.deletedAt.toISOString() : null,
 })
 
 const mapEvent = (event: {
   id: bigint
+  userId: bigint
   title: string
   date: Date
   time: string | null
   location: string | null
-  icon: string | null
-  accent: AccentType | null
+  isShared: boolean
+  recurrence: EventRecurrence
+  recurrenceGroupId: string | null
   subjectId: bigint | null
-}): ApiEvent => ({
+  deletedAt: Date | null
+}): ApiEvent & {
+  userId: number
+  deletedAt: string | null
+} => ({
   id: Number(event.id),
+  userId: Number(event.userId),
   title: event.title,
   date: toDateOnlyIso(event.date),
   time: event.time,
   location: event.location,
-  icon: event.icon,
-  accent: event.accent,
+  isShared: event.isShared,
+  recurrence: event.recurrence,
+  recurrenceGroupId: event.recurrenceGroupId,
   subjectId: asNumberId(event.subjectId),
+  deletedAt: event.deletedAt ? event.deletedAt.toISOString() : null,
 })
 
-const mapAudit = (log: {
+const mapFileRecord = (file: {
   id: bigint
-  entityType: EntityType
-  action: AuditAction
-  entityId: bigint | null
+  userId: bigint
   subjectId: bigint | null
-  payload: Prisma.JsonValue
-  createdAt: Date
+  lessonId: bigint | null
+  name: string
+  size: number
+  addedLabel: string
+  isShared: boolean
+  deletedAt: Date | null
 }) => ({
-  id: Number(log.id),
-  entityType: log.entityType,
-  action: log.action,
-  entityId: asNumberId(log.entityId),
-  subjectId: asNumberId(log.subjectId),
-  payload: log.payload,
-  createdAt: log.createdAt.toISOString(),
+  id: Number(file.id),
+  userId: Number(file.userId),
+  subjectId: asNumberId(file.subjectId),
+  lessonId: asNumberId(file.lessonId),
+  name: file.name,
+  category: inferFileCategory(file.name),
+  size: formatFileSize(file.size),
+  sizeBytes: file.size,
+  addedLabel: file.addedLabel,
+  isShared: file.isShared,
+  shared: file.isShared,
+  deletedAt: file.deletedAt ? file.deletedAt.toISOString() : null,
 })
 
-const logAudit = async (payload: {
-  entityType: EntityType
-  action: AuditAction
-  entityId?: bigint | null
-  subjectId?: bigint | null
-  changes?: Prisma.JsonObject
-}) => {
-  await prisma.auditLog.create({
-    data: {
-      entityType: payload.entityType,
-      action: payload.action,
-      entityId: payload.entityId ?? null,
-      subjectId: payload.subjectId ?? null,
-      payload: payload.changes ?? undefined,
-    },
-  })
-}
+const toAuthActor = (user: {
+  id: bigint
+  fullName: string
+  email: string
+  role: UserRole
+}): AuthActor => ({
+  id: Number(user.id),
+  fullName: user.fullName,
+  email: user.email,
+  role: user.role,
+})
 
-const ensureProfile = async () => {
-  const existing = await prisma.profile.findFirst({ orderBy: { id: 'asc' } })
-  if (existing) {
-    return existing
+const getActorFromRequest = async (req: express.Request): Promise<AuthActor> => {
+  const requestedUserId = asBigInt(req.header('x-user-id'))
+
+  if (requestedUserId) {
+    const requestedUser = await prisma.user.findFirst({
+      where: { id: requestedUserId, deletedAt: null },
+    })
+
+    if (requestedUser) {
+      return toAuthActor(requestedUser)
+    }
   }
 
-  const created = await prisma.profile.create({ data: defaultProfile })
-  await logAudit({
-    entityType: EntityType.PROFILE,
-    action: AuditAction.CREATE,
-    entityId: created.id,
-    changes: {
-      source: 'bootstrap',
-    },
-  })
+  return {
+    id: 0,
+    fullName: 'Verejnost',
+    email: '',
+    role: 'PUBLIC',
+  }
+}
 
-  return created
+const isPublicActor = (actor: AuthActor) => actor.role === 'PUBLIC'
+
+const requireRegisteredActor = async (req: express.Request, res: express.Response) => {
+  const actor = await getActorFromRequest(req)
+  if (isPublicActor(actor)) {
+    res.status(401).json({ error: 'Tato akce vyzaduje prihlaseni.' })
+    return null
+  }
+
+  return actor
+}
+
+const requireAdmin = async (req: express.Request, res: express.Response) => {
+  const actor = await requireRegisteredActor(req, res)
+  if (!actor) {
+    return null
+  }
+
+  if (actor.role !== 'ADMIN') {
+    res.status(403).json({ error: 'Tato akce vyzaduje roli admin.' })
+    return null
+  }
+
+  return actor
 }
 
 const parseIncomingTask = (value: unknown): ApiTask | null => {
@@ -216,13 +565,7 @@ const parseIncomingEvent = (value: unknown): ApiEvent | null => {
     date: toDateOnlyIso(parsedDate),
     time: typeof candidate.time === 'string' ? candidate.time : null,
     location: typeof candidate.location === 'string' ? candidate.location : null,
-    icon: typeof candidate.icon === 'string' ? candidate.icon : null,
-    accent:
-      candidate.accent === 'primary' ||
-      candidate.accent === 'amber' ||
-      candidate.accent === 'emerald'
-        ? candidate.accent
-        : null,
+    isShared: typeof candidate.isShared === 'boolean' ? candidate.isShared : false,
     subjectId:
       typeof candidate.subjectId === 'number' || candidate.subjectId === null
         ? candidate.subjectId
@@ -275,22 +618,784 @@ const toPaginatedPayload = <T extends { id: number }>(rows: T[], limit: number) 
 app.get('/api/health', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`
-    res.json({ status: 'OK', message: 'Server je spuštěný', database: 'connected' })
+    res.json({ status: 'OK', message: 'Server bezi', database: 'connected' })
   } catch {
-    res.status(503).json({ status: 'ERROR', message: 'Databáze není dostupná' })
+    res.status(503).json({ status: 'ERROR', message: 'Databaze neni dostupna' })
   }
 })
 
-app.get('/api/subjects', async (_req, res, next) => {
+app.post('/api/auth/register', async (req, res, next) => {
   try {
-    const pagination = parseCursorPagination(_req, { defaultLimit: 20, maxLimit: 100 })
+    const payload = req.body as {
+      fullName?: string
+      email?: string
+      password?: string
+      school?: string
+      faculty?: string
+      studyMajor?: string
+      studyYear?: string
+      studyType?: string
+      birthDate?: string
+      bio?: string
+    }
 
-    const baseInclude = {
+    if (!payload.fullName?.trim() || !payload.email?.trim() || !payload.password?.trim()) {
+      res.status(400).json({ error: 'Pole fullName, email a password jsou povinna.' })
+      return
+    }
+
+    const created = await prisma.user.create({
+      data: {
+        fullName: payload.fullName.trim(),
+        email: payload.email.trim().toLowerCase(),
+        passwordHash: payload.password,
+        role: 'REGISTERED',
+        school: payload.school?.trim() || null,
+        faculty: payload.faculty?.trim() || null,
+        studyMajor: payload.studyMajor?.trim() || null,
+        studyYear: payload.studyYear?.trim() || null,
+        studyType: payload.studyType?.trim() || null,
+        birthDate: parseOptionalDate(payload.birthDate) ?? null,
+        bio: payload.bio?.trim() || null,
+        avatarDataUrl: null,
+      },
+    })
+
+    res.status(201).json({
+      user: {
+        id: Number(created.id),
+        fullName: created.fullName,
+        email: created.email,
+        role: created.role,
+      },
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/auth/login', async (req, res, next) => {
+  try {
+    const payload = req.body as { email?: string; password?: string }
+    if (!payload.email?.trim() || !payload.password?.trim()) {
+      res.status(400).json({ error: 'Pole email a password jsou povinna.' })
+      return
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { email: payload.email.trim().toLowerCase(), deletedAt: null },
+    })
+
+    if (!user || user.passwordHash !== payload.password) {
+      res.status(401).json({ error: 'Neplatne prihlasovaci udaje.' })
+      return
+    }
+
+    res.json({
+      user: {
+        id: Number(user.id),
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+      },
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/users', async (_req, res, next) => {
+  try {
+    const admin = await requireAdmin(_req, res)
+    if (!admin) {
+      return
+    }
+
+    const users = await prisma.user.findMany({ where: { deletedAt: null }, orderBy: { id: 'asc' } })
+    res.json(
+      users.map((user) => ({
+        id: Number(user.id),
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        school: user.school ?? '',
+        faculty: user.faculty,
+        studyMajor: user.studyMajor ?? '',
+        studyYear: user.studyYear ?? '',
+        studyType: user.studyType ?? '',
+        birthDate: user.birthDate ? toDateOnlyIso(user.birthDate) : null,
+        bio: user.bio,
+        avatarDataUrl: user.avatarDataUrl,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      })),
+    )
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/profile', async (_req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(_req, res)
+    if (!actor) {
+      return
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: BigInt(actor.id) } })
+
+    if (!user) {
+      res.status(404).json({ error: 'Profil nebyl nalezen.' })
+      return
+    }
+
+    res.json({
+      id: Number(user.id),
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      school: user.school ?? '',
+      faculty: user.faculty,
+      studyMajor: user.studyMajor ?? '',
+      studyYear: user.studyYear ?? '',
+      studyType: user.studyType ?? '',
+      birthDate: user.birthDate ? toDateOnlyIso(user.birthDate) : null,
+      bio: user.bio,
+      avatarDataUrl: user.avatarDataUrl,
+      updatedAt: user.updatedAt.toISOString(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/profile', async (req, res, next) => {
+  try {
+    const admin = await requireAdmin(req, res)
+    if (!admin) {
+      return
+    }
+
+    const existing = await prisma.user.findFirst({ where: { deletedAt: null }, orderBy: { id: 'asc' } })
+    if (existing) {
+      res.status(409).json({ error: 'Profil uz existuje. Pouzijte PUT /api/profile.' })
+      return
+    }
+
+    const payload = req.body as Partial<typeof defaultUserPayload> & {
+      password?: string
+      role?: UserRole
+    }
+
+    if (!payload.fullName || !payload.email) {
+      res.status(400).json({ error: 'Pole fullName, email a school jsou povinna.' })
+      return
+    }
+
+    const created = await prisma.user.create({
+      data: {
+        fullName: payload.fullName,
+        email: payload.email.toLowerCase(),
+        passwordHash: payload.password ?? defaultUserPayload.passwordHash,
+        role: parseUserRole(payload.role) ?? defaultUserPayload.role,
+        school: payload.school ?? null,
+        faculty: payload.faculty ?? null,
+        studyMajor: payload.studyMajor ?? null,
+        studyYear: payload.studyYear ?? null,
+        studyType: payload.studyType ?? null,
+        birthDate: parseOptionalDate(payload.birthDate) ?? null,
+        bio: payload.bio ?? null,
+        avatarDataUrl:
+          typeof payload.avatarDataUrl === 'string' || payload.avatarDataUrl === null
+            ? payload.avatarDataUrl
+            : null,
+      },
+    })
+
+    res.status(201).json({
+      id: Number(created.id),
+      fullName: created.fullName,
+      email: created.email,
+      role: created.role,
+      school: created.school ?? '',
+      faculty: created.faculty,
+      studyMajor: created.studyMajor ?? '',
+      studyYear: created.studyYear ?? '',
+      studyType: created.studyType ?? '',
+      birthDate: created.birthDate ? toDateOnlyIso(created.birthDate) : null,
+      bio: created.bio,
+      avatarDataUrl: created.avatarDataUrl,
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.put('/api/profile', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const payload = req.body as Partial<typeof defaultUserPayload> & {
+      password?: string
+      role?: UserRole
+    }
+
+    const parsedBirthDate = parseOptionalDate(payload.birthDate)
+    if (payload.birthDate !== undefined && parsedBirthDate === undefined) {
+      res.status(400).json({ error: 'Neplatny format birthDate.' })
+      return
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: BigInt(actor.id) },
+      data: {
+        fullName: typeof payload.fullName === 'string' ? payload.fullName : undefined,
+        email: typeof payload.email === 'string' ? payload.email.toLowerCase() : undefined,
+        passwordHash: typeof payload.password === 'string' ? payload.password : undefined,
+        role:
+          actor.role === 'ADMIN' && payload.role !== undefined
+            ? parseUserRole(payload.role)
+            : undefined,
+        school: typeof payload.school === 'string' ? payload.school : undefined,
+        faculty: typeof payload.faculty === 'string' || payload.faculty === null ? payload.faculty : undefined,
+        studyMajor: typeof payload.studyMajor === 'string' ? payload.studyMajor : undefined,
+        studyYear: typeof payload.studyYear === 'string' ? payload.studyYear : undefined,
+        studyType: typeof payload.studyType === 'string' ? payload.studyType : undefined,
+        birthDate: parsedBirthDate,
+        bio: typeof payload.bio === 'string' || payload.bio === null ? payload.bio : undefined,
+        avatarDataUrl:
+          typeof payload.avatarDataUrl === 'string' || payload.avatarDataUrl === null
+            ? payload.avatarDataUrl
+            : undefined,
+      },
+    })
+
+    res.json({
+      id: Number(updated.id),
+      fullName: updated.fullName,
+      email: updated.email,
+      role: updated.role,
+      school: updated.school ?? '',
+      faculty: updated.faculty,
+      studyMajor: updated.studyMajor ?? '',
+      studyYear: updated.studyYear ?? '',
+      studyType: updated.studyType ?? '',
+      birthDate: updated.birthDate ? toDateOnlyIso(updated.birthDate) : null,
+      bio: updated.bio,
+      avatarDataUrl: updated.avatarDataUrl,
+      updatedAt: updated.updatedAt.toISOString(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/profile', async (_req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(_req, res)
+    if (!actor) {
+      return
+    }
+
+    const user = await prisma.user.findFirst({ where: { id: BigInt(actor.id), deletedAt: null } })
+    if (!user) {
+      res.status(404).json({ error: 'Profil nebyl nalezen.' })
+      return
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { deletedAt: new Date() },
+    })
+
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/study-plans', async (req, res, next) => {
+  try {
+    const actor = await getActorFromRequest(req)
+    const includeInactive = req.query.includeInactive === 'true'
+
+    const where: Prisma.StudyPlanWhereInput = isPublicActor(actor)
+      ? {
+          isShared: true,
+          isActive: includeInactive ? undefined : true,
+        }
+      : {
+          isActive: includeInactive ? undefined : true,
+          OR: [
+            { userId: BigInt(actor.id) },
+            { isShared: true },
+            { collaborators: { some: { userId: BigInt(actor.id) } } },
+          ],
+        }
+
+    const studyPlans = await prisma.studyPlan.findMany({
+      where,
+      orderBy: [{ isActive: 'desc' }, { startDate: 'asc' }],
+      include: {
+        _count: {
+          select: {
+            subjects: true,
+            tasks: true,
+            lessons: true,
+          },
+        },
+      },
+    })
+
+    const collaboratorRoleByPlanId = new Map<string, CollaborationRole>()
+    if (!isPublicActor(actor) && studyPlans.length > 0) {
+      const collaborators = await prisma.studyPlanCollaborator.findMany({
+        where: {
+          userId: BigInt(actor.id),
+          studyPlanId: { in: studyPlans.map((plan) => plan.id) },
+        },
+        select: {
+          studyPlanId: true,
+          role: true,
+        },
+      })
+
+      for (const collaborator of collaborators) {
+        collaboratorRoleByPlanId.set(collaborator.studyPlanId.toString(), collaborator.role)
+      }
+    }
+
+    res.json(
+      studyPlans.map((plan) => ({
+        id: Number(plan.id),
+        userId: Number(plan.userId),
+        name: plan.name,
+        description: plan.description,
+        faculty: plan.faculty,
+        startDate: plan.startDate ? toDateOnlyIso(plan.startDate) : null,
+        endDate: plan.endDate ? toDateOnlyIso(plan.endDate) : null,
+        isActive: plan.isActive,
+        isShared: plan.isShared,
+        collaboratorRole: collaboratorRoleByPlanId.get(plan.id.toString()) ?? null,
+        canEditMetadata:
+          !isPublicActor(actor) && (actor.role === 'ADMIN' || plan.userId === BigInt(actor.id)),
+        canCreateSubjects:
+          !isPublicActor(actor) &&
+          (actor.role === 'ADMIN' ||
+            plan.userId === BigInt(actor.id) ||
+            collaboratorRoleByPlanId.get(plan.id.toString()) === 'CONTRIBUTOR'),
+        subjectsCount: plan._count.subjects,
+        tasksCount: plan._count.tasks,
+        lessonsCount: plan._count.lessons,
+        createdAt: plan.createdAt.toISOString(),
+        updatedAt: plan.updatedAt.toISOString(),
+      })),
+    )
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/study-plans', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const payload = req.body as {
+      name?: string
+      description?: string | null
+      faculty?: string | null
+      startDate?: string
+      endDate?: string | null
+      isActive?: boolean
+      isShared?: boolean
+    }
+
+    if (!payload.name?.trim()) {
+      res.status(400).json({ error: 'Pole name je povinne.' })
+      return
+    }
+
+    const parsedStartDate = parseOptionalDate(payload.startDate)
+    if (payload.startDate !== undefined && parsedStartDate === undefined) {
+      res.status(400).json({ error: 'Neplatny format startDate.' })
+      return
+    }
+
+    const parsedEndDate = parseOptionalDate(payload.endDate)
+    if (payload.endDate !== undefined && parsedEndDate === undefined) {
+      res.status(400).json({ error: 'Neplatny format endDate.' })
+      return
+    }
+
+    const created = await prisma.studyPlan.create({
+      data: {
+        userId: BigInt(actor.id),
+        name: payload.name.trim(),
+        description: typeof payload.description === 'string' ? payload.description.trim() : null,
+        faculty: typeof payload.faculty === 'string' ? payload.faculty.trim() : null,
+        startDate: parsedStartDate,
+        endDate: parsedEndDate,
+        isActive: typeof payload.isActive === 'boolean' ? payload.isActive : true,
+        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : false,
+      },
+    })
+
+    res.status(201).json({
+      id: Number(created.id),
+      userId: Number(created.userId),
+      name: created.name,
+      description: created.description,
+      faculty: created.faculty,
+      startDate: created.startDate ? toDateOnlyIso(created.startDate) : null,
+      endDate: created.endDate ? toDateOnlyIso(created.endDate) : null,
+      isActive: created.isActive,
+      isShared: created.isShared,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.patch('/api/study-plans/:id', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const studyPlanId = asBigInt(req.params.id)
+
+    if (!studyPlanId) {
+      res.status(400).json({ error: 'Neplatne ID studijniho planu.' })
+      return
+    }
+
+    const existing = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
+      return
+    }
+
+    const canEditMetadata = actor.role === 'ADMIN' || existing.userId === BigInt(actor.id)
+    if (!canEditMetadata) {
+      res.status(403).json({ error: 'Nemate opravneni upravovat metadata tohoto planu.' })
+      return
+    }
+
+    const payload = req.body as {
+      name?: string
+      description?: string | null
+      faculty?: string | null
+      startDate?: string
+      endDate?: string | null
+      isActive?: boolean
+      isShared?: boolean
+    }
+
+    const parsedStartDate = parseOptionalDate(payload.startDate)
+    if (payload.startDate !== undefined && (parsedStartDate === undefined || parsedStartDate === null)) {
+      res.status(400).json({ error: 'Neplatny format startDate.' })
+      return
+    }
+
+    const parsedEndDate = parseOptionalDate(payload.endDate)
+    if (payload.endDate !== undefined && parsedEndDate === undefined) {
+      res.status(400).json({ error: 'Neplatny format endDate.' })
+      return
+    }
+
+    const updated = await prisma.studyPlan.update({
+      where: { id: studyPlanId },
+      data: {
+        name: typeof payload.name === 'string' ? payload.name.trim() : undefined,
+        description:
+          typeof payload.description === 'string'
+            ? payload.description.trim()
+            : payload.description === null
+              ? null
+              : undefined,
+        faculty:
+          typeof payload.faculty === 'string'
+            ? payload.faculty.trim()
+            : payload.faculty === null
+              ? null
+              : undefined,
+        startDate: parsedStartDate ?? undefined,
+        endDate: parsedEndDate,
+        isActive: typeof payload.isActive === 'boolean' ? payload.isActive : undefined,
+        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : undefined,
+      },
+    })
+
+    res.json({
+      id: Number(updated.id),
+      userId: Number(updated.userId),
+      name: updated.name,
+      description: updated.description,
+      faculty: updated.faculty,
+      startDate: updated.startDate ? toDateOnlyIso(updated.startDate) : null,
+      endDate: updated.endDate ? toDateOnlyIso(updated.endDate) : null,
+      isActive: updated.isActive,
+      isShared: updated.isShared,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/study-plans/:id', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const studyPlanId = asBigInt(req.params.id)
+
+    if (!studyPlanId) {
+      res.status(400).json({ error: 'Neplatne ID studijniho planu.' })
+      return
+    }
+
+    const existing = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
+      return
+    }
+
+    const canDelete = actor.role === 'ADMIN' || existing.userId === BigInt(actor.id)
+    if (!canDelete) {
+      res.status(403).json({ error: 'Nemate opravneni smazat tento plan.' })
+      return
+    }
+
+    await prisma.studyPlan.delete({ where: { id: studyPlanId } })
+
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/study-plans/:id/collaborators', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const studyPlanId = asBigInt(req.params.id)
+    if (!studyPlanId) {
+      res.status(400).json({ error: 'Neplatne ID studijniho planu.' })
+      return
+    }
+
+    const plan = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    if (!plan) {
+      res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
+      return
+    }
+
+    const canRead =
+      actor.role === 'ADMIN' ||
+      plan.userId === BigInt(actor.id) ||
+      (await prisma.studyPlanCollaborator.findFirst({
+        where: { studyPlanId, userId: BigInt(actor.id) },
+      })) !== null
+
+    if (!canRead) {
+      res.status(403).json({ error: 'Nemate opravneni zobrazit spolupracovniky.' })
+      return
+    }
+
+    const collaborators = await prisma.studyPlanCollaborator.findMany({
+      where: { studyPlanId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    res.json(
+      collaborators.map((collaborator) => ({
+        id: Number(collaborator.id),
+        studyPlanId: Number(collaborator.studyPlanId),
+        userId: Number(collaborator.userId),
+        role: collaborator.role,
+        user: {
+          id: Number(collaborator.user.id),
+          fullName: collaborator.user.fullName,
+          email: collaborator.user.email,
+        },
+      })),
+    )
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/study-plans/:id/share', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const studyPlanId = asBigInt(req.params.id)
+    if (!studyPlanId) {
+      res.status(400).json({ error: 'Neplatne ID studijniho planu.' })
+      return
+    }
+
+    const plan = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    if (!plan) {
+      res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
+      return
+    }
+
+    const canShare = actor.role === 'ADMIN' || plan.userId === BigInt(actor.id)
+    if (!canShare) {
+      res.status(403).json({ error: 'Nemate opravneni sdilet tento plan.' })
+      return
+    }
+
+    const payload = req.body as { email?: string; role?: CollaborationRole }
+    if (!payload.email?.trim()) {
+      res.status(400).json({ error: 'Pole email je povinne.' })
+      return
+    }
+
+    const user = await prisma.user.findFirst({ where: { email: payload.email.trim().toLowerCase(), deletedAt: null } })
+    if (!user) {
+      res.status(404).json({ error: 'Uzivatel s danym emailem nebyl nalezen.' })
+      return
+    }
+
+    if (user.id === plan.userId) {
+      res.status(400).json({ error: 'Vlastnika planu nelze pridat jako spolupracovnika.' })
+      return
+    }
+
+    const role = parseCollaborationRole(payload.role) ?? 'VIEWER'
+    const collaborator = await prisma.studyPlanCollaborator.upsert({
+      where: {
+        studyPlanId_userId: {
+          studyPlanId,
+          userId: user.id,
+        },
+      },
+      update: {
+        role,
+      },
+      create: {
+        studyPlanId,
+        userId: user.id,
+        role,
+      },
+    })
+
+    res.status(201).json({
+      id: Number(collaborator.id),
+      studyPlanId: Number(collaborator.studyPlanId),
+      userId: Number(collaborator.userId),
+      role: collaborator.role,
+      user: {
+        id: Number(user.id),
+        fullName: user.fullName,
+        email: user.email,
+      },
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/study-plans/:id/share/:userId', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const studyPlanId = asBigInt(req.params.id)
+    const userId = asBigInt(req.params.userId)
+    if (!studyPlanId || !userId) {
+      res.status(400).json({ error: 'Neplatne ID studijniho planu nebo uzivatele.' })
+      return
+    }
+
+    const plan = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    if (!plan) {
+      res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
+      return
+    }
+
+    const canShare = actor.role === 'ADMIN' || plan.userId === BigInt(actor.id)
+    if (!canShare) {
+      res.status(403).json({ error: 'Nemate opravneni upravovat sdileni tohoto planu.' })
+      return
+    }
+
+    await prisma.studyPlanCollaborator.deleteMany({
+      where: {
+        studyPlanId,
+        userId,
+      },
+    })
+
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/subjects', async (req, res, next) => {
+  try {
+    const actor = await getActorFromRequest(req)
+    const pagination = parseCursorPagination(req, { defaultLimit: 20, maxLimit: 100 })
+    const includeDeleted = req.query.includeDeleted === 'true'
+    const studyPlanId = asBigInt(req.query.studyPlanId)
+
+    const where: Prisma.SubjectWhereInput = isPublicActor(actor)
+      ? {
+          deletedAt: includeDeleted ? undefined : null,
+          studyPlanId: studyPlanId ?? undefined,
+          OR: [{ isShared: true }, { studyPlan: { isShared: true } }],
+        }
+      : {
+          deletedAt: includeDeleted ? undefined : null,
+          studyPlanId: studyPlanId ?? undefined,
+          OR: [
+            { userId: BigInt(actor.id) },
+            { isShared: true },
+            { studyPlan: { isShared: true } },
+            { studyPlan: { collaborators: { some: { userId: BigInt(actor.id) } } } },
+          ],
+        }
+
+    const countInclude = {
       _count: {
         select: {
           files: true,
           tasks: true,
           events: true,
+          lessons: true,
         },
       },
     }
@@ -301,23 +1406,29 @@ app.get('/api/subjects', async (_req, res, next) => {
           skip: pagination.cursor ? 1 : 0,
           cursor: pagination.cursor ? { id: pagination.cursor } : undefined,
           orderBy: { id: 'asc' },
-          include: baseInclude,
+          where,
+          include: countInclude,
         })
       : await prisma.subject.findMany({
           orderBy: { createdAt: 'asc' },
-          include: baseInclude,
+          where,
+          include: countInclude,
         })
 
     const mappedSubjects = subjects.map((subject) => ({
       id: Number(subject.id),
+      userId: asNumberId(subject.userId),
+      studyPlanId: asNumberId(subject.studyPlanId),
       name: subject.name,
       teacher: subject.teacher,
       code: subject.code,
-      archived: subject.archived,
+      isShared: subject.isShared,
+      archived: Boolean(subject.deletedAt),
+      deletedAt: subject.deletedAt ? subject.deletedAt.toISOString() : null,
       files: subject._count.files,
       tasks: subject._count.tasks,
       events: subject._count.events,
-      notes: 0,
+      notes: subject._count.lessons,
       createdAt: subject.createdAt.toISOString(),
       updatedAt: subject.updatedAt.toISOString(),
     }))
@@ -339,42 +1450,72 @@ app.get('/api/subjects', async (_req, res, next) => {
 
 app.post('/api/subjects', async (req, res, next) => {
   try {
-    const { name, teacher, code } = req.body as {
-      name?: string
-      teacher?: string
-      code?: string
-    }
-
-    if (!name?.trim() || !teacher?.trim() || !code?.trim()) {
-      res.status(400).json({ error: 'Pole name, teacher a code jsou povinná.' })
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
       return
     }
 
-    const subject = await prisma.subject.create({
+    const { name, teacher, code, studyPlanId, isShared } = req.body as {
+      name?: string
+      teacher?: string
+      code?: string
+      studyPlanId?: number | null
+      isShared?: boolean
+    }
+
+    if (!name?.trim() || !teacher?.trim() || !code?.trim()) {
+      res.status(400).json({ error: 'Pole name, teacher a code jsou povinna.' })
+      return
+    }
+
+    const parsedStudyPlanId = asBigInt(studyPlanId)
+    let ownerUserId = BigInt(actor.id)
+
+    if (parsedStudyPlanId) {
+      const plan = await prisma.studyPlan.findUnique({ where: { id: parsedStudyPlanId } })
+      if (!plan) {
+        res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
+        return
+      }
+
+      const collaborator = await prisma.studyPlanCollaborator.findFirst({
+        where: { studyPlanId: parsedStudyPlanId, userId: BigInt(actor.id) },
+      })
+
+      const canCreateInPlan =
+        actor.role === 'ADMIN' ||
+        plan.userId === BigInt(actor.id) ||
+        collaborator?.role === 'CONTRIBUTOR'
+
+      if (!canCreateInPlan) {
+        res.status(403).json({ error: 'Nemate opravneni pridavat predmety do tohoto planu.' })
+        return
+      }
+
+      ownerUserId = plan.userId
+    }
+
+    const created = await prisma.subject.create({
       data: {
+        userId: ownerUserId,
+        studyPlanId: parsedStudyPlanId,
         name: name.trim(),
         teacher: teacher.trim(),
         code: code.trim().toUpperCase(),
-      },
-    })
-
-    await logAudit({
-      entityType: EntityType.SUBJECT,
-      action: AuditAction.CREATE,
-      entityId: subject.id,
-      subjectId: subject.id,
-      changes: {
-        name: subject.name,
-        code: subject.code,
+        isShared: typeof isShared === 'boolean' ? isShared : false,
       },
     })
 
     res.status(201).json({
-      id: Number(subject.id),
-      name: subject.name,
-      teacher: subject.teacher,
-      code: subject.code,
-      archived: subject.archived,
+      id: Number(created.id),
+      userId: Number(created.userId),
+      studyPlanId: asNumberId(created.studyPlanId),
+      name: created.name,
+      teacher: created.teacher,
+      code: created.code,
+      isShared: created.isShared,
+      archived: false,
+      deletedAt: null,
     })
   } catch (error) {
     next(error)
@@ -383,24 +1524,36 @@ app.post('/api/subjects', async (req, res, next) => {
 
 app.put('/api/subjects/:id', async (req, res, next) => {
   try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
     const subjectId = asBigInt(req.params.id)
 
     if (!subjectId) {
-      res.status(400).json({ error: 'Neplatné ID předmětu.' })
+      res.status(400).json({ error: 'Neplatne ID predmetu.' })
       return
     }
 
     const existing = await prisma.subject.findUnique({ where: { id: subjectId } })
     if (!existing) {
-      res.status(404).json({ error: 'Předmět nebyl nalezen.' })
+      res.status(404).json({ error: 'Predmet nebyl nalezen.' })
       return
     }
 
-    const { name, teacher, code, archived } = req.body as {
+    if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Nemate opravneni upravit tento predmet.' })
+      return
+    }
+
+    const { name, teacher, code, archived, studyPlanId, isShared } = req.body as {
       name?: string
       teacher?: string
       code?: string
       archived?: boolean
+      studyPlanId?: number | null
+      isShared?: boolean
     }
 
     const updated = await prisma.subject.update({
@@ -409,37 +1562,22 @@ app.put('/api/subjects/:id', async (req, res, next) => {
         name: typeof name === 'string' ? name.trim() : undefined,
         teacher: typeof teacher === 'string' ? teacher.trim() : undefined,
         code: typeof code === 'string' ? code.trim().toUpperCase() : undefined,
-        archived: typeof archived === 'boolean' ? archived : undefined,
-      },
-    })
-
-    await logAudit({
-      entityType: EntityType.SUBJECT,
-      action: AuditAction.UPDATE,
-      entityId: updated.id,
-      subjectId: updated.id,
-      changes: {
-        before: {
-          name: existing.name,
-          teacher: existing.teacher,
-          code: existing.code,
-          archived: existing.archived,
-        },
-        after: {
-          name: updated.name,
-          teacher: updated.teacher,
-          code: updated.code,
-          archived: updated.archived,
-        },
+        studyPlanId: studyPlanId !== undefined ? asBigInt(studyPlanId) : undefined,
+        isShared: typeof isShared === 'boolean' ? isShared : undefined,
+        deletedAt: typeof archived === 'boolean' ? (archived ? new Date() : null) : undefined,
       },
     })
 
     res.json({
       id: Number(updated.id),
+      userId: asNumberId(updated.userId),
+      studyPlanId: asNumberId(updated.studyPlanId),
       name: updated.name,
       teacher: updated.teacher,
       code: updated.code,
-      archived: updated.archived,
+      isShared: updated.isShared,
+      archived: Boolean(updated.deletedAt),
+      deletedAt: updated.deletedAt ? updated.deletedAt.toISOString() : null,
     })
   } catch (error) {
     next(error)
@@ -448,394 +1586,37 @@ app.put('/api/subjects/:id', async (req, res, next) => {
 
 app.delete('/api/subjects/:id', async (req, res, next) => {
   try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
     const subjectId = asBigInt(req.params.id)
     if (!subjectId) {
-      res.status(400).json({ error: 'Neplatné ID předmětu.' })
+      res.status(400).json({ error: 'Neplatne ID predmetu.' })
       return
     }
 
     const existing = await prisma.subject.findUnique({ where: { id: subjectId } })
     if (!existing) {
-      res.status(404).json({ error: 'Předmět nebyl nalezen.' })
+      res.status(404).json({ error: 'Predmet nebyl nalezen.' })
       return
     }
 
-    await prisma.subject.delete({ where: { id: subjectId } })
-
-    await logAudit({
-      entityType: EntityType.SUBJECT,
-      action: AuditAction.DELETE,
-      entityId: subjectId,
-      subjectId,
-      changes: {
-        name: existing.name,
-        code: existing.code,
-      },
-    })
-
-    res.json({ success: true })
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.get('/api/files', async (req, res, next) => {
-  try {
-    const pagination = parseCursorPagination(req, { defaultLimit: 25, maxLimit: 100 })
-    const subjectId = asBigInt(req.query.subjectId)
-    const shared = req.query.shared
-
-    const findArgs: Prisma.FileRecordFindManyArgs = {
-      orderBy: { createdAt: 'desc' },
-      where: {
-        subjectId: subjectId ?? undefined,
-        shared: shared === 'true' ? true : shared === 'false' ? false : undefined,
-      },
-    }
-
-    if (pagination.enabled) {
-      findArgs.take = pagination.limit + 1
-      findArgs.skip = pagination.cursor ? 1 : 0
-      findArgs.cursor = pagination.cursor ? { id: pagination.cursor } : undefined
-      findArgs.orderBy = { id: 'asc' }
-    }
-
-    const files = await prisma.fileRecord.findMany(findArgs)
-
-    const mappedFiles = files.map((file) => ({
-      id: Number(file.id),
-      name: file.name,
-      size: file.size,
-      addedLabel: file.addedLabel,
-      category: file.category,
-      shared: file.shared,
-      subjectId: asNumberId(file.subjectId),
-    }))
-
-    if (!pagination.enabled) {
-      res.json(mappedFiles)
+    if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Nemate opravneni smazat tento predmet.' })
       return
     }
 
-    const paginated = toPaginatedPayload(mappedFiles, pagination.limit)
-    res.json({
-      ...paginated,
-      limit: pagination.limit,
-    })
-  } catch (error) {
-    next(error)
-  }
-})
+    const deletedAt = new Date()
 
-app.post('/api/files', async (req, res, next) => {
-  try {
-    const { name, size, addedLabel, category, shared, subjectId } = req.body as {
-      name?: string
-      size?: string
-      addedLabel?: string
-      category?: FileCategory
-      shared?: boolean
-      subjectId?: number | null
-    }
-
-    if (!name?.trim() || !size?.trim()) {
-      res.status(400).json({ error: 'Pole name a size jsou povinná.' })
-      return
-    }
-
-    const validCategory: FileCategory =
-      category === 'folder' ||
-      category === 'pdf' ||
-      category === 'image' ||
-      category === 'document' ||
-      category === 'other'
-        ? category
-        : 'other'
-
-    const created = await prisma.fileRecord.create({
-      data: {
-        name: name.trim(),
-        size: size.trim(),
-        addedLabel: typeof addedLabel === 'string' ? addedLabel : 'Added now',
-        category: validCategory,
-        shared: typeof shared === 'boolean' ? shared : false,
-        subjectId: asBigInt(subjectId) ?? null,
-      },
-    })
-
-    await logAudit({
-      entityType: EntityType.FILE,
-      action: AuditAction.CREATE,
-      entityId: created.id,
-      subjectId: created.subjectId,
-      changes: {
-        name: created.name,
-        category: created.category,
-      },
-    })
-
-    res.status(201).json({
-      id: Number(created.id),
-      name: created.name,
-      size: created.size,
-      addedLabel: created.addedLabel,
-      category: created.category,
-      shared: created.shared,
-      subjectId: asNumberId(created.subjectId),
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.put('/api/files/:id', async (req, res, next) => {
-  try {
-    const fileId = asBigInt(req.params.id)
-    if (!fileId) {
-      res.status(400).json({ error: 'Neplatné ID souboru.' })
-      return
-    }
-
-    const existing = await prisma.fileRecord.findUnique({ where: { id: fileId } })
-    if (!existing) {
-      res.status(404).json({ error: 'Soubor nebyl nalezen.' })
-      return
-    }
-
-    const { name, size, addedLabel, category, shared, subjectId } = req.body as {
-      name?: string
-      size?: string
-      addedLabel?: string
-      category?: FileCategory
-      shared?: boolean
-      subjectId?: number | null
-    }
-
-    const updated = await prisma.fileRecord.update({
-      where: { id: fileId },
-      data: {
-        name: typeof name === 'string' ? name.trim() : undefined,
-        size: typeof size === 'string' ? size.trim() : undefined,
-        addedLabel: typeof addedLabel === 'string' ? addedLabel : undefined,
-        category:
-          category === 'folder' ||
-          category === 'pdf' ||
-          category === 'image' ||
-          category === 'document' ||
-          category === 'other'
-            ? category
-            : undefined,
-        shared: typeof shared === 'boolean' ? shared : undefined,
-        subjectId: subjectId !== undefined ? asBigInt(subjectId) : undefined,
-      },
-    })
-
-    await logAudit({
-      entityType: EntityType.FILE,
-      action: AuditAction.UPDATE,
-      entityId: updated.id,
-      subjectId: updated.subjectId,
-      changes: {
-        before: {
-          name: existing.name,
-          category: existing.category,
-          shared: existing.shared,
-          subjectId: asNumberId(existing.subjectId),
-        },
-        after: {
-          name: updated.name,
-          category: updated.category,
-          shared: updated.shared,
-          subjectId: asNumberId(updated.subjectId),
-        },
-      },
-    })
-
-    res.json({
-      id: Number(updated.id),
-      name: updated.name,
-      size: updated.size,
-      addedLabel: updated.addedLabel,
-      category: updated.category,
-      shared: updated.shared,
-      subjectId: asNumberId(updated.subjectId),
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.delete('/api/files/:id', async (req, res, next) => {
-  try {
-    const fileId = asBigInt(req.params.id)
-    if (!fileId) {
-      res.status(400).json({ error: 'Neplatné ID souboru.' })
-      return
-    }
-
-    const existing = await prisma.fileRecord.findUnique({ where: { id: fileId } })
-    if (!existing) {
-      res.status(404).json({ error: 'Soubor nebyl nalezen.' })
-      return
-    }
-
-    await prisma.fileRecord.delete({ where: { id: fileId } })
-
-    await logAudit({
-      entityType: EntityType.FILE,
-      action: AuditAction.DELETE,
-      entityId: fileId,
-      subjectId: existing.subjectId,
-      changes: {
-        name: existing.name,
-      },
-    })
-
-    res.json({ success: true })
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.get('/api/profile', async (_req, res, next) => {
-  try {
-    const profile = await ensureProfile()
-    res.json({
-      id: Number(profile.id),
-      fullName: profile.fullName,
-      email: profile.email,
-      school: profile.school,
-      studyMajor: profile.studyMajor,
-      studyYear: profile.studyYear,
-      studyType: profile.studyType,
-      avatarDataUrl: profile.avatarDataUrl,
-      updatedAt: profile.updatedAt.toISOString(),
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.post('/api/profile', async (req, res, next) => {
-  try {
-    const existing = await prisma.profile.findFirst({ orderBy: { id: 'asc' } })
-    if (existing) {
-      res.status(409).json({ error: 'Profil už existuje. Použijte PUT /api/profile.' })
-      return
-    }
-
-    const payload = req.body as Partial<typeof defaultProfile>
-
-    if (!payload.fullName || !payload.email || !payload.school) {
-      res.status(400).json({ error: 'Pole fullName, email a school jsou povinná.' })
-      return
-    }
-
-    const created = await prisma.profile.create({
-      data: {
-        fullName: payload.fullName,
-        email: payload.email,
-        school: payload.school,
-        studyMajor: payload.studyMajor ?? '',
-        studyYear: payload.studyYear ?? '',
-        studyType: payload.studyType ?? '',
-        avatarDataUrl:
-          typeof payload.avatarDataUrl === 'string' || payload.avatarDataUrl === null
-            ? payload.avatarDataUrl
-            : null,
-      },
-    })
-
-    await logAudit({
-      entityType: EntityType.PROFILE,
-      action: AuditAction.CREATE,
-      entityId: created.id,
-      changes: {
-        source: 'api',
-      },
-    })
-
-    res.status(201).json({
-      id: Number(created.id),
-      fullName: created.fullName,
-      email: created.email,
-      school: created.school,
-      studyMajor: created.studyMajor,
-      studyYear: created.studyYear,
-      studyType: created.studyType,
-      avatarDataUrl: created.avatarDataUrl,
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.put('/api/profile', async (req, res, next) => {
-  try {
-    const profile = await ensureProfile()
-
-    const payload = req.body as Partial<typeof defaultProfile>
-
-    const updated = await prisma.profile.update({
-      where: { id: profile.id },
-      data: {
-        fullName: typeof payload.fullName === 'string' ? payload.fullName : undefined,
-        email: typeof payload.email === 'string' ? payload.email : undefined,
-        school: typeof payload.school === 'string' ? payload.school : undefined,
-        studyMajor: typeof payload.studyMajor === 'string' ? payload.studyMajor : undefined,
-        studyYear: typeof payload.studyYear === 'string' ? payload.studyYear : undefined,
-        studyType: typeof payload.studyType === 'string' ? payload.studyType : undefined,
-        avatarDataUrl:
-          typeof payload.avatarDataUrl === 'string' || payload.avatarDataUrl === null
-            ? payload.avatarDataUrl
-            : undefined,
-      },
-    })
-
-    await logAudit({
-      entityType: EntityType.PROFILE,
-      action: AuditAction.UPDATE,
-      entityId: updated.id,
-      changes: {
-        fields: Object.keys(payload),
-      },
-    })
-
-    res.json({
-      id: Number(updated.id),
-      fullName: updated.fullName,
-      email: updated.email,
-      school: updated.school,
-      studyMajor: updated.studyMajor,
-      studyYear: updated.studyYear,
-      studyType: updated.studyType,
-      avatarDataUrl: updated.avatarDataUrl,
-      updatedAt: updated.updatedAt.toISOString(),
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.delete('/api/profile', async (_req, res, next) => {
-  try {
-    const profile = await prisma.profile.findFirst({ orderBy: { id: 'asc' } })
-    if (!profile) {
-      res.status(404).json({ error: 'Profil nebyl nalezen.' })
-      return
-    }
-
-    await prisma.profile.delete({ where: { id: profile.id } })
-
-    await logAudit({
-      entityType: EntityType.PROFILE,
-      action: AuditAction.DELETE,
-      entityId: profile.id,
-      changes: {
-        fullName: profile.fullName,
-        email: profile.email,
-      },
-    })
+    await prisma.$transaction([
+      prisma.subject.update({ where: { id: subjectId }, data: { deletedAt } }),
+      prisma.task.updateMany({ where: { subjectId, deletedAt: null }, data: { deletedAt } }),
+      prisma.fileRecord.updateMany({ where: { subjectId, deletedAt: null }, data: { deletedAt } }),
+      prisma.lesson.updateMany({ where: { subjectId, deletedAt: null }, data: { deletedAt } }),
+      prisma.event.updateMany({ where: { subjectId, deletedAt: null }, data: { deletedAt } }),
+    ])
 
     res.json({ success: true })
   } catch (error) {
@@ -845,13 +1626,40 @@ app.delete('/api/profile', async (_req, res, next) => {
 
 app.get('/api/tasks', async (req, res, next) => {
   try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
     const pagination = parseCursorPagination(req, { defaultLimit: 30, maxLimit: 200 })
     const subjectId = asBigInt(req.query.subjectId)
+    const studyPlanId = asBigInt(req.query.studyPlanId)
+    const includeDeleted = req.query.includeDeleted === 'true'
+    const doneFilter = req.query.done
+    const favoriteFilter = req.query.favorite
+    const tagFilter = typeof req.query.tag === 'string' ? req.query.tag.trim() : ''
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : ''
+    const deadlineFrom = parseOptionalDate(req.query.deadlineFrom)
+    const deadlineTo = parseOptionalDate(req.query.deadlineTo)
 
     const findArgs: Prisma.TaskFindManyArgs = {
       orderBy: { createdAt: 'asc' },
       where: {
+        userId: BigInt(actor.id),
         subjectId: subjectId ?? undefined,
+        studyPlanId: studyPlanId ?? undefined,
+        done: doneFilter === 'true' ? true : doneFilter === 'false' ? false : undefined,
+        favorite: favoriteFilter === 'true' ? true : favoriteFilter === 'false' ? false : undefined,
+        tag: tagFilter ? tagFilter : undefined,
+        title: search ? { contains: search, mode: 'insensitive' } : undefined,
+        deadline:
+          deadlineFrom || deadlineTo
+            ? {
+                gte: deadlineFrom ?? undefined,
+                lte: deadlineTo ?? undefined,
+              }
+            : undefined,
+        deletedAt: includeDeleted ? undefined : null,
       },
     }
 
@@ -863,7 +1671,6 @@ app.get('/api/tasks', async (req, res, next) => {
     }
 
     const tasks = await prisma.task.findMany(findArgs)
-
     const mappedTasks = tasks.map(mapTask)
 
     if (!pagination.enabled) {
@@ -883,33 +1690,50 @@ app.get('/api/tasks', async (req, res, next) => {
 
 app.post('/api/tasks', async (req, res, next) => {
   try {
-    const { title, done, subjectId } = req.body as {
-      title?: string
-      done?: boolean
-      subjectId?: number | null
-    }
-
-    if (!title?.trim()) {
-      res.status(400).json({ error: 'Pole title je povinné.' })
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
       return
     }
 
+    const { title, done, subjectId, studyPlanId, favorite, tag, priority, deadline } = req.body as {
+      title?: string
+      done?: boolean
+      subjectId?: number | null
+      studyPlanId?: number | null
+      favorite?: boolean
+      tag?: string | null
+      priority?: TaskPriority
+      deadline?: string | null
+    }
+
+    if (!title?.trim()) {
+      res.status(400).json({ error: 'Pole title je povinne.' })
+      return
+    }
+
+    const parsedDeadline = parseOptionalDate(deadline)
+    if (deadline !== undefined && parsedDeadline === undefined) {
+      res.status(400).json({ error: 'Neplatny format deadline.' })
+      return
+    }
+
+    const parsedTag =
+      typeof tag === 'string'
+        ? tag.trim() || null
+        : priority !== undefined
+          ? parseTaskPriority(priority) ?? null
+          : null
+
     const created = await prisma.task.create({
       data: {
+        userId: BigInt(actor.id),
         title: title.trim(),
         done: typeof done === 'boolean' ? done : false,
-        subjectId: asBigInt(subjectId) ?? null,
-      },
-    })
-
-    await logAudit({
-      entityType: EntityType.TASK,
-      action: AuditAction.CREATE,
-      entityId: created.id,
-      subjectId: created.subjectId,
-      changes: {
-        title: created.title,
-        done: created.done,
+        subjectId: asBigInt(subjectId),
+        studyPlanId: asBigInt(studyPlanId),
+        favorite: typeof favorite === 'boolean' ? favorite : false,
+        tag: parsedTag,
+        deadline: parsedDeadline,
       },
     })
 
@@ -921,23 +1745,46 @@ app.post('/api/tasks', async (req, res, next) => {
 
 app.patch('/api/tasks/:id', async (req, res, next) => {
   try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
     const taskId = asBigInt(req.params.id)
     if (!taskId) {
-      res.status(400).json({ error: 'Neplatné ID úkolu.' })
+      res.status(400).json({ error: 'Neplatne ID ukolu.' })
       return
     }
 
-    const existing = await prisma.task.findUnique({ where: { id: taskId } })
+    const existing = await prisma.task.findFirst({ where: { id: taskId, userId: BigInt(actor.id) } })
     if (!existing) {
-      res.status(404).json({ error: 'Úkol nebyl nalezen.' })
+      res.status(404).json({ error: 'Ukol nebyl nalezen.' })
       return
     }
 
-    const { title, done, subjectId } = req.body as {
+    const { title, done, subjectId, studyPlanId, favorite, tag, priority, deadline } = req.body as {
       title?: string
       done?: boolean
       subjectId?: number | null
+      studyPlanId?: number | null
+      favorite?: boolean
+      tag?: string | null
+      priority?: TaskPriority
+      deadline?: string | null
     }
+
+    const parsedDeadline = parseOptionalDate(deadline)
+    if (deadline !== undefined && parsedDeadline === undefined) {
+      res.status(400).json({ error: 'Neplatny format deadline.' })
+      return
+    }
+
+    const parsedTag =
+      typeof tag === 'string'
+        ? tag.trim() || null
+        : priority !== undefined
+          ? (parseTaskPriority(priority) ?? null)
+          : undefined
 
     const updated = await prisma.task.update({
       where: { id: taskId },
@@ -945,17 +1792,10 @@ app.patch('/api/tasks/:id', async (req, res, next) => {
         title: typeof title === 'string' ? title.trim() : undefined,
         done: typeof done === 'boolean' ? done : undefined,
         subjectId: subjectId !== undefined ? asBigInt(subjectId) : undefined,
-      },
-    })
-
-    await logAudit({
-      entityType: EntityType.TASK,
-      action: AuditAction.UPDATE,
-      entityId: updated.id,
-      subjectId: updated.subjectId,
-      changes: {
-        before: mapTask(existing),
-        after: mapTask(updated),
+        studyPlanId: studyPlanId !== undefined ? asBigInt(studyPlanId) : undefined,
+        favorite: typeof favorite === 'boolean' ? favorite : undefined,
+        tag: parsedTag,
+        deadline: parsedDeadline,
       },
     })
 
@@ -965,30 +1805,44 @@ app.patch('/api/tasks/:id', async (req, res, next) => {
   }
 })
 
+app.post('/api/tasks/:id/archive', async (req, res, next) => {
+  try {
+    res.status(410).json({ error: 'Task archive bylo odstraneno. Pouzivejte tagy u ukolu.' })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/task-archive', async (req, res, next) => {
+  try {
+    res.status(410).json({ error: 'Task archive bylo odstraneno. Pouzivejte tagy u ukolu.' })
+  } catch (error) {
+    next(error)
+  }
+})
+
 app.delete('/api/tasks/:id', async (req, res, next) => {
   try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
     const taskId = asBigInt(req.params.id)
     if (!taskId) {
-      res.status(400).json({ error: 'Neplatné ID úkolu.' })
+      res.status(400).json({ error: 'Neplatne ID ukolu.' })
       return
     }
 
-    const existing = await prisma.task.findUnique({ where: { id: taskId } })
+    const existing = await prisma.task.findFirst({ where: { id: taskId, userId: BigInt(actor.id), deletedAt: null } })
     if (!existing) {
-      res.status(404).json({ error: 'Úkol nebyl nalezen.' })
+      res.status(404).json({ error: 'Ukol nebyl nalezen.' })
       return
     }
 
-    await prisma.task.delete({ where: { id: taskId } })
-
-    await logAudit({
-      entityType: EntityType.TASK,
-      action: AuditAction.DELETE,
-      entityId: taskId,
-      subjectId: existing.subjectId,
-      changes: {
-        title: existing.title,
-      },
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { deletedAt: new Date() },
     })
 
     res.json({ success: true })
@@ -999,21 +1853,26 @@ app.delete('/api/tasks/:id', async (req, res, next) => {
 
 app.put('/api/tasks', async (req, res, next) => {
   try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
     const { tasks } = req.body as { tasks?: unknown[] }
 
     if (!Array.isArray(tasks)) {
-      res.status(400).json({ error: 'Neplatný payload: očekává se pole tasks.' })
+      res.status(400).json({ error: 'Neplatny payload: ocekava se pole tasks.' })
       return
     }
 
     const parsedTasks = tasks.map(parseIncomingTask)
     if (parsedTasks.some((task) => task === null)) {
-      res.status(400).json({ error: 'Neplatná struktura tasku.' })
+      res.status(400).json({ error: 'Neplatna struktura tasku.' })
       return
     }
 
     const typedTasks = parsedTasks as ApiTask[]
-    const existingTasks = await prisma.task.findMany()
+    const existingTasks = await prisma.task.findMany({ where: { userId: BigInt(actor.id), deletedAt: null } })
     const existingById = new Map(existingTasks.map((task) => [task.id.toString(), task]))
 
     const incomingIds = typedTasks.map((task) => BigInt(task.id))
@@ -1031,89 +1890,45 @@ app.put('/api/tasks', async (req, res, next) => {
             title: task.title,
             done: task.done,
             subjectId: nextSubjectId,
+            userId: BigInt(actor.id),
+            deletedAt: null,
           },
           create: {
             id: taskId,
             title: task.title,
             done: task.done,
             subjectId: nextSubjectId,
+            userId: BigInt(actor.id),
+            favorite: false,
+            tag: null,
+            deletedAt: null,
           },
         })
 
-        if (!before) {
-          await transaction.auditLog.create({
-            data: {
-              entityType: EntityType.TASK,
-              action: AuditAction.CREATE,
-              entityId: taskId,
-              subjectId: upserted.subjectId,
-              payload: {
-                source: 'sync',
-              },
-            },
-          })
-          continue
-        }
-
-        const changed =
-          before.title !== upserted.title ||
-          before.done !== upserted.done ||
-          (before.subjectId?.toString() ?? null) !== (upserted.subjectId?.toString() ?? null)
-
-        if (changed) {
-          await transaction.auditLog.create({
-            data: {
-              entityType: EntityType.TASK,
-              action: AuditAction.UPDATE,
-              entityId: taskId,
-              subjectId: upserted.subjectId,
-              payload: {
-                source: 'sync',
-                before: {
-                  title: before.title,
-                  done: before.done,
-                  subjectId: asNumberId(before.subjectId),
-                },
-                after: {
-                  title: upserted.title,
-                  done: upserted.done,
-                  subjectId: asNumberId(upserted.subjectId),
-                },
-              },
-            },
-          })
-        }
+        void before
       }
 
       const removedTasks = existingTasks.filter((task) => !incomingIdSet.has(task.id.toString()))
 
       if (removedTasks.length > 0) {
-        for (const removedTask of removedTasks) {
-          await transaction.auditLog.create({
-            data: {
-              entityType: EntityType.TASK,
-              action: AuditAction.DELETE,
-              entityId: removedTask.id,
-              subjectId: removedTask.subjectId,
-              payload: {
-                source: 'sync',
-                title: removedTask.title,
-              },
-            },
-          })
-        }
-
-        await transaction.task.deleteMany({
+        await transaction.task.updateMany({
           where: {
             id: {
               in: removedTasks.map((task) => task.id),
             },
           },
+          data: {
+            deletedAt: new Date(),
+          },
         })
       }
     })
 
-    const finalTasks = await prisma.task.findMany({ orderBy: { createdAt: 'asc' } })
+    const finalTasks = await prisma.task.findMany({
+      where: { userId: BigInt(actor.id), deletedAt: null },
+      orderBy: { createdAt: 'asc' },
+    })
+
     res.json({ success: true, tasks: finalTasks.map(mapTask) })
   } catch (error) {
     next(error)
@@ -1122,14 +1937,24 @@ app.put('/api/tasks', async (req, res, next) => {
 
 app.get('/api/events', async (req, res, next) => {
   try {
+    const actor = await getActorFromRequest(req)
     const pagination = parseCursorPagination(req, { defaultLimit: 30, maxLimit: 200 })
     const subjectId = asBigInt(req.query.subjectId)
+    const includeDeleted = req.query.includeDeleted === 'true'
 
     const findArgs: Prisma.EventFindManyArgs = {
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-      where: {
-        subjectId: subjectId ?? undefined,
-      },
+      where: isPublicActor(actor)
+        ? {
+            isShared: true,
+            subjectId: subjectId ?? undefined,
+            deletedAt: includeDeleted ? undefined : null,
+          }
+        : {
+            subjectId: subjectId ?? undefined,
+            deletedAt: includeDeleted ? undefined : null,
+            OR: [{ userId: BigInt(actor.id) }, { isShared: true }],
+          },
     }
 
     if (pagination.enabled) {
@@ -1160,52 +1985,67 @@ app.get('/api/events', async (req, res, next) => {
 
 app.post('/api/events', async (req, res, next) => {
   try {
-    const { title, date, time, location, icon, accent, subjectId } = req.body as {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const { title, date, time, location, subjectId, recurrence, repeatCount, isShared } = req.body as {
       title?: string
       date?: string
       time?: string | null
       location?: string | null
-      icon?: string | null
-      accent?: AccentType | null
       subjectId?: number | null
+      recurrence?: EventRecurrence
+      repeatCount?: number
+      isShared?: boolean
     }
 
     if (!title?.trim() || !date?.trim()) {
-      res.status(400).json({ error: 'Pole title a date jsou povinná.' })
+      res.status(400).json({ error: 'Pole title a date jsou povinna.' })
       return
     }
 
     const parsedDate = new Date(date)
     if (Number.isNaN(parsedDate.getTime())) {
-      res.status(400).json({ error: 'Neplatný formát data.' })
+      res.status(400).json({ error: 'Neplatny format data.' })
       return
     }
 
-    const created = await prisma.event.create({
-      data: {
-        title: title.trim(),
-        date: parsedDate,
-        time: typeof time === 'string' ? time : null,
-        location: typeof location === 'string' ? location : null,
-        icon: typeof icon === 'string' ? icon : null,
-        accent:
-          accent === 'primary' || accent === 'amber' || accent === 'emerald' ? accent : null,
-        subjectId: asBigInt(subjectId) ?? null,
-      },
+    const parsedRecurrence = parseEventRecurrence(recurrence) ?? 'NONE'
+    const safeRepeatCount = typeof repeatCount === 'number' ? Math.trunc(repeatCount) : 1
+    const dates = buildRecurringDates(parsedDate, parsedRecurrence, safeRepeatCount)
+    const recurrenceGroupId =
+      parsedRecurrence === 'NONE' || dates.length <= 1
+        ? null
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+    const created = await prisma.$transaction(async (transaction) => {
+      const rows = []
+      for (const eventDate of dates) {
+        const row = await transaction.event.create({
+          data: {
+            userId: BigInt(actor.id),
+            title: title.trim(),
+            date: eventDate,
+            time: typeof time === 'string' ? time : null,
+            location: typeof location === 'string' ? location : null,
+            isShared: typeof isShared === 'boolean' ? isShared : false,
+            subjectId: asBigInt(subjectId),
+            recurrence: parsedRecurrence,
+            recurrenceGroupId,
+          },
+        })
+        rows.push(row)
+      }
+
+      return rows
     })
 
-    await logAudit({
-      entityType: EntityType.EVENT,
-      action: AuditAction.CREATE,
-      entityId: created.id,
-      subjectId: created.subjectId,
-      changes: {
-        title: created.title,
-        date: toDateOnlyIso(created.date),
-      },
+    res.status(201).json({
+      event: mapEvent(created[0]),
+      occurrences: created.map(mapEvent),
     })
-
-    res.status(201).json(mapEvent(created))
   } catch (error) {
     next(error)
   }
@@ -1213,15 +2053,20 @@ app.post('/api/events', async (req, res, next) => {
 
 app.patch('/api/events/:id', async (req, res, next) => {
   try {
-    const eventId = asBigInt(req.params.id)
-    if (!eventId) {
-      res.status(400).json({ error: 'Neplatné ID události.' })
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
       return
     }
 
-    const existing = await prisma.event.findUnique({ where: { id: eventId } })
+    const eventId = asBigInt(req.params.id)
+    if (!eventId) {
+      res.status(400).json({ error: 'Neplatne ID udalosti.' })
+      return
+    }
+
+    const existing = await prisma.event.findFirst({ where: { id: eventId, userId: BigInt(actor.id) } })
     if (!existing) {
-      res.status(404).json({ error: 'Událost nebyla nalezena.' })
+      res.status(404).json({ error: 'Udalost nebyla nalezena.' })
       return
     }
 
@@ -1230,16 +2075,16 @@ app.patch('/api/events/:id', async (req, res, next) => {
       date?: string
       time?: string | null
       location?: string | null
-      icon?: string | null
-      accent?: AccentType | null
       subjectId?: number | null
+      recurrence?: EventRecurrence
+      isShared?: boolean
     }
 
     const parsedDate =
       typeof payload.date === 'string' ? new Date(payload.date) : undefined
 
     if (parsedDate && Number.isNaN(parsedDate.getTime())) {
-      res.status(400).json({ error: 'Neplatný formát data.' })
+      res.status(400).json({ error: 'Neplatny format data.' })
       return
     }
 
@@ -1253,25 +2098,12 @@ app.patch('/api/events/:id', async (req, res, next) => {
           typeof payload.location === 'string' || payload.location === null
             ? payload.location
             : undefined,
-        icon: typeof payload.icon === 'string' || payload.icon === null ? payload.icon : undefined,
-        accent:
-          payload.accent === 'primary' || payload.accent === 'amber' || payload.accent === 'emerald'
-            ? payload.accent
-            : payload.accent === null
-              ? null
-              : undefined,
+        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : undefined,
         subjectId: payload.subjectId !== undefined ? asBigInt(payload.subjectId) : undefined,
-      },
-    })
-
-    await logAudit({
-      entityType: EntityType.EVENT,
-      action: AuditAction.UPDATE,
-      entityId: updated.id,
-      subjectId: updated.subjectId,
-      changes: {
-        before: mapEvent(existing),
-        after: mapEvent(updated),
+        recurrence:
+          payload.recurrence !== undefined
+            ? (parseEventRecurrence(payload.recurrence) ?? undefined)
+            : undefined,
       },
     })
 
@@ -1283,30 +2115,24 @@ app.patch('/api/events/:id', async (req, res, next) => {
 
 app.delete('/api/events/:id', async (req, res, next) => {
   try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
     const eventId = asBigInt(req.params.id)
     if (!eventId) {
-      res.status(400).json({ error: 'Neplatné ID události.' })
+      res.status(400).json({ error: 'Neplatne ID udalosti.' })
       return
     }
 
-    const existing = await prisma.event.findUnique({ where: { id: eventId } })
+    const existing = await prisma.event.findFirst({ where: { id: eventId, userId: BigInt(actor.id), deletedAt: null } })
     if (!existing) {
-      res.status(404).json({ error: 'Událost nebyla nalezena.' })
+      res.status(404).json({ error: 'Udalost nebyla nalezena.' })
       return
     }
 
-    await prisma.event.delete({ where: { id: eventId } })
-
-    await logAudit({
-      entityType: EntityType.EVENT,
-      action: AuditAction.DELETE,
-      entityId: eventId,
-      subjectId: existing.subjectId,
-      changes: {
-        title: existing.title,
-        date: toDateOnlyIso(existing.date),
-      },
-    })
+    await prisma.event.update({ where: { id: eventId }, data: { deletedAt: new Date() } })
 
     res.json({ success: true })
   } catch (error) {
@@ -1316,21 +2142,26 @@ app.delete('/api/events/:id', async (req, res, next) => {
 
 app.put('/api/events', async (req, res, next) => {
   try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
     const { events } = req.body as { events?: unknown[] }
 
     if (!Array.isArray(events)) {
-      res.status(400).json({ error: 'Neplatný payload: očekává se pole events.' })
+      res.status(400).json({ error: 'Neplatny payload: ocekava se pole events.' })
       return
     }
 
     const parsedEvents = events.map(parseIncomingEvent)
     if (parsedEvents.some((event) => event === null)) {
-      res.status(400).json({ error: 'Neplatná struktura eventu.' })
+      res.status(400).json({ error: 'Neplatna struktura eventu.' })
       return
     }
 
     const typedEvents = parsedEvents as ApiEvent[]
-    const existingEvents = await prisma.event.findMany()
+    const existingEvents = await prisma.event.findMany({ where: { userId: BigInt(actor.id), deletedAt: null } })
     const existingById = new Map(existingEvents.map((event) => [event.id.toString(), event]))
 
     const incomingIdSet = new Set(typedEvents.map((event) => BigInt(event.id).toString()))
@@ -1338,66 +2169,42 @@ app.put('/api/events', async (req, res, next) => {
     await prisma.$transaction(async (transaction) => {
       for (const event of typedEvents) {
         const eventId = BigInt(event.id)
-        const before = existingById.get(eventId.toString())
         const parsedDate = new Date(event.date)
-        const upserted = await transaction.event.upsert({
+        const existing = existingById.get(eventId.toString())
+
+        await transaction.event.upsert({
           where: { id: eventId },
           update: {
+            userId: BigInt(actor.id),
             title: event.title,
             date: parsedDate,
             time: event.time,
             location: event.location,
-            icon: event.icon,
-            accent: event.accent,
+            isShared: typeof event.isShared === 'boolean' ? event.isShared : false,
             subjectId: asBigInt(event.subjectId),
+            recurrence: 'NONE',
+            recurrenceGroupId: null,
+            deletedAt: null,
           },
           create: {
             id: eventId,
+            userId: BigInt(actor.id),
             title: event.title,
             date: parsedDate,
             time: event.time,
             location: event.location,
-            icon: event.icon,
-            accent: event.accent,
+            isShared: typeof event.isShared === 'boolean' ? event.isShared : false,
             subjectId: asBigInt(event.subjectId),
+            recurrence: 'NONE',
+            recurrenceGroupId: null,
+            deletedAt: null,
           },
         })
 
-        if (!before) {
-          await transaction.auditLog.create({
-            data: {
-              entityType: EntityType.EVENT,
-              action: AuditAction.CREATE,
-              entityId: eventId,
-              subjectId: upserted.subjectId,
-              payload: { source: 'sync' },
-            },
-          })
-          continue
-        }
-
-        const changed =
-          before.title !== upserted.title ||
-          toDateOnlyIso(before.date) !== toDateOnlyIso(upserted.date) ||
-          before.time !== upserted.time ||
-          before.location !== upserted.location ||
-          before.icon !== upserted.icon ||
-          before.accent !== upserted.accent ||
-          (before.subjectId?.toString() ?? null) !== (upserted.subjectId?.toString() ?? null)
-
-        if (changed) {
-          await transaction.auditLog.create({
-            data: {
-              entityType: EntityType.EVENT,
-              action: AuditAction.UPDATE,
-              entityId: eventId,
-              subjectId: upserted.subjectId,
-              payload: {
-                source: 'sync',
-                before: mapEvent(before),
-                after: mapEvent(upserted),
-              },
-            },
+        if (existing && existing.deletedAt) {
+          await transaction.event.update({
+            where: { id: eventId },
+            data: { deletedAt: null },
           })
         }
       }
@@ -1405,33 +2212,21 @@ app.put('/api/events', async (req, res, next) => {
       const removedEvents = existingEvents.filter((event) => !incomingIdSet.has(event.id.toString()))
 
       if (removedEvents.length > 0) {
-        for (const removedEvent of removedEvents) {
-          await transaction.auditLog.create({
-            data: {
-              entityType: EntityType.EVENT,
-              action: AuditAction.DELETE,
-              entityId: removedEvent.id,
-              subjectId: removedEvent.subjectId,
-              payload: {
-                source: 'sync',
-                title: removedEvent.title,
-                date: toDateOnlyIso(removedEvent.date),
-              },
-            },
-          })
-        }
-
-        await transaction.event.deleteMany({
+        await transaction.event.updateMany({
           where: {
             id: {
               in: removedEvents.map((event) => event.id),
             },
+          },
+          data: {
+            deletedAt: new Date(),
           },
         })
       }
     })
 
     const finalEvents = await prisma.event.findMany({
+      where: { userId: BigInt(actor.id), deletedAt: null },
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
     })
 
@@ -1441,196 +2236,1047 @@ app.put('/api/events', async (req, res, next) => {
   }
 })
 
-app.get('/api/history', async (req, res, next) => {
+app.get('/api/files', async (req, res, next) => {
   try {
-    const pagination = parseCursorPagination(req, { defaultLimit: 100, maxLimit: 500 })
-    const entityTypeRaw = req.query.entityType
+    const actor = await getActorFromRequest(req)
+    const pagination = parseCursorPagination(req, { defaultLimit: 25, maxLimit: 100 })
     const subjectId = asBigInt(req.query.subjectId)
+    const lessonId = asBigInt(req.query.lessonId)
+    const shared = req.query.shared
+    const includeDeleted = req.query.includeDeleted === 'true'
 
-    const entityType =
-      entityTypeRaw === 'SUBJECT' ||
-      entityTypeRaw === 'FILE' ||
-      entityTypeRaw === 'PROFILE' ||
-      entityTypeRaw === 'TASK' ||
-      entityTypeRaw === 'EVENT'
-        ? entityTypeRaw
-        : undefined
-
-    const findArgs: Prisma.AuditLogFindManyArgs = {
+    const findArgs: Prisma.FileRecordFindManyArgs = {
       orderBy: { createdAt: 'desc' },
-      take: pagination.limit,
+      where: isPublicActor(actor)
+        ? {
+            subjectId: subjectId ?? undefined,
+            lessonId: lessonId ?? undefined,
+            isShared: true,
+            deletedAt: includeDeleted ? undefined : null,
+          }
+        : {
+            subjectId: subjectId ?? undefined,
+            lessonId: lessonId ?? undefined,
+            isShared: shared === 'true' ? true : shared === 'false' ? false : undefined,
+            deletedAt: includeDeleted ? undefined : null,
+            OR: [{ userId: BigInt(actor.id) }, { isShared: true }],
+          },
+    }
+
+    if (pagination.enabled) {
+      findArgs.take = pagination.limit + 1
+      findArgs.skip = pagination.cursor ? 1 : 0
+      findArgs.cursor = pagination.cursor ? { id: pagination.cursor } : undefined
+      findArgs.orderBy = { id: 'asc' }
+    }
+
+    const files = await prisma.fileRecord.findMany(findArgs)
+    const mappedFiles = files.map(mapFileRecord)
+
+    if (!pagination.enabled) {
+      res.json(mappedFiles)
+      return
+    }
+
+    const paginated = toPaginatedPayload(mappedFiles, pagination.limit)
+    res.json({
+      ...paginated,
+      limit: pagination.limit,
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/files/public', async (_req, res, next) => {
+  try {
+    const files = await prisma.fileRecord.findMany({
       where: {
-        entityType,
-        subjectId: subjectId ?? undefined,
+        isShared: true,
+        deletedAt: null,
       },
-    }
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+    })
 
-    if (pagination.enabled) {
-      findArgs.take = pagination.limit + 1
-      findArgs.skip = pagination.cursor ? 1 : 0
-      findArgs.cursor = pagination.cursor ? { id: pagination.cursor } : undefined
-      findArgs.orderBy = { id: 'desc' }
-    }
+    res.json(files.map(mapFileRecord))
+  } catch (error) {
+    next(error)
+  }
+})
 
-    const logs = await prisma.auditLog.findMany(findArgs)
-
-    const mappedLogs = logs.map(mapAudit)
-
-    if (!pagination.enabled) {
-      res.json(mappedLogs)
+app.get('/api/admin/files', async (req, res, next) => {
+  try {
+    const admin = await requireAdmin(req, res)
+    if (!admin) {
       return
     }
 
-    const paginated = toPaginatedPayload(mappedLogs, pagination.limit)
-    res.json({
-      ...paginated,
-      limit: pagination.limit,
+    const includeDeleted = req.query.includeDeleted === 'true'
+    const files = await prisma.fileRecord.findMany({
+      where: {
+        deletedAt: includeDeleted ? undefined : null,
+      },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+    })
+
+    res.json(files.map(mapFileRecord))
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.patch('/api/admin/files/:id/moderation', async (req, res, next) => {
+  try {
+    const admin = await requireAdmin(req, res)
+    if (!admin) {
+      return
+    }
+
+    const fileId = asBigInt(req.params.id)
+    if (!fileId) {
+      res.status(400).json({ error: 'Neplatne ID souboru.' })
+      return
+    }
+
+    const payload = req.body as { isShared?: boolean; deleted?: boolean }
+    const existing = await prisma.fileRecord.findUnique({ where: { id: fileId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Soubor nebyl nalezen.' })
+      return
+    }
+
+    const updated = await prisma.fileRecord.update({
+      where: { id: fileId },
+      data: {
+        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : undefined,
+        deletedAt:
+          payload.deleted === true
+            ? new Date()
+            : payload.deleted === false
+              ? null
+              : undefined,
+      },
+    })
+
+    res.json(mapFileRecord(updated))
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/files', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const { name, size, addedLabel, shared, isShared, subjectId, lessonId } = req.body as {
+      name?: string
+      size?: string | number
+      addedLabel?: string
+      shared?: boolean
+      isShared?: boolean
+      subjectId?: number | null
+      lessonId?: number | null
+    }
+
+    if (!name?.trim()) {
+      res.status(400).json({ error: 'Pole name je povinne.' })
+      return
+    }
+
+    const parsedSize = parseFileSizeToBytes(size)
+    if (parsedSize === undefined || parsedSize === null) {
+      res.status(400).json({ error: 'Pole size musi byt cislo nebo text typu "2.4 MB".' })
+      return
+    }
+
+    const created = await prisma.fileRecord.create({
+      data: {
+        userId: BigInt(actor.id),
+        subjectId: asBigInt(subjectId),
+        lessonId: asBigInt(lessonId),
+        name: name.trim(),
+        size: parsedSize,
+        addedLabel: typeof addedLabel === 'string' ? addedLabel : 'Added now',
+        isShared: typeof isShared === 'boolean' ? isShared : typeof shared === 'boolean' ? shared : false,
+      },
+    })
+
+    res.status(201).json(mapFileRecord(created))
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.put('/api/files/:id', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const fileId = asBigInt(req.params.id)
+    if (!fileId) {
+      res.status(400).json({ error: 'Neplatne ID souboru.' })
+      return
+    }
+
+    const existing = await prisma.fileRecord.findUnique({ where: { id: fileId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Soubor nebyl nalezen.' })
+      return
+    }
+
+    if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Nemate opravneni upravit tento soubor.' })
+      return
+    }
+
+    const { name, size, addedLabel, shared, isShared, subjectId, lessonId } = req.body as {
+      name?: string
+      size?: string | number
+      addedLabel?: string
+      shared?: boolean
+      isShared?: boolean
+      subjectId?: number | null
+      lessonId?: number | null
+    }
+
+    const parsedSize = parseFileSizeToBytes(size)
+    if (size !== undefined && parsedSize === undefined) {
+      res.status(400).json({ error: 'Neplatna velikost souboru.' })
+      return
+    }
+
+    const updated = await prisma.fileRecord.update({
+      where: { id: fileId },
+      data: {
+        name: typeof name === 'string' ? name.trim() : undefined,
+        size: parsedSize === null ? undefined : parsedSize,
+        addedLabel: typeof addedLabel === 'string' ? addedLabel : undefined,
+        isShared:
+          typeof isShared === 'boolean'
+            ? isShared
+            : typeof shared === 'boolean'
+              ? shared
+              : undefined,
+        subjectId: subjectId !== undefined ? asBigInt(subjectId) : undefined,
+        lessonId: lessonId !== undefined ? asBigInt(lessonId) : undefined,
+      },
+    })
+
+    res.json(mapFileRecord(updated))
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/files/:id', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const fileId = asBigInt(req.params.id)
+    if (!fileId) {
+      res.status(400).json({ error: 'Neplatne ID souboru.' })
+      return
+    }
+
+    const existing = await prisma.fileRecord.findUnique({ where: { id: fileId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Soubor nebyl nalezen.' })
+      return
+    }
+
+    if (existing.deletedAt) {
+      res.status(404).json({ error: 'Soubor nebyl nalezen.' })
+      return
+    }
+
+    if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Nemate opravneni smazat tento soubor.' })
+      return
+    }
+
+    await prisma.fileRecord.update({ where: { id: fileId }, data: { deletedAt: new Date() } })
+
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/files/:id/comments', async (req, res, next) => {
+  try {
+    const actor = await getActorFromRequest(req)
+    const fileId = asBigInt(req.params.id)
+    if (!fileId) {
+      res.status(400).json({ error: 'Neplatne ID souboru.' })
+      return
+    }
+
+    const file = await prisma.fileRecord.findUnique({ where: { id: fileId } })
+    if (!file || file.deletedAt) {
+      res.status(404).json({ error: 'Soubor nebyl nalezen.' })
+      return
+    }
+
+    const canRead = file.isShared || file.userId === BigInt(actor.id) || actor.role === 'ADMIN'
+    if (!canRead) {
+      res.status(403).json({ error: 'Nemate opravneni zobrazit komentare tohoto souboru.' })
+      return
+    }
+
+    const comments = await prisma.fileComment.findMany({
+      where: { fileId },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    res.json(
+      comments.map((comment) => ({
+        id: Number(comment.id),
+        fileId: Number(comment.fileId),
+        userId: Number(comment.userId),
+        comment: comment.comment,
+        createdAt: comment.createdAt.toISOString(),
+        updatedAt: comment.updatedAt.toISOString(),
+      })),
+    )
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/files/:id/comments', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const fileId = asBigInt(req.params.id)
+    if (!fileId) {
+      res.status(400).json({ error: 'Neplatne ID souboru.' })
+      return
+    }
+
+    const { comment } = req.body as { comment?: string }
+    if (!comment?.trim()) {
+      res.status(400).json({ error: 'Pole comment je povinne.' })
+      return
+    }
+
+    const file = await prisma.fileRecord.findUnique({ where: { id: fileId } })
+    if (!file || file.deletedAt) {
+      res.status(404).json({ error: 'Soubor nebyl nalezen.' })
+      return
+    }
+
+    const canComment = file.isShared || file.userId === BigInt(actor.id) || actor.role === 'ADMIN'
+    if (!canComment) {
+      res.status(403).json({ error: 'Nemate opravneni komentovat tento soubor.' })
+      return
+    }
+
+    const created = await prisma.fileComment.create({
+      data: {
+        fileId,
+        userId: BigInt(actor.id),
+        comment: comment.trim(),
+      },
+    })
+
+    res.status(201).json({
+      id: Number(created.id),
+      fileId: Number(created.fileId),
+      userId: Number(created.userId),
+      comment: created.comment,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
     })
   } catch (error) {
     next(error)
   }
 })
 
-app.get('/api/history/tasks', async (req, res, next) => {
+app.patch('/api/file-comments/:id', async (req, res, next) => {
   try {
-    const pagination = parseCursorPagination(req, { defaultLimit: 100, maxLimit: 500 })
-
-    const findArgs: Prisma.AuditLogFindManyArgs = {
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-      where: { entityType: EntityType.TASK },
-    }
-
-    if (pagination.enabled) {
-      findArgs.take = pagination.limit + 1
-      findArgs.skip = pagination.cursor ? 1 : 0
-      findArgs.cursor = pagination.cursor ? { id: pagination.cursor } : undefined
-      findArgs.orderBy = { id: 'desc' }
-    }
-
-    const logs = await prisma.auditLog.findMany(findArgs)
-
-    const mappedLogs = logs.map(mapAudit)
-    if (!pagination.enabled) {
-      res.json(mappedLogs)
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
       return
     }
 
-    const paginated = toPaginatedPayload(mappedLogs, pagination.limit)
+    const commentId = asBigInt(req.params.id)
+    if (!commentId) {
+      res.status(400).json({ error: 'Neplatne ID komentare.' })
+      return
+    }
+
+    const { comment } = req.body as { comment?: string }
+    if (!comment?.trim()) {
+      res.status(400).json({ error: 'Pole comment je povinne.' })
+      return
+    }
+
+    const existing = await prisma.fileComment.findUnique({
+      where: { id: commentId },
+      include: {
+        file: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    })
+    if (!existing) {
+      res.status(404).json({ error: 'Komentar nebyl nalezen.' })
+      return
+    }
+
+    const canEdit =
+      existing.userId === BigInt(actor.id) || existing.file.userId === BigInt(actor.id) || actor.role === 'ADMIN'
+    if (!canEdit) {
+      res.status(403).json({ error: 'Nemate opravneni upravit tento komentar.' })
+      return
+    }
+
+    const updated = await prisma.fileComment.update({
+      where: { id: commentId },
+      data: { comment: comment.trim() },
+    })
+
     res.json({
-      ...paginated,
-      limit: pagination.limit,
+      id: Number(updated.id),
+      fileId: Number(updated.fileId),
+      userId: Number(updated.userId),
+      comment: updated.comment,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
     })
   } catch (error) {
     next(error)
   }
 })
 
-app.get('/api/history/events', async (req, res, next) => {
+app.delete('/api/file-comments/:id', async (req, res, next) => {
   try {
-    const pagination = parseCursorPagination(req, { defaultLimit: 100, maxLimit: 500 })
-
-    const findArgs: Prisma.AuditLogFindManyArgs = {
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-      where: { entityType: EntityType.EVENT },
-    }
-
-    if (pagination.enabled) {
-      findArgs.take = pagination.limit + 1
-      findArgs.skip = pagination.cursor ? 1 : 0
-      findArgs.cursor = pagination.cursor ? { id: pagination.cursor } : undefined
-      findArgs.orderBy = { id: 'desc' }
-    }
-
-    const logs = await prisma.auditLog.findMany(findArgs)
-
-    const mappedLogs = logs.map(mapAudit)
-    if (!pagination.enabled) {
-      res.json(mappedLogs)
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
       return
     }
 
-    const paginated = toPaginatedPayload(mappedLogs, pagination.limit)
-    res.json({
-      ...paginated,
-      limit: pagination.limit,
+    const commentId = asBigInt(req.params.id)
+    if (!commentId) {
+      res.status(400).json({ error: 'Neplatne ID komentare.' })
+      return
+    }
+
+    const existing = await prisma.fileComment.findUnique({
+      where: { id: commentId },
+      include: {
+        file: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    })
+    if (!existing) {
+      res.status(404).json({ error: 'Komentar nebyl nalezen.' })
+      return
+    }
+
+    const canDelete =
+      existing.userId === BigInt(actor.id) || existing.file.userId === BigInt(actor.id) || actor.role === 'ADMIN'
+    if (!canDelete) {
+      res.status(403).json({ error: 'Nemate opravneni smazat tento komentar.' })
+      return
+    }
+
+    await prisma.fileComment.delete({ where: { id: commentId } })
+
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/lessons', async (req, res, next) => {
+  try {
+    const actor = await getActorFromRequest(req)
+    const subjectId = asBigInt(req.query.subjectId)
+    const studyPlanId = asBigInt(req.query.studyPlanId)
+    const includeDeleted = req.query.includeDeleted === 'true'
+
+    const lessons = await prisma.lesson.findMany({
+      where: isPublicActor(actor)
+        ? {
+            subjectId: subjectId ?? undefined,
+            studyPlanId: studyPlanId ?? undefined,
+            isShared: true,
+            deletedAt: includeDeleted ? undefined : null,
+          }
+        : {
+            subjectId: subjectId ?? undefined,
+            studyPlanId: studyPlanId ?? undefined,
+            deletedAt: includeDeleted ? undefined : null,
+            OR: [
+              { isShared: true },
+              { subject: { userId: BigInt(actor.id) } },
+              { studyPlan: { userId: BigInt(actor.id) } },
+              { studyPlan: { collaborators: { some: { userId: BigInt(actor.id) } } } },
+            ],
+          },
+      orderBy: [{ orderIndex: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        _count: {
+          select: {
+            notes: true,
+            files: true,
+          },
+        },
+      },
+    })
+
+    res.json(
+      lessons.map((lesson) => ({
+        id: Number(lesson.id),
+        subjectId: asNumberId(lesson.subjectId),
+        studyPlanId: asNumberId(lesson.studyPlanId),
+        title: lesson.title,
+        content: lesson.content,
+        isShared: lesson.isShared,
+        orderIndex: lesson.orderIndex,
+        notesCount: lesson._count.notes,
+        filesCount: lesson._count.files,
+        deletedAt: lesson.deletedAt ? lesson.deletedAt.toISOString() : null,
+        createdAt: lesson.createdAt.toISOString(),
+        updatedAt: lesson.updatedAt.toISOString(),
+      })),
+    )
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/lessons', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const payload = req.body as {
+      subjectId?: number | null
+      studyPlanId?: number | null
+      title?: string
+      content?: string | null
+      isShared?: boolean
+      orderIndex?: number
+    }
+
+    if (!payload.title?.trim()) {
+      res.status(400).json({ error: 'Pole title je povinne.' })
+      return
+    }
+
+    const created = await prisma.lesson.create({
+      data: {
+        subjectId: asBigInt(payload.subjectId),
+        studyPlanId: asBigInt(payload.studyPlanId),
+        title: payload.title.trim(),
+        content: typeof payload.content === 'string' ? payload.content : null,
+        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : false,
+        orderIndex: typeof payload.orderIndex === 'number' ? Math.trunc(payload.orderIndex) : 0,
+      },
+    })
+
+    res.status(201).json({
+      id: Number(created.id),
+      subjectId: asNumberId(created.subjectId),
+      studyPlanId: asNumberId(created.studyPlanId),
+      title: created.title,
+      content: created.content,
+      isShared: created.isShared,
+      orderIndex: created.orderIndex,
+      deletedAt: created.deletedAt,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
     })
   } catch (error) {
     next(error)
   }
 })
 
-app.get('/api/history/calendar', async (req, res, next) => {
+app.patch('/api/lessons/:id', async (req, res, next) => {
   try {
-    const pagination = parseCursorPagination(req, { defaultLimit: 100, maxLimit: 500 })
-
-    const findArgs: Prisma.AuditLogFindManyArgs = {
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-      where: { entityType: EntityType.EVENT },
-    }
-
-    if (pagination.enabled) {
-      findArgs.take = pagination.limit + 1
-      findArgs.skip = pagination.cursor ? 1 : 0
-      findArgs.cursor = pagination.cursor ? { id: pagination.cursor } : undefined
-      findArgs.orderBy = { id: 'desc' }
-    }
-
-    const logs = await prisma.auditLog.findMany(findArgs)
-
-    const mappedLogs = logs.map(mapAudit)
-    if (!pagination.enabled) {
-      res.json(mappedLogs)
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
       return
     }
 
-    const paginated = toPaginatedPayload(mappedLogs, pagination.limit)
+    const lessonId = asBigInt(req.params.id)
+    if (!lessonId) {
+      res.status(400).json({ error: 'Neplatne ID lekce.' })
+      return
+    }
+
+    const existing = await prisma.lesson.findUnique({ where: { id: lessonId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Lekce nebyla nalezena.' })
+      return
+    }
+
+    const ownsStudyPlan =
+      existing.studyPlanId !== null
+        ? (await prisma.studyPlan.findFirst({ where: { id: existing.studyPlanId, userId: BigInt(actor.id) } })) !==
+          null
+        : false
+
+    const ownsSubject =
+      existing.subjectId !== null
+        ? (await prisma.subject.findFirst({ where: { id: existing.subjectId, userId: BigInt(actor.id) } })) !== null
+        : false
+
+    const canEditLesson = actor.role === 'ADMIN' || ownsStudyPlan || ownsSubject
+
+    if (!canEditLesson) {
+      res.status(403).json({ error: 'Nemate opravneni upravit tuto lekci.' })
+      return
+    }
+
+    const payload = req.body as {
+      subjectId?: number | null
+      studyPlanId?: number | null
+      title?: string
+      content?: string | null
+      isShared?: boolean
+      orderIndex?: number
+    }
+
+    const updated = await prisma.lesson.update({
+      where: { id: lessonId },
+      data: {
+        subjectId: payload.subjectId !== undefined ? asBigInt(payload.subjectId) : undefined,
+        studyPlanId: payload.studyPlanId !== undefined ? asBigInt(payload.studyPlanId) : undefined,
+        title: typeof payload.title === 'string' ? payload.title.trim() : undefined,
+        content:
+          typeof payload.content === 'string'
+            ? payload.content
+            : payload.content === null
+              ? null
+              : undefined,
+        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : undefined,
+        orderIndex: typeof payload.orderIndex === 'number' ? Math.trunc(payload.orderIndex) : undefined,
+      },
+    })
+
     res.json({
-      ...paginated,
-      limit: pagination.limit,
+      id: Number(updated.id),
+      subjectId: asNumberId(updated.subjectId),
+      studyPlanId: asNumberId(updated.studyPlanId),
+      title: updated.title,
+      content: updated.content,
+      isShared: updated.isShared,
+      orderIndex: updated.orderIndex,
+      deletedAt: updated.deletedAt,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
     })
   } catch (error) {
     next(error)
   }
 })
 
-app.get('/api/subjects/:id/history', async (req, res, next) => {
+app.delete('/api/lessons/:id', async (req, res, next) => {
   try {
-    const pagination = parseCursorPagination(req, { defaultLimit: 100, maxLimit: 500 })
-    const subjectId = asBigInt(req.params.id)
-    if (!subjectId) {
-      res.status(400).json({ error: 'Neplatné ID předmětu.' })
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
       return
     }
 
-    const findArgs: Prisma.AuditLogFindManyArgs = {
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-      where: { subjectId },
-    }
-
-    if (pagination.enabled) {
-      findArgs.take = pagination.limit + 1
-      findArgs.skip = pagination.cursor ? 1 : 0
-      findArgs.cursor = pagination.cursor ? { id: pagination.cursor } : undefined
-      findArgs.orderBy = { id: 'desc' }
-    }
-
-    const logs = await prisma.auditLog.findMany(findArgs)
-
-    const mappedLogs = logs.map(mapAudit)
-    if (!pagination.enabled) {
-      res.json(mappedLogs)
+    const lessonId = asBigInt(req.params.id)
+    if (!lessonId) {
+      res.status(400).json({ error: 'Neplatne ID lekce.' })
       return
     }
 
-    const paginated = toPaginatedPayload(mappedLogs, pagination.limit)
-    res.json({
-      ...paginated,
-      limit: pagination.limit,
+    const existing = await prisma.lesson.findUnique({ where: { id: lessonId } })
+    if (!existing || existing.deletedAt) {
+      res.status(404).json({ error: 'Lekce nebyla nalezena.' })
+      return
+    }
+
+    const ownsStudyPlan =
+      existing.studyPlanId !== null
+        ? (await prisma.studyPlan.findFirst({ where: { id: existing.studyPlanId, userId: BigInt(actor.id) } })) !==
+          null
+        : false
+
+    const ownsSubject =
+      existing.subjectId !== null
+        ? (await prisma.subject.findFirst({ where: { id: existing.subjectId, userId: BigInt(actor.id) } })) !== null
+        : false
+
+    const canDeleteLesson = actor.role === 'ADMIN' || ownsStudyPlan || ownsSubject
+
+    if (!canDeleteLesson) {
+      res.status(403).json({ error: 'Nemate opravneni smazat tuto lekci.' })
+      return
+    }
+
+    await prisma.lesson.update({
+      where: { id: lessonId },
+      data: { deletedAt: new Date() },
     })
+
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/lessons/:id/notes', async (req, res, next) => {
+  try {
+    const actor = await getActorFromRequest(req)
+    const lessonId = asBigInt(req.params.id)
+    if (!lessonId) {
+      res.status(400).json({ error: 'Neplatne ID lekce.' })
+      return
+    }
+
+    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } })
+    if (!lesson || lesson.deletedAt) {
+      res.status(404).json({ error: 'Lekce nebyla nalezena.' })
+      return
+    }
+
+    if (isPublicActor(actor)) {
+      if (!lesson.isShared) {
+        res.status(403).json({ error: 'Verejnost vidi jen verejne poznamky.' })
+        return
+      }
+
+      const publicNotes = await prisma.lessonNote.findMany({
+        where: { lessonId },
+        orderBy: [{ isPinned: 'desc' }, { createdAt: 'asc' }],
+      })
+
+      res.json(
+        publicNotes.map((note) => ({
+          id: Number(note.id),
+          lessonId: Number(note.lessonId),
+          userId: Number(note.userId),
+          note: note.note,
+          isPinned: note.isPinned,
+          createdAt: note.createdAt.toISOString(),
+          updatedAt: note.updatedAt.toISOString(),
+        })),
+      )
+      return
+    }
+
+    const includeAll = req.query.includeAll === 'true' && actor.role === 'ADMIN'
+
+    const notes = await prisma.lessonNote.findMany({
+      where: {
+        lessonId,
+        userId: includeAll ? undefined : BigInt(actor.id),
+      },
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'asc' }],
+    })
+
+    res.json(
+      notes.map((note) => ({
+        id: Number(note.id),
+        lessonId: Number(note.lessonId),
+        userId: Number(note.userId),
+        note: note.note,
+        isPinned: note.isPinned,
+        createdAt: note.createdAt.toISOString(),
+        updatedAt: note.updatedAt.toISOString(),
+      })),
+    )
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/lessons/:id/notes', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const lessonId = asBigInt(req.params.id)
+    if (!lessonId) {
+      res.status(400).json({ error: 'Neplatne ID lekce.' })
+      return
+    }
+
+    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } })
+    if (!lesson || lesson.deletedAt) {
+      res.status(404).json({ error: 'Lekce nebyla nalezena.' })
+      return
+    }
+
+    const payload = req.body as { note?: string; isPinned?: boolean }
+    if (!payload.note?.trim()) {
+      res.status(400).json({ error: 'Pole note je povinne.' })
+      return
+    }
+
+    const created = await prisma.lessonNote.create({
+      data: {
+        lessonId,
+        userId: BigInt(actor.id),
+        note: payload.note.trim(),
+        isPinned: typeof payload.isPinned === 'boolean' ? payload.isPinned : false,
+      },
+    })
+
+    res.status(201).json({
+      id: Number(created.id),
+      lessonId: Number(created.lessonId),
+      userId: Number(created.userId),
+      note: created.note,
+      isPinned: created.isPinned,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.patch('/api/lesson-notes/:id', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const noteId = asBigInt(req.params.id)
+    if (!noteId) {
+      res.status(400).json({ error: 'Neplatne ID poznamky.' })
+      return
+    }
+
+    const existing = await prisma.lessonNote.findUnique({ where: { id: noteId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Poznamka nebyla nalezena.' })
+      return
+    }
+
+    if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Nemate opravneni upravit tuto poznamku.' })
+      return
+    }
+
+    const payload = req.body as { note?: string; isPinned?: boolean }
+
+    const updated = await prisma.lessonNote.update({
+      where: { id: noteId },
+      data: {
+        note: typeof payload.note === 'string' ? payload.note.trim() : undefined,
+        isPinned: typeof payload.isPinned === 'boolean' ? payload.isPinned : undefined,
+      },
+    })
+
+    res.json({
+      id: Number(updated.id),
+      lessonId: Number(updated.lessonId),
+      userId: Number(updated.userId),
+      note: updated.note,
+      isPinned: updated.isPinned,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/lesson-notes/:id', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const noteId = asBigInt(req.params.id)
+    if (!noteId) {
+      res.status(400).json({ error: 'Neplatne ID poznamky.' })
+      return
+    }
+
+    const existing = await prisma.lessonNote.findUnique({ where: { id: noteId } })
+    if (!existing) {
+      res.status(404).json({ error: 'Poznamka nebyla nalezena.' })
+      return
+    }
+
+    if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Nemate opravneni smazat tuto poznamku.' })
+      return
+    }
+
+    await prisma.lessonNote.delete({ where: { id: noteId } })
+
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/annotations', async (req, res, next) => {
+  try {
+    const actor = await getActorFromRequest(req)
+    const targetType = parseAnnotationTargetType(req.query.targetType)
+    const targetId = asBigInt(req.query.targetId)
+
+    if (!targetType || !targetId) {
+      res.status(400).json({ error: 'Pole targetType a targetId jsou povinna.' })
+      return
+    }
+
+    const canRead = await canActorReadAnnotationTarget(targetType, targetId, actor)
+    if (!canRead) {
+      res.status(403).json({ error: 'Nemate opravneni zobrazit anotace tohoto obsahu.' })
+      return
+    }
+
+    const annotations = await prisma.textAnnotation.findMany({
+      where: {
+        targetType,
+        targetId,
+      },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    res.json(
+      annotations.map((annotation) => ({
+        id: Number(annotation.id),
+        targetType: annotation.targetType,
+        targetId: Number(annotation.targetId),
+        userId: Number(annotation.userId),
+        startOffset: annotation.startOffset,
+        endOffset: annotation.endOffset,
+        selectedText: annotation.selectedText,
+        comment: annotation.comment,
+        createdAt: annotation.createdAt.toISOString(),
+        updatedAt: annotation.updatedAt.toISOString(),
+      })),
+    )
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/annotations', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const payload = req.body as {
+      targetType?: AnnotationTargetType
+      targetId?: number | string
+      startOffset?: number
+      endOffset?: number
+      selectedText?: string
+      comment?: string
+    }
+
+    const targetType = parseAnnotationTargetType(payload.targetType)
+    const targetId = asBigInt(payload.targetId)
+    if (!targetType || !targetId) {
+      res.status(400).json({ error: 'Pole targetType a targetId jsou povinna.' })
+      return
+    }
+
+    if (
+      typeof payload.startOffset !== 'number' ||
+      typeof payload.endOffset !== 'number' ||
+      payload.startOffset < 0 ||
+      payload.endOffset < payload.startOffset
+    ) {
+      res.status(400).json({ error: 'Neplatny interval oznaceni textu.' })
+      return
+    }
+
+    if (!payload.selectedText?.trim() || !payload.comment?.trim()) {
+      res.status(400).json({ error: 'Pole selectedText a comment jsou povinna.' })
+      return
+    }
+
+    const canRead = await canActorReadAnnotationTarget(targetType, targetId, actor)
+    if (!canRead) {
+      res.status(403).json({ error: 'Nemate opravneni komentovat tento obsah.' })
+      return
+    }
+
+    const created = await prisma.textAnnotation.create({
+      data: {
+        targetType,
+        targetId,
+        userId: BigInt(actor.id),
+        startOffset: Math.trunc(payload.startOffset),
+        endOffset: Math.trunc(payload.endOffset),
+        selectedText: payload.selectedText.trim(),
+        comment: payload.comment.trim(),
+      },
+    })
+
+    res.status(201).json({
+      id: Number(created.id),
+      targetType: created.targetType,
+      targetId: Number(created.targetId),
+      userId: Number(created.userId),
+      startOffset: created.startOffset,
+      endOffset: created.endOffset,
+      selectedText: created.selectedText,
+      comment: created.comment,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/annotations/:id', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) {
+      return
+    }
+
+    const annotationId = asBigInt(req.params.id)
+    if (!annotationId) {
+      res.status(400).json({ error: 'Neplatne ID anotace.' })
+      return
+    }
+
+    const annotation = await prisma.textAnnotation.findUnique({ where: { id: annotationId } })
+    if (!annotation) {
+      res.status(404).json({ error: 'Anotace nebyla nalezena.' })
+      return
+    }
+
+    if (annotation.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Nemate opravneni smazat tuto anotaci.' })
+      return
+    }
+
+    await prisma.textAnnotation.delete({ where: { id: annotationId } })
+    res.json({ success: true })
   } catch (error) {
     next(error)
   }
@@ -1643,22 +3289,22 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
     'code' in error &&
     (error as { code?: string }).code === 'P2002'
   ) {
-    res.status(409).json({ error: 'Konflikt unikátních dat (pravděpodobně duplicitní code).' })
+    res.status(409).json({ error: 'Konflikt unikatnich dat (pravdepodobne duplicitni code nebo email).' })
     return
   }
 
   console.error(error)
-  res.status(500).json({ error: 'Interní chyba serveru' })
+  res.status(500).json({ error: 'Interni chyba serveru' })
 })
 
 const start = async () => {
   try {
     await prisma.$connect()
     app.listen(PORT, () => {
-      console.log(`🚀 Server běží na http://localhost:${PORT}`)
+      console.log(`Server bezi na http://localhost:${PORT}`)
     })
   } catch (error) {
-    console.error('❌ Nepodařilo se připojit k databázi:', error)
+    console.error('Nepodarilo se pripojit k databazi:', error)
     process.exit(1)
   }
 }
