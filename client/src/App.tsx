@@ -2,10 +2,6 @@ import React from 'react'
 import './App.css'
 import {
   calendarWeekDays,
-  filesSeed,
-  foldersSeed,
-  scheduleSeed,
-  subjectsSeed,
   subjectVisualByCode,
 } from './app/data'
 import { getDeadlineMeta, getDefaultMetaForTitle, getRelativeDaysLabel } from './app/utils'
@@ -34,10 +30,6 @@ function App() {
       <Sidebar
         activeMobileNav={state.activeMobileNav}
         setActiveMobileNav={state.setActiveMobileNav}
-        accentPalette={state.accentPalette}
-        setAccentPalette={state.setAccentPalette}
-        themeMode={state.themeMode}
-        setThemeMode={state.setThemeMode}
       />
 
       <main className="main-content">
@@ -48,10 +40,6 @@ function App() {
           isProfileScreen={state.isProfileScreen}
           fileInputRef={fileInputRef}
           setActiveMobileNav={state.setActiveMobileNav}
-          accentPalette={state.accentPalette}
-          setAccentPalette={state.setAccentPalette}
-          themeMode={state.themeMode}
-          setThemeMode={state.setThemeMode}
           profileName={state.profile.fullName}
           profileSubtitle={state.profile.studyYear}
           profileAvatarDataUrl={state.profile.avatarDataUrl}
@@ -62,9 +50,6 @@ function App() {
           <MobileFilesScreen
             fileTab={state.fileTab}
             setFileTab={state.setFileTab}
-            fileTypeFilter={state.fileTypeFilter}
-            setFileTypeFilter={state.setFileTypeFilter}
-            folders={foldersSeed}
             displayedRecentFiles={state.displayedRecentFiles}
             isDragActive={state.isDragActive}
             setIsDragActive={state.setIsDragActive}
@@ -112,15 +97,14 @@ function App() {
           />
 
           <DashboardHomeContent
+            profileName={state.profile.fullName}
             tasksDone={state.tasksDone}
             tasks={state.tasks}
             upcomingEvents={state.upcomingEvents}
             getDeadlineMeta={getDeadlineMeta}
             getRelativeDaysLabel={getRelativeDaysLabel}
-            schedule={scheduleSeed}
             managedFiles={state.managedFiles}
-            filesSeed={filesSeed}
-            subjects={subjectsSeed}
+            subjects={state.subjects}
             toggleTask={state.toggleTask}
           />
 
@@ -151,9 +135,7 @@ function App() {
           />
 
           <DesktopFilesScreen
-            folders={foldersSeed}
             managedFiles={state.managedFiles}
-            filesSeed={filesSeed}
             fileInputRef={fileInputRef}
             onUploadFiles={state.onUploadFiles}
             onManageFile={state.manageFile}

@@ -37,11 +37,11 @@ export function DesktopCalendarScreen({
     <section className="desktop-calendar-screen" id="desktop-calendar">
       <div className="desktop-calendar-head">
         <div>
-          <h2>Calendar</h2>
-          <p>Manage your academic schedule and deadlines</p>
+          <h2>Kalendář</h2>
+          <p>Správa studijních událostí a termínů.</p>
         </div>
         <div className="desktop-calendar-controls">
-          <button type="button" onClick={goToToday}>Today</button>
+          <button type="button" onClick={goToToday}>Dnes</button>
           <div className="month-switch">
             <button
               type="button"
@@ -68,7 +68,7 @@ export function DesktopCalendarScreen({
             </button>
           </div>
           <button type="button" className="primary" onClick={addDesktopEvent}>
-            Add Event
+            Přidat událost
           </button>
         </div>
       </div>
@@ -116,8 +116,8 @@ export function DesktopCalendarScreen({
         <aside className="desktop-events-panel">
           <section className="events-card">
             <h3>
-              Events for{' '}
-              {new Intl.DateTimeFormat('en-US', {
+              Události pro{' '}
+              {new Intl.DateTimeFormat('cs-CZ', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
@@ -126,7 +126,7 @@ export function DesktopCalendarScreen({
 
             <div className="events-list-desktop">
               {selectedDayEvents.length === 0 ? (
-                <p className="empty-events">No events for selected day.</p>
+                <p className="empty-events">Pro vybraný den nejsou žádné události.</p>
               ) : (
                 selectedDayEvents.map((event) => {
                   const meta = eventMetaById[event.id] ?? getDefaultMetaForTitle(event.title)
@@ -146,16 +146,6 @@ export function DesktopCalendarScreen({
                 })
               )}
             </div>
-
-            <button type="button" className="outline-full-width">
-              View Full Day Schedule
-            </button>
-          </section>
-
-          <section className="exam-callout">
-            <h3>Exam Season is Coming</h3>
-            <p>Your finals start in 12 days. Don&apos;t forget to review your study plan.</p>
-            <button type="button">View Study Guide</button>
           </section>
         </aside>
       </div>

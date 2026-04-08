@@ -32,8 +32,6 @@ export function MobileProfileScreen({
   onLogout,
 }: MobileProfileScreenProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = React.useState(true)
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = React.useState(false)
   const [authFullName, setAuthFullName] = React.useState(profile.fullName)
   const [authEmail, setAuthEmail] = React.useState(profile.email)
   const [authPassword, setAuthPassword] = React.useState('')
@@ -230,48 +228,6 @@ export function MobileProfileScreen({
           />
         </label>
       </section>
-
-      <section className="mobile-profile-section">
-        <h3>Zabezpečení</h3>
-        <button type="button" className="mobile-profile-action-row">
-          <span>Změnit heslo</span>
-          <span aria-hidden="true">›</span>
-        </button>
-      </section>
-
-      <section className="mobile-profile-section">
-        <h3>Notifikace</h3>
-
-        <label className="mobile-profile-toggle-row">
-          <div>
-            <strong>E-mailové notifikace</strong>
-            <small>Týdenní souhrn a aktualizace</small>
-          </div>
-          <input
-            type="checkbox"
-            checked={emailNotificationsEnabled}
-            onChange={(event) => setEmailNotificationsEnabled(event.target.checked)}
-          />
-        </label>
-
-        <label className="mobile-profile-toggle-row">
-          <div>
-            <strong>Push notifikace</strong>
-            <small>Deadline a připomenutí</small>
-          </div>
-          <input
-            type="checkbox"
-            checked={pushNotificationsEnabled}
-            onChange={(event) => setPushNotificationsEnabled(event.target.checked)}
-          />
-        </label>
-      </section>
-
-      <div className="mobile-profile-save-wrap">
-        <button type="button" className="mobile-profile-save">
-          Uloženo automaticky
-        </button>
-      </div>
     </section>
   )
 }

@@ -1,34 +1,30 @@
 import {
   CalendarEvent,
   ManagedFile,
-  ScheduleItem,
   Subject,
   Task,
-  StudyFile,
 } from '../../app/types'
 
 type DashboardHomeContentProps = {
+  profileName: string
   tasksDone: number
   tasks: Task[]
   upcomingEvents: CalendarEvent[]
   getDeadlineMeta: (index: number) => { label: string; className: string; progress: number }
   getRelativeDaysLabel: (date: string) => string
-  schedule: ScheduleItem[]
   managedFiles: ManagedFile[]
-  filesSeed: StudyFile[]
   subjects: Subject[]
   toggleTask: (taskId: number) => void
 }
 
 export function DashboardHomeContent({
+  profileName,
   tasksDone,
   tasks,
   upcomingEvents,
   getDeadlineMeta,
   getRelativeDaysLabel,
-  schedule,
   managedFiles,
-  filesSeed,
   subjects,
   toggleTask,
 }: DashboardHomeContentProps) {
@@ -36,16 +32,16 @@ export function DashboardHomeContent({
     <div className="mobile-dashboard-content desktop-dashboard-content">
       <section className="welcome">
         <div>
-          <h2>Dobré ráno, Jakube!</h2>
-          <p>Dnes je pondělí. Máš před sebou nabitý studijní den.</p>
+          <h2>Ahoj, {profileName || 'studente'}!</h2>
+          <p>Přehled studijních dat podle předmětů, úkolů, kalendáře a souborů.</p>
         </div>
       </section>
 
       <section className="stats-grid">
         <article className="progress-card">
           <div>
-            <p className="eyebrow">Daily Progress</p>
-            <h3>Tasks for Today</h3>
+            <p className="eyebrow">Postup</p>
+            <h3>Úkoly</h3>
             <p>
               Dokončeno {tasksDone} z {tasks.length} úkolů.
             </p>
@@ -54,7 +50,7 @@ export function DashboardHomeContent({
         </article>
 
         <article className="deadlines-card">
-          <h3>Upcoming Deadlines</h3>
+          <h3>Nadcházející termíny</h3>
           <ul>
             {upcomingEvents.slice(0, 3).map((event, index) => {
               const meta = getDeadlineMeta(index)
@@ -78,63 +74,45 @@ export function DashboardHomeContent({
 
       <section className="main-grid">
         <div className="left-column">
-          <article className="card" id="schedule">
-            <div className="section-head">
-              <h3>Today's Schedule</h3>
-              <button type="button" className="text-button">See All</button>
-            </div>
-            <div className="mobile-schedule-list">
-              {schedule.map((item) => (
-                <div key={item.id} className="mobile-schedule-item">
-                  <div className="mobile-schedule-icon">{item.subject.slice(0, 2).toUpperCase()}</div>
-                  <div className="mobile-schedule-content">
-                    <h4>{item.subject}</h4>
-                    <p>{item.time}</p>
-                  </div>
-                  <div className="mobile-schedule-location">{item.location}</div>
-                </div>
+          <article className="card" id="calendar-overview">
+            <h3>Kalendář</h3>
+            <ul className="file-list">
+              {upcomingEvents.slice(0, 4).map((event) => (
+                <li key={event.id}>
+                  <span>{event.title}</span>
+                  <small>
+                    {new Intl.DateTimeFormat('cs-CZ', {
+                      day: 'numeric',
+                      month: 'short',
+                    }).format(new Date(event.date))}
+                    {' • '}
+                    {getRelativeDaysLabel(event.date)}
+                  </small>
+                </li>
               ))}
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Subject</th>
-                  <th>Type</th>
-                  <th>Location</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedule.map((item) => (
-                  <tr key={item.id} className={item.type === 'Live Now' ? 'live-row' : ''}>
-                    <td>{item.time}</td>
-                    <td>{item.subject}</td>
-                    <td>{item.type}</td>
-                    <td>{item.location}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            </ul>
+            {upcomingEvents.length === 0 ? <p>Zatím nejsou naplánované žádné události.</p> : null}
           </article>
 
           <article className="card" id="files">
             <h3>Soubory</h3>
             <ul className="file-list">
-              {managedFiles.slice(0, 3).map((file, index) => (
+              {managedFiles.slice(0, 4).map((file) => (
                 <li key={file.id}>
-                  <span>{filesSeed[index]?.name ?? file.name}</span>
+                  <span>{file.name}</span>
                   <small>
-                    {filesSeed[index]?.subject ?? 'UP'} • {file.size}
+                    {file.shared ? 'Sdílený' : 'Soukromý'} • {file.size}
                   </small>
                 </li>
               ))}
             </ul>
+            {managedFiles.length === 0 ? <p>Zatím nejsou nahrané žádné soubory.</p> : null}
           </article>
         </div>
 
         <div className="right-column">
           <article className="card" id="subjects">
-            <h3>My Subjects</h3>
+            <h3>Moje předměty</h3>
             <div className="subjects-grid">
               {subjects.map((subject) => (
                 <div key={subject.id} className="subject-item">
@@ -144,15 +122,16 @@ export function DashboardHomeContent({
                   </div>
                   <h4>{subject.name}</h4>
                   <p>
-                    {subject.files} files • {subject.notes} notes
+                    {subject.files} souborů • {subject.notes} poznámek
                   </p>
                 </div>
               ))}
             </div>
+            {subjects.length === 0 ? <p>Zatím nejsou evidované žádné předměty.</p> : null}
           </article>
 
           <article className="card" id="tasks-card">
-            <h3>Tasks for Today</h3>
+            <h3>Úkoly</h3>
             <ul className="task-list">
               {tasks.map((task) => (
                 <li key={task.id}>
@@ -163,6 +142,7 @@ export function DashboardHomeContent({
                 </li>
               ))}
             </ul>
+            {tasks.length === 0 ? <p>Zatím nejsou evidované žádné úkoly.</p> : null}
           </article>
         </div>
       </section>

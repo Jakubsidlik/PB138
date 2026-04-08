@@ -10,7 +10,6 @@ export function MobileBottomNav({ activeMobileNav, setActiveMobileNav }: MobileB
   return (
     <nav className="mobile-bottom-nav" aria-label="Mobilní navigace">
       <a className={activeMobileNav === 'home' ? 'active' : ''} href="#" onClick={() => setActiveMobileNav('home')}>
-        <span className="nav-icon" aria-hidden="true">🏠</span>
         <span className="nav-label">Domů</span>
       </a>
       <a
@@ -18,7 +17,6 @@ export function MobileBottomNav({ activeMobileNav, setActiveMobileNav }: MobileB
         href="#calendar"
         onClick={() => setActiveMobileNav('calendar')}
       >
-        <span className="nav-icon" aria-hidden="true">📅</span>
         <span className="nav-label">Kalendář</span>
       </a>
       <a
@@ -26,11 +24,9 @@ export function MobileBottomNav({ activeMobileNav, setActiveMobileNav }: MobileB
         href="#subjects"
         onClick={() => setActiveMobileNav('subjects')}
       >
-        <span className="nav-icon" aria-hidden="true">📚</span>
         <span className="nav-label">Předměty</span>
       </a>
       <a className={activeMobileNav === 'files' ? 'active' : ''} href="#files" onClick={() => setActiveMobileNav('files')}>
-        <span className="nav-icon" aria-hidden="true">📁</span>
         <span className="nav-label">Soubory</span>
       </a>
       <a
@@ -38,7 +34,6 @@ export function MobileBottomNav({ activeMobileNav, setActiveMobileNav }: MobileB
         href="#profile"
         onClick={() => setActiveMobileNav('profile')}
       >
-        <span className="nav-icon" aria-hidden="true">👤</span>
         <span className="nav-label">Profil</span>
       </a>
     </nav>

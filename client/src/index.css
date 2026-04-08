@@ -8,6 +8,6 @@ body,
   margin: 0;
   width: 100%;
   min-height: 100%;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: 'IBM Plex Sans', 'Noto Sans', 'Segoe UI', sans-serif;
   color: #0f172a;
 }
