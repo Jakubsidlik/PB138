@@ -969,6 +969,7 @@ export function useDashboardState() {
     login,
     register,
     logout,
+    setAuthSession,
     createSubject,
     updateSubject,
     toggleSubjectArchived,

@@ -30,10 +30,13 @@ Webová aplikace, která umožňuje studentům lépe organizovat své studium. A
 pb138/
 ├── client/                    # React frontend
 │   ├── src/
-│   │   ├── App.tsx           # Hlavní komponenta
-│   │   ├── main.tsx          # Entry point
-│   │   ├── index.css         # Globální styly
-│   │   └── App.css
+│   │   ├── app           
+│   │   ├── components
+│   │   ├── screen   
+|   |   ├── App.tsx
+|   |   ├── App.css       
+│   │   ├── index.css         
+│   │   └── main.tsx
 │   ├── index.html
 │   ├── package.json
 │   ├── tsconfig.json
@@ -104,13 +107,50 @@ npm install <package>
 ```
 
 ## 📝 TODO
+1. Datový model a Backend (ERD & API)
+- [ ] Upravit datový model a schéma 
+- [ ] Přejmenovat entitu SUBJECT na TAG (klasifikační prvek) 
+- [✅] Zrušit entitu TASK_ARCHIVE a nahradit ji logikou LESSON_NOTE a LESSON_COMMENT 
+- [ ] Přidat do entity USER pole: datum narození, fakulta, studijní typ a rok 
+- [ ] Vytvořit entitu COMMENT s vazbou na konkrétní části textu v poznámkách 
+- [ ] Zajistit, aby pole v ERD (např. u Task) byla správně nastavena jako nullable 
+- [ ] Postavit API endpointy (CRUD pro všechny entity) 
+- [ ] Implementovat Create, Update, Delete pro Tagy, Úkoly, Plány, Lekce a Poznámky 
+- [ ] Vytvořit endpointy pro správu komentářů a označování částí textu
+- [ ] Implementovat systém ukládání souborů a avatarů 
+- [ ] Nastavit ukládání mimo server (Amazon S3 / Blob storage) pomocí GUID jako klíče
+- [ ] Propojit soubory (FILE_RECORD) přímo s entitou LESSON 
 
-- [ ] Implementovat datový model (Subject, Note, Event, File)
-- [ ] Vytvořit databázové schéma
-- [ ] Postavit API endpointy
-- [ ] Vytvořit React komponenty pro hlavní funkcionalitu
-- [ ] Implementovat kalendář
-- [ ] Přidat autentifikaci (volitelné)
+2. Autentifikace, Role a Práva
+- [ ] Implementovat autentifikaci a profily
+- [ ] Nastavit ukládání přihlašovacích údajů (hashovaná hesla) a session management 
+- [ ] Vytvořit role a jejich oprávnění:
+    - [ ] Neregistrovaný: Vidí pouze veřejná data, poznámky má "read-only"
+    - [ ] Registrovaný: Plný přístup k vlastním datům a žádostem o zveřejnění 
+    - [ ] Admin: Schvalování obsahu a moderování 
+
+3. Klíčové funkce aplikace
+- [ ] Organizace lekcí a předmětů: Vytvořit systém položek pro správu lekcí a studijních materiálů.
+- [ ] Správa úkolů a deadlinů: Možnost zápisu termínů odevzdání (assignments) a dat cvičení/přednášek.
+- [ ] Souborový systém: Implementovat úložiště pro přednášky a další studijní podklady u každé položky.
+- [ ] Kalendář: Implementovat zobrazení nadcházejících událostí a deadlinů v kalendáři.
+- [ ] Opakované události: Podpora pro pravidelné přednášky a cvičení.
+- [ ] Vytvořit logiku sdílení
+- [ ] Implementovat proces "Žádost o zveřejnění" pro poznámky a plány??? 
+- [ ] Umožnit propojování entit (např. napojení vlastního předmětu na cizí studijní plán)??? 
+- [ ] Kalendář a události: Implementovat kalendář s podporou opakovaných událostí 
+
+4. Frontend a React komponenty
+- [ ] Vytvořit React komponenty a UI 
+- [ ] Implementovat dashboard s přehledem úkolů a pokročilým filtrováním 
+- [ ] Vytvořit interaktivní textový editor pro poznámky s funkcí komentování označeného textu 
+- [ ] Vytvořit komponentu pro správu profilu a nahrávání avatara 
+- [ ] Postavit komponentu pro kalendář (zobrazení měsíc/týden) 
+
+5. Finální integrace a testování
+- [ ] Ověřit, že neregistrovaní uživatelé vidí pouze schválený obsah 
+- [ ] Otestovat nahrávání souborů, správné generování GUID a ukládání na externí storage 
+- [ ] Zkontrolovat všechna nullable pole, aby aplikace nevyhazovala chyby při chybějících datech 
 
 ## 📝 Poznámky
 

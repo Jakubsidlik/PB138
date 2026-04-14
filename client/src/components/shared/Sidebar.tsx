@@ -1,23 +1,39 @@
 import React from 'react'
-import { MobileNavItem } from '../../app/types'
+import { MobileNavItem, ThemeMode, AccentPalette } from '../../app/types'
+import { ThemeSelector } from './ThemeSelector'
+import ghostLogo from '../../assets/ghostLogo.jpg'
 
 type SidebarProps = {
   activeMobileNav: MobileNavItem
   setActiveMobileNav: React.Dispatch<React.SetStateAction<MobileNavItem>>
+  themeMode: ThemeMode
+  onThemeChange: (theme: ThemeMode) => void
+  accentPalette: AccentPalette
+  onPaletteChange: (palette: AccentPalette) => void
+  onLogout: () => void
 }
 
 export function Sidebar({
   activeMobileNav,
   setActiveMobileNav,
+  themeMode,
+  onThemeChange,
+  accentPalette,
+  onPaletteChange,
+  onLogout,
 }: SidebarProps) {
+
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-icon">PB</div>
-        <div>
-          <h1>Studijní plán</h1>
-          <p>PB138</p>
-        </div>
+        <img 
+          src={ghostLogo}
+          alt="Lonely Student Logo"
+          className="brand-logo"
+          //Matěji tu pak logo
+          style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+        />
+        <h1>Lonely Student</h1>
       </div>
 
       <nav className="menu">
@@ -26,7 +42,7 @@ export function Sidebar({
           href="#"
           onClick={() => setActiveMobileNav('home')}
         >
-          Dashboard
+          Hlavní stránka
         </a>
         <a
           className={`menu-item ${activeMobileNav === 'calendar' ? 'active' : ''}`}
@@ -56,6 +72,19 @@ export function Sidebar({
         >
           Profil
         </a>
+
+        <div className="menu-theme-selector">
+          <ThemeSelector
+            currentTheme={themeMode}
+            onThemeChange={onThemeChange}
+            currentPalette={accentPalette}
+            onPaletteChange={onPaletteChange}
+          />
+        </div>
+
+        <button type="button" className="menu-logout-btn" onClick={onLogout}>
+          Odhlásit se
+        </button>
       </nav>
     </aside>
   )

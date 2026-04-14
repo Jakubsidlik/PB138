@@ -8,20 +8,44 @@ import { getDeadlineMeta, getDefaultMetaForTitle, getRelativeDaysLabel } from '.
 import { useDashboardState } from './app/useDashboardState'
 import { Sidebar } from './components/shared/Sidebar'
 import { Topbar } from './components/shared/Topbar'
-import { MobileFilesScreen } from './components/mobile/MobileFilesScreen'
-import { MobileCalendarScreen } from './components/mobile/MobileCalendarScreen'
-import { MobileSubjectsScreen } from './components/mobile/MobileSubjectsScreen'
+import { AuthScreen } from './components/shared/AuthScreen'
+
+import { MobileFilesScreen } from './screen/mobile/MobileFilesScreen'
+import { MobileCalendarScreen } from './screen/mobile/MobileCalendarScreen'
+import { MobileSubjectsScreen } from './screen/mobile/MobileSubjectsScreen'
+import { MobileBottomNav } from './screen/mobile/MobileBottomNav'
+import { MobileProfileScreen } from './screen/mobile/MobileProfileScreen'
 import { DashboardHomeContent } from './components/shared/DashboardHomeContent'
-import { DesktopCalendarScreen } from './components/desktop/DesktopCalendarScreen'
-import { DesktopSubjectsScreen } from './components/desktop/DesktopSubjectsScreen'
-import { MobileBottomNav } from './components/mobile/MobileBottomNav'
-import { DesktopFilesScreen } from './components/desktop/DesktopFilesScreen'
-import { DesktopProfileScreen } from './components/desktop/DesktopProfileScreen'
-import { MobileProfileScreen } from './components/mobile/MobileProfileScreen'
+import { DesktopCalendarScreen } from './screen/desktop/DesktopCalendarScreen'
+import { DesktopFilesScreen } from './screen/desktop/DesktopFilesScreen'
+import { DesktopSubjectsScreen } from './screen/desktop/DesktopSubjectsScreen'
+import { DesktopProfileScreen } from './screen/desktop/DesktopProfileScreen'
 
 function App() {
   const state = useDashboardState()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const handleSkipAsAdmin = () => {
+    // Nastaví mock admin session pro vývoj
+    const mockAdminSession = {
+      userId: 999,
+      role: 'ADMIN' as const,
+      fullName: 'Admin Vývojář',
+      email: 'admin@dev.local',
+    }
+    state.setAuthSession(mockAdminSession)
+  }
+
+  // Pokud uživatel není přihlášený, zobraz AuthScreen
+  if (!state.authSession) {
+    return (
+      <AuthScreen
+        onLogin={state.login}
+        onRegister={state.register}
+        onSkipAsAdmin={handleSkipAsAdmin}
+      />
+    )
+  }
 
   return (
     <div
@@ -30,6 +54,11 @@ function App() {
       <Sidebar
         activeMobileNav={state.activeMobileNav}
         setActiveMobileNav={state.setActiveMobileNav}
+        themeMode={state.themeMode}
+        onThemeChange={state.setThemeMode}
+        accentPalette={state.accentPalette}
+        onPaletteChange={state.setAccentPalette}
+        onLogout={state.logout}
       />
 
       <main className="main-content">
@@ -94,6 +123,10 @@ function App() {
             onLogin={state.login}
             onRegister={state.register}
             onLogout={state.logout}
+            themeMode={state.themeMode}
+            onThemeChange={state.setThemeMode}
+            accentPalette={state.accentPalette}
+            onPaletteChange={state.setAccentPalette}
           />
 
           <DashboardHomeContent
@@ -106,6 +139,15 @@ function App() {
             managedFiles={state.managedFiles}
             subjects={state.subjects}
             toggleTask={state.toggleTask}
+          />
+
+          <DesktopFilesScreen
+            managedFiles={state.managedFiles}
+            fileInputRef={fileInputRef}
+            onUploadFiles={state.onUploadFiles}
+            onManageFile={state.manageFile}
+            onDeleteFile={state.removeFile}
+            onToggleFileShared={state.toggleFileShared}
           />
 
           <DesktopCalendarScreen
@@ -134,15 +176,6 @@ function App() {
             onDeleteSubject={state.deleteSubject}
           />
 
-          <DesktopFilesScreen
-            managedFiles={state.managedFiles}
-            fileInputRef={fileInputRef}
-            onUploadFiles={state.onUploadFiles}
-            onManageFile={state.manageFile}
-            onDeleteFile={state.removeFile}
-            onToggleFileShared={state.toggleFileShared}
-          />
-
           <DesktopProfileScreen
             profile={state.profile}
             authSession={state.authSession}
@@ -153,6 +186,10 @@ function App() {
             onLogin={state.login}
             onRegister={state.register}
             onLogout={state.logout}
+            themeMode={state.themeMode}
+            onThemeChange={state.setThemeMode}
+            accentPalette={state.accentPalette}
+            onPaletteChange={state.setAccentPalette}
           />
         </div>
 
