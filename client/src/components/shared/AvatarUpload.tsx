@@ -57,8 +57,6 @@ export function AvatarUpload({
       setPreviewUrl(e.target?.result as string)
     }
     reader.readAsDataURL(file)
-
-    // Call parent handler
     onUpload(files)
   }
 
