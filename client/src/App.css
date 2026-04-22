@@ -133,6 +133,23 @@
   gap: 1.5rem;
 }
 
+.brand-button {
+  all: unset;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  transition: all 0.2s ease;
+  display: flex;
+}
+
+.brand-button:hover {
+  background-color: var(--bg-secondary);
+}
+
+.brand-button:active {
+  transform: scale(0.98);
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -165,6 +182,22 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  height: 100%;
+}
+
+.menu-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.menu-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
 }
 
 .menu-item {
@@ -175,6 +208,11 @@
   padding: 0.7rem 0.85rem;
   border: 1px solid transparent;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-size: inherit;
 }
 
 .menu-item:hover {
@@ -189,6 +227,15 @@
 
 .menu-item.active:hover {
   background: var(--accent);
+  color: var(--text-contrast);
+}
+
+.menu-item.menu-logout {
+  color: var(--danger);
+}
+
+.menu-item.menu-logout:hover {
+  background: var(--danger);
   color: var(--text-contrast);
 }
 
@@ -393,6 +440,7 @@
   place-items: center;
   font-size: 0.72rem;
   font-weight: 700;
+  overflow: hidden;
 }
 
 .mobile-schedule-list {
@@ -510,6 +558,28 @@
   place-items: center;
   color: var(--accent);
   font-weight: 800;
+}
+
+.circular-progress-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circular-progress-text {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.circular-progress-text span {
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 1.8rem;
 }
 
 .deadlines-card {
@@ -3371,10 +3441,23 @@ th {
     pointer-events: none;
   }
 
-  .avatar-preview {
+  .avatar-circle-container {
+    position: relative;
     width: 100%;
     height: 100%;
+    overflow: hidden;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .avatar-preview {
+    width: 150%;
+    height: 150%;
     object-fit: cover;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .avatar-fallback {
@@ -3466,6 +3549,17 @@ th {
   .avatar-upload-area.loading {
     opacity: 0.6;
     pointer-events: none;
+  }
+
+  .avatar-circle-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .avatar-upload-info {
@@ -4034,40 +4128,10 @@ th {
 }
 
 .palette-option.palette-mono .palette-dot {
-  background: #52525b;
-}
 
-/* Logout Button in Sidebar */
-.menu-logout-btn {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 0.65rem;
-  color: var(--text-main);
-  padding: 0.65rem 1rem;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  margin-top: 0.75rem;
-  transition: all 0.3s ease;
-  width: 100%;
-  text-align: left;
-}
 
-.menu-logout-btn:hov2s ease;
-  width: 100%;
-  text-align: left;
-}
+/* Logout Button in Sidebar - now uses same styling as menu-item */
 
-.menu-logout-btn:hover {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: var(--text-contrast);
-}
-
-.menu-logout-btn:active {
-  background: color-mix(in srgb, var(--danger) 80%, #000000);
-  border-color: var(--danger
-}
 
 .mobile-profile-action-row {
   display: flex;

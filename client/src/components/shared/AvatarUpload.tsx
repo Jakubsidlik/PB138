@@ -29,6 +29,10 @@ export function AvatarUpload({
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = React.useState(false)
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(avatarDataUrl)
+  const [offsetX, setOffsetX] = React.useState(0)
+  const [offsetY, setOffsetY] = React.useState(0)
+  const [isDraggingImage, setIsDraggingImage] = React.useState(false)
+  const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 })
 
   React.useEffect(() => {
     setPreviewUrl(avatarDataUrl)
@@ -39,9 +43,10 @@ export function AvatarUpload({
 
     const file = files[0]
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Prosím vyberte obrázek (JPG, PNG, GIF, WebP)')
+    // Validate file type - only PNG and JPG
+    const allowedTypes = ['image/png', 'image/jpeg']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Prosím vyberte obrázek ve formátu PNG nebo JPG')
       return
     }
 
@@ -51,10 +56,12 @@ export function AvatarUpload({
       return
     }
 
-    // Create preview
+    // Create preview and reset offset
     const reader = new FileReader()
     reader.onload = (e) => {
       setPreviewUrl(e.target?.result as string)
+      setOffsetX(0)
+      setOffsetY(0)
     }
     reader.readAsDataURL(file)
     onUpload(files)
@@ -83,10 +90,30 @@ export function AvatarUpload({
 
   const handleRemove = () => {
     setPreviewUrl(null)
+    setOffsetX(0)
+    setOffsetY(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
     onRemove()
+  }
+
+  const handleImageMouseDown = (e: React.MouseEvent<HTMLImageElement>) => {
+    e.preventDefault()
+    setIsDraggingImage(true)
+    setDragStart({ x: e.clientX - offsetX, y: e.clientY - offsetY })
+  }
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDraggingImage) return
+    const newX = e.clientX - dragStart.x
+    const newY = e.clientY - dragStart.y
+    setOffsetX(newX)
+    setOffsetY(newY)
+  }
+
+  const handleMouseUp = () => {
+    setIsDraggingImage(false)
   }
 
   if (variant === 'mobile') {
@@ -99,7 +126,15 @@ export function AvatarUpload({
           onDrop={handleDrop}
         >
           {previewUrl ? (
-            <img src={previewUrl} alt="Profilová fotka" className="avatar-preview" />
+            <div className="avatar-circle-container" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+              <img 
+                src={previewUrl} 
+                alt="Profilová fotka" 
+                className="avatar-preview" 
+                style={{ transform: `translate(${offsetX}px, ${offsetY}px)`, cursor: isDraggingImage ? 'grabbing' : 'grab' }}
+                onMouseDown={handleImageMouseDown}
+              />
+            </div>
           ) : (
             <div className="avatar-fallback">
               {initialsFromName(fullName)}
@@ -119,7 +154,7 @@ export function AvatarUpload({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/gif,image/webp"
+            accept="image/png,image/jpeg"
             className="hidden-file-input"
             onChange={(event) => handleFileSelect(event.target.files)}
             disabled={isLoading}
@@ -150,7 +185,15 @@ export function AvatarUpload({
           onDrop={handleDrop}
         >
           {previewUrl ? (
-            <img src={previewUrl} alt="Profilová fotka" className="avatar-preview" />
+            <div className="avatar-circle-container" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+              <img 
+                src={previewUrl} 
+                alt="Profilová fotka" 
+                className="avatar-preview" 
+                style={{ transform: `translate(${offsetX}px, ${offsetY}px)`, cursor: isDraggingImage ? 'grabbing' : 'grab' }}
+                onMouseDown={handleImageMouseDown}
+              />
+            </div>
           ) : (
             <div className="avatar-fallback">
               {initialsFromName(fullName)}
@@ -170,7 +213,7 @@ export function AvatarUpload({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/gif,image/webp"
+            accept="image/png,image/jpeg"
             className="hidden-file-input"
             onChange={(event) => handleFileSelect(event.target.files)}
             disabled={isLoading}
@@ -178,7 +221,8 @@ export function AvatarUpload({
         </div>
 
         <div className="avatar-upload-info">
-          <p>JPG/PNG/GIF/WebP • Max 5MB</p>
+          <p>PNG nebo JPG • Max 5MB</p>
+          {previewUrl && <p className="drag-hint">Tahej obrázek pro posun ↕️↔️</p>}
           {isDragging && <p className="drag-hint">Pusť soubor tady ⬇️</p>}
         </div>
       </div>

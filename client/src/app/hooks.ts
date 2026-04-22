@@ -16,7 +16,7 @@ import type {
   UpdateEventRequest,
   UpdateTaskRequest,
   User,
-} from './apiTypes'
+} from './types'
 
 interface UseQueryState<T> {
   data: T | null

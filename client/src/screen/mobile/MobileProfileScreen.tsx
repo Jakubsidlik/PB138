@@ -247,6 +247,16 @@ export function MobileProfileScreen({
           />
         </label>
       </section>
+
+      <section className="mobile-profile-section">
+        <h3>Vzhled</h3>
+        <ThemeSelector
+          currentTheme={themeMode}
+          onThemeChange={onThemeChange}
+          currentPalette={accentPalette}
+          onPaletteChange={onPaletteChange}
+        />
+      </section>
     </section>
   )
 }

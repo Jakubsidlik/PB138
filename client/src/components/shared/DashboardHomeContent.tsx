@@ -4,6 +4,7 @@ import {
   Subject,
   Task,
 } from '../../app/types'
+import { CircularProgress } from './CircularProgress'
 
 type DashboardHomeContentProps = {
   profileName: string
@@ -46,7 +47,11 @@ export function DashboardHomeContent({
               Dokončeno {tasksDone} z {tasks.length} úkolů.
             </p>
           </div>
-          <div className="progress-ring">{tasks.length > 0 ? Math.round((tasksDone / tasks.length) * 100) : 0}%</div>
+          <CircularProgress 
+            percentage={tasks.length > 0 ? (tasksDone / tasks.length) * 100 : 0}
+            size={140}
+            strokeWidth={10}
+          />
         </article>
 
         <article className="deadlines-card">
@@ -112,7 +117,7 @@ export function DashboardHomeContent({
 
         <div className="right-column">
           <article className="card" id="subjects">
-            <h3>Moje předměty</h3>
+            <h3>Můj studijní plán</h3>
             <div className="subjects-grid">
               {subjects.map((subject) => (
                 <div key={subject.id} className="subject-item">

@@ -1,5 +1,6 @@
 import React from 'react'
 import { MobileNavItem } from '../../app/types'
+import { getDailyMotto } from '../../app/utils'
 
 type TopbarProps = {
   isCalendarScreen: boolean
@@ -9,7 +10,6 @@ type TopbarProps = {
   fileInputRef: React.RefObject<HTMLInputElement>
   setActiveMobileNav: React.Dispatch<React.SetStateAction<MobileNavItem>>
   profileName: string
-  profileSubtitle: string
   profileAvatarDataUrl: string | null
   onOpenProfile: () => void
 }
@@ -22,7 +22,6 @@ export function Topbar({
   fileInputRef,
   setActiveMobileNav,
   profileName,
-  profileSubtitle,
   profileAvatarDataUrl,
   onOpenProfile,
 }: TopbarProps) {
@@ -78,10 +77,8 @@ export function Topbar({
           </>
         ) : (
           <div className="mobile-greeting">
-            <div className="mobile-avatar">{initials}</div>
             <div>
-              <p>{isFilesScreen ? 'Správa souborů' : 'Vítej zpět'}</p>
-              <h1>{isFilesScreen ? 'Soubory' : profileName}</h1>
+              <h1>{isFilesScreen ? 'Soubory' : 'Lonely Student'}</h1>
             </div>
           </div>
         )}
@@ -97,23 +94,16 @@ export function Topbar({
               ＋
             </button>
           </div>
-        ) : (
-          <div className="mobile-home-actions">
-            <button type="button" className="mobile-notification" aria-label="Profil" onClick={onOpenProfile}>
-              👤
-            </button>
-          </div>
-        )}
+        ) : null}
       </div>
 
       <div className="topbar-desktop">
         <div className="desktop-title-wrap">
-          <p className="subtitle">PB138 Studijní plánovač</p>
+          <p className="subtitle">{getDailyMotto()}</p>
         </div>
         <button type="button" className="profile" onClick={onOpenProfile}>
           <div>
             <p className="name">{profileName}</p>
-            <p className="subtitle">{profileSubtitle}</p>
           </div>
           <div className="avatar">
             {profileAvatarDataUrl ? (

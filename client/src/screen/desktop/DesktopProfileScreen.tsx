@@ -247,6 +247,16 @@ export function DesktopProfileScreen({
         </div>
       </section>
 
+      <section className="profile-card">
+        <h3>Vzhled</h3>
+        <ThemeSelector
+          currentTheme={themeMode}
+          onThemeChange={onThemeChange}
+          currentPalette={accentPalette}
+          onPaletteChange={onPaletteChange}
+        />
+      </section>
+
       <div className="profile-actions-row">
         <button type="button" className="secondary" onClick={onResetProfile}>
           Zahodit změny

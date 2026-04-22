@@ -110,7 +110,7 @@ npm install <package>
 1. Datový model a Backend (ERD & API)
 - [ ] Upravit datový model a schéma 
 - [ ] Přejmenovat entitu SUBJECT na TAG (klasifikační prvek) 
-- [✅] Zrušit entitu TASK_ARCHIVE a nahradit ji logikou LESSON_NOTE a LESSON_COMMENT 
+- [✅] Zrušit entitu TASK_ARCHIVE a nahradit ji logikou LESSON_NOTE a LESSON_COMMENT v ERD
 - [ ] Přidat do entity USER pole: datum narození, fakulta, studijní typ a rok 
 - [ ] Vytvořit entitu COMMENT s vazbou na konkrétní části textu v poznámkách 
 - [ ] Zajistit, aby pole v ERD (např. u Task) byla správně nastavena jako nullable 
