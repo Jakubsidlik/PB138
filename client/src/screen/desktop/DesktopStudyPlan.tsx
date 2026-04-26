@@ -8,7 +8,7 @@ type DesktopSubject = Subject & {
 
 type SubjectFilter = 'all' | 'active' | 'archived'
 
-type DesktopSubjectsScreenProps = {
+type DesktopStudyPlanProps = {
   desktopSubjects: DesktopSubject[]
   subjectFilter: SubjectFilter
   setSubjectFilter: React.Dispatch<React.SetStateAction<SubjectFilter>>
@@ -18,7 +18,7 @@ type DesktopSubjectsScreenProps = {
   onDeleteSubject: (subjectId: number) => void
 }
 
-export function DesktopSubjectsScreen({
+export function DesktopStudyPlan({
   desktopSubjects,
   subjectFilter,
   setSubjectFilter,
@@ -26,12 +26,12 @@ export function DesktopSubjectsScreen({
   onEditSubject,
   onToggleArchiveSubject,
   onDeleteSubject,
-}: DesktopSubjectsScreenProps) {
+}: DesktopStudyPlanProps) {
   return (
-    <section className="desktop-subjects-screen" id="desktop-subjects">
-      <div className="desktop-subjects-head">
-        <h2>Moje předměty</h2>
-        <p>Přehled zapsaných kurzů pro aktuální semestr</p>
+    <section className="desktop-study-plan" id="desktop-study-plan">
+      <div className="desktop-study-plan-head">
+        <h2>Studijní plán</h2>
+        <p>Přehled předmětů a jejich probíhajících úkolů</p>
       </div>
 
       <div className="desktop-subjects-filters">

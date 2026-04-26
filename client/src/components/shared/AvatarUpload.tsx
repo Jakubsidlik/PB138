@@ -43,14 +43,14 @@ export function AvatarUpload({
 
     const file = files[0]
 
-    // Validate file type - only PNG and JPG
+    // Validace - jenom PNG a JPG
     const allowedTypes = ['image/png', 'image/jpeg']
     if (!allowedTypes.includes(file.type)) {
       alert('Prosím vyberte obrázek ve formátu PNG nebo JPG')
       return
     }
 
-    // Validate file size (max 5MB)
+    // Validace velikosti (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('Soubor je příliš velký. Maximum je 5MB.')
       return

@@ -69,9 +69,9 @@ export function Sidebar({
             Soubory
           </a>
           <a
-            className={`menu-item ${activeMobileNav === 'subjects' ? 'active' : ''}`}
-            href="#subjects"
-            onClick={() => setActiveMobileNav('subjects')}
+            className={`menu-item ${activeMobileNav === 'study-plan' ? 'active' : ''}`}
+            href="#study-plan"
+            onClick={() => setActiveMobileNav('study-plan')}
           >
             Studijní plán
           </a>

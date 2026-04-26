@@ -122,6 +122,8 @@ export interface Subject {
   userId?: number
   studyPlanId?: number | null
   deletedAt?: string | null
+  files?: number
+  notes?: number
 }
 
 export interface CreateSubjectRequest {
@@ -339,7 +341,7 @@ export type AccentPalette =
 	| 'rose'
 	| 'amber'
 	| 'mono'
-export type MobileNavItem = 'home' | 'calendar' | 'subjects' | 'files' | 'profile'
+export type MobileNavItem = 'home' | 'calendar' | 'tasks' | 'files' | 'study-plan' | 'profile'
 
 export type UserProfile = {
   fullName: string
@@ -362,6 +364,7 @@ export type DesktopSubjectMeta = {
   icon: string
   tone: DesktopSubjectTone
 }
+
 
 export type UserRole = 'student' | 'registered' | 'public'
 

@@ -820,7 +820,8 @@ export function useDashboardState() {
   const tasksDone = tasks.filter((task) => task.done).length
   const isCalendarScreen = activeMobileNav === 'calendar'
   const isFilesScreen = activeMobileNav === 'files'
-  const isSubjectsScreen = activeMobileNav === 'subjects'
+  const isTasksScreen = activeMobileNav === 'tasks'
+  const isStudyPlanScreen = activeMobileNav === 'study-plan'
   const isProfileScreen = activeMobileNav === 'profile'
 
   const monthLabel = new Intl.DateTimeFormat('en-US', {
@@ -945,7 +946,8 @@ export function useDashboardState() {
     tasksDone,
     isCalendarScreen,
     isFilesScreen,
-    isSubjectsScreen,
+    isTasksScreen,
+    isStudyPlanScreen,
     isProfileScreen,
     monthLabel,
     upcomingEvents,

@@ -4,11 +4,14 @@ export const getNavFromHash = (hash: string): MobileNavItem => {
   if (hash === '#calendar') {
     return 'calendar'
   }
-  if (hash === '#subjects') {
-    return 'subjects'
+  if (hash === '#tasks') {
+    return 'tasks'
   }
   if (hash === '#files') {
     return 'files'
+  }
+  if (hash === '#study-plan') {
+    return 'study-plan'
   }
 
   if (hash === '#profile') {

@@ -34,7 +34,6 @@ export function DashboardHomeContent({
       <section className="welcome">
         <div>
           <h2>Ahoj, {profileName || 'studente'}!</h2>
-          <p>Přehled studijních dat podle předmětů, úkolů, kalendáře a souborů.</p>
         </div>
       </section>
 

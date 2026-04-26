@@ -30,23 +30,64 @@ Webová aplikace, která umožňuje studentům lépe organizovat své studium. A
 pb138/
 ├── client/                    # React frontend
 │   ├── src/
-│   │   ├── app           
-│   │   ├── components
-│   │   ├── screen   
-|   |   ├── App.tsx
-|   |   ├── App.css       
-│   │   ├── index.css         
-│   │   └── main.tsx
+│   │   ├── app/              # Aplikační logika
+│   │   │   ├── api.ts
+│   │   │   ├── data.ts
+│   │   │   ├── hooks.ts
+│   │   │   ├── storage.ts
+│   │   │   ├── types.ts
+│   │   │   ├── useDashboardState.ts
+│   │   │   └── utils.ts
+│   │   ├── components/       # React komponenty
+│   │   │   ├── authentication/
+│   │   │   │   └── AuthScreen.tsx
+│   │   │   ├── shared/
+│   │   │   │   ├── AvatarUpload.tsx
+│   │   │   │   ├── CircularProgress.tsx
+│   │   │   │   ├── DashboardHomeContent.tsx
+│   │   │   │   ├── PlannerCalendar.tsx
+│   │   │   │   ├── Sidebar.tsx
+│   │   │   │   ├── ThemeSelector.tsx
+│   │   │   │   └── Topbar.tsx
+│   │   │   └── ui/           # UI komponenty
+│   │   │       ├── badge.tsx
+│   │   │       └── card.tsx
+│   │   ├── screen/           # Obrazovky (desktop & mobile)
+│   │   │   ├── desktop/
+│   │   │   │   ├── DesktopCalendarScreen.tsx
+│   │   │   │   ├── DesktopFilesScreen.tsx
+│   │   │   │   ├── DesktopProfileScreen.tsx
+│   │   │   │   └── DesktopSubjectsScreen.tsx
+│   │   │   └── mobile/
+│   │   │       ├── MobileBottomNav.tsx
+│   │   │       ├── MobileCalendarScreen.tsx
+│   │   │       ├── MobileFilesScreen.tsx
+│   │   │       ├── MobileProfileScreen.tsx
+│   │   │       └── MobileSubjectsScreen.tsx
+│   │   ├── assets/
+│   │   ├── App.tsx
+│   │   ├── App.css
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   └── vite-env.d.ts
 │   ├── index.html
 │   ├── package.json
 │   ├── tsconfig.json
+│   ├── tsconfig.node.json
 │   └── vite.config.ts
 ├── server/                    # Express backend
 │   ├── src/
-│   │   └── index.ts          # Server entry point
+│   │   ├── index.ts          # Server entry point
+│   │   └── prisma.ts         # Prisma klient
+│   ├── prisma/
+│   │   ├── schema.prisma     # Datový model
+│   │   └── seed.ts           # Seed data
 │   ├── package.json
-│   ├── tsconfig.json
-│   └── .env.example
+│   └── tsconfig.json
+├── milestones/               # Projektové milníky
+│   ├── first/
+|   ├── second/
+│   └── third
 ├── package.json              # Kořenový package.json (monorepo)
 └── README.md
 ```

@@ -5,7 +5,8 @@ import { getDailyMotto } from '../../app/utils'
 type TopbarProps = {
   isCalendarScreen: boolean
   isFilesScreen: boolean
-  isSubjectsScreen: boolean
+  isTasksScreen: boolean
+  isStudyPlanScreen: boolean
   isProfileScreen: boolean
   fileInputRef: React.RefObject<HTMLInputElement>
   setActiveMobileNav: React.Dispatch<React.SetStateAction<MobileNavItem>>
@@ -17,7 +18,8 @@ type TopbarProps = {
 export function Topbar({
   isCalendarScreen,
   isFilesScreen,
-  isSubjectsScreen,
+  isTasksScreen,
+  isStudyPlanScreen,
   isProfileScreen,
   fileInputRef,
   setActiveMobileNav,
@@ -69,10 +71,36 @@ export function Topbar({
             <h2 className="mobile-subjects-title">Kalendář</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
           </>
-        ) : isSubjectsScreen ? (
+        ) : isTasksScreen ? (
           <>
+            <button
+              type="button"
+              className="mobile-header-icon"
+              aria-label="Zpět"
+              onClick={() => {
+                setActiveMobileNav('home')
+                window.location.hash = ''
+              }}
+            >
+              ←
+            </button>
+            <h2 className="mobile-subjects-title">Úkoly</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
-            <h2 className="mobile-subjects-title">Moje předměty</h2>
+          </>
+        ) : isStudyPlanScreen ? (
+          <>
+            <button
+              type="button"
+              className="mobile-header-icon"
+              aria-label="Zpět"
+              onClick={() => {
+                setActiveMobileNav('home')
+                window.location.hash = ''
+              }}
+            >
+              ←
+            </button>
+            <h2 className="mobile-subjects-title">Studijní plán</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
           </>
         ) : (
@@ -83,7 +111,7 @@ export function Topbar({
           </div>
         )}
 
-        {isSubjectsScreen || isCalendarScreen || isProfileScreen ? null : isFilesScreen ? (
+        {isTasksScreen || isStudyPlanScreen || isCalendarScreen || isProfileScreen ? null : isFilesScreen ? (
           <div className="mobile-files-actions">
             <button
               type="button"

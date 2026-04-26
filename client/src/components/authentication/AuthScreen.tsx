@@ -75,7 +75,7 @@ return (
                 Registrace
                 </button>
             </div>
-            <button className="auth-skip-btn" onClick={onSkipAsAdmin} type="button">Přeskočit jako admin</button>
+            <button className="auth-skip-btn" onClick={onSkipAsAdmin} type="button">Admin</button>
             </div>
         ) : mobileMode === 'login' ? (
             <div className="auth-form-screen">
@@ -87,7 +87,6 @@ return (
                 {error && <span className="auth-error">{error}</span>}
                 <button type="submit">{isLoading ? 'Čekám...' : 'Přihlásit se'}</button>
             </form>
-            <button className="auth-skip-btn" onClick={onSkipAsAdmin} type="button">Přeskočit jako admin</button>
             </div>
         ) : (
             <div className="auth-form-screen">
@@ -100,7 +99,6 @@ return (
                 {error && <span className="auth-error">{error}</span>}
                 <button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</button>
             </form>
-            <button className="auth-skip-btn" onClick={onSkipAsAdmin} type="button">Přeskočit jako admin</button>
             </div>
         )}
         </div>
@@ -109,7 +107,7 @@ return (
         <div className={`auth-main-container ${isSignUp ? 'sign-up-mode' : ''}`}>
         <div className="auth-form-container auth-sign-up-container">
         <form onSubmit={handleSignUpSubmit}>
-            <h1>Vytvořit účet</h1>
+            <h1>Registrace</h1>
             <input type="text" placeholder="Jméno a příjmení" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} />
             <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
             <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
@@ -144,7 +142,7 @@ return (
         </div>
         </div>
 
-        <button className="auth-skip-btn" onClick={onSkipAsAdmin} type="button">Přeskočit jako admin (vývoj)</button>
+        <button className="auth-skip-btn" onClick={onSkipAsAdmin} type="button">Admin</button>
     </div>
     )}
 

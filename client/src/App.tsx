@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import './App.css'
 import {
   calendarWeekDays,
@@ -8,18 +8,20 @@ import { getDeadlineMeta, getDefaultMetaForTitle, getRelativeDaysLabel } from '.
 import { useDashboardState } from './app/useDashboardState'
 import { Sidebar } from './components/shared/Sidebar'
 import { Topbar } from './components/shared/Topbar'
-import { AuthScreen } from './components/shared/AuthScreen'
+import { AuthScreen } from './components/authentication/AuthScreen'
 
-import { MobileFilesScreen } from './screen/mobile/MobileFilesScreen'
-import { MobileCalendarScreen } from './screen/mobile/MobileCalendarScreen'
-import { MobileSubjectsScreen } from './screen/mobile/MobileSubjectsScreen'
+import { MobileFilesScreen } from './screen/mobile/MobileFiles'
+import { MobileCalendarScreen } from './screen/mobile/MobileCalendar'
+import { MobileTasks } from './screen/mobile/MobileTasks'
+import { MobileStudyPlanScreen } from './screen/mobile/MobileStudyPlan'
 import { MobileBottomNav } from './screen/mobile/MobileBottomNav'
-import { MobileProfileScreen } from './screen/mobile/MobileProfileScreen'
+import { MobileProfileScreen } from './screen/mobile/MobileProfile'
 import { DashboardHomeContent } from './components/shared/DashboardHomeContent'
-import { DesktopCalendarScreen } from './screen/desktop/DesktopCalendarScreen'
-import { DesktopFilesScreen } from './screen/desktop/DesktopFilesScreen'
-import { DesktopSubjectsScreen } from './screen/desktop/DesktopSubjectsScreen'
-import { DesktopProfileScreen } from './screen/desktop/DesktopProfileScreen'
+import { DesktopCalendarScreen } from './screen/desktop/DesktopCalendar'
+import { DesktopFilesScreen } from './screen/desktop/DesktopFiles'
+import { DesktopTasksScreen } from './screen/desktop/DesktopTasks'
+import { DesktopStudyPlan } from './screen/desktop/DesktopStudyPlan'
+import { DesktopProfileScreen } from './screen/desktop/DesktopProfile'
 
 function App() {
   const state = useDashboardState()
@@ -30,13 +32,13 @@ function App() {
     const mockAdminSession = {
       userId: 999,
       role: 'ADMIN' as const,
-      fullName: 'Admin Vývojář',
+      fullName: 'Admin',
       email: 'admin@dev.local',
     }
     state.setAuthSession(mockAdminSession)
   }
 
-  // Pokud uživatel není přihlášený, zobraz AuthScreen
+  // Pokud uživatel není přihlášený, zobrazí se AuthScreen
   if (!state.authSession) {
     return (
       <AuthScreen
@@ -65,7 +67,8 @@ function App() {
         <Topbar
           isCalendarScreen={state.isCalendarScreen}
           isFilesScreen={state.isFilesScreen}
-          isSubjectsScreen={state.isSubjectsScreen}
+          isTasksScreen={state.isTasksScreen}
+          isStudyPlanScreen={state.isStudyPlanScreen}
           isProfileScreen={state.isProfileScreen}
           fileInputRef={fileInputRef}
           setActiveMobileNav={state.setActiveMobileNav}
@@ -103,7 +106,9 @@ function App() {
             removeEvent={state.removeEvent}
           />
 
-          <MobileSubjectsScreen
+          <MobileTasks />
+
+          <MobileStudyPlanScreen
             subjectSearch={state.subjectSearch}
             setSubjectSearch={state.setSubjectSearch}
             filteredSubjects={state.filteredSubjects}
@@ -166,7 +171,13 @@ function App() {
             addDesktopEvent={state.addDesktopEvent}
           />
 
-          <DesktopSubjectsScreen
+          <DesktopTasksScreen
+            tasks={state.tasks}
+            tasksDone={state.tasksDone}
+            toggleTask={state.toggleTask}
+          />
+
+          <DesktopStudyPlan
             desktopSubjects={state.desktopSubjects}
             subjectFilter={state.subjectFilter}
             setSubjectFilter={state.setSubjectFilter}
