@@ -11,6 +11,7 @@ import {
   Lesson,
   LessonNote,
   StudyPlan,
+  ManagedFile,
 } from './types'
 
 export const TASKS_STORAGE_KEY = 'pb138.tasks'
@@ -81,30 +82,6 @@ export const subjectsSeed: Subject[] = [
   },
 ]
 
-export const scheduleSeed: ScheduleItem[] = [
-  {
-    id: 1,
-    time: '09:00 - 10:30',
-    subject: 'Software Engineering',
-    type: 'Lecture',
-    location: 'Hall B-12',
-  },
-  {
-    id: 2,
-    time: '11:00 - 12:30',
-    subject: 'Artificial Intelligence',
-    type: 'Live Now',
-    location: 'Zoom',
-  },
-  {
-    id: 3,
-    time: '14:00 - 15:30',
-    subject: 'Data Structures',
-    type: 'Workshop',
-    location: 'Lab 402',
-  },
-]
-
 // LESSONS - Lekce
 export const lessonsSeed: Lesson[] = [
   {
@@ -161,13 +138,6 @@ export const lessonsSeed: Lesson[] = [
     orderIndex: 2,
     notesCount: 4,
   },
-]
-
-// FILES - Soubory
-export const filesSeed: StudyFile[] = [
-  { id: 1, subject: 'SE', name: 'Lecture_05_Software_Design.pdf', size: '2.4 MB' },
-  { id: 2, subject: 'AI', name: 'Neural_Networks_Notes.docx', size: '780 KB' },
-  { id: 3, subject: 'DS', name: 'Heap_Exercises.zip', size: '1.1 MB' },
 ]
 
 // LESSON NOTES - Poznámky k lekcím
@@ -302,7 +272,7 @@ export const tasksSeed: Task[] = [
     title: 'Dokončit Data Structures essay',
     done: false,
     favorite: true,
-    priority: 'HIGH',
+    tag: 'HIGH',
     deadline: '2026-03-18',
   },
   {
@@ -313,7 +283,7 @@ export const tasksSeed: Task[] = [
     title: 'Přečíst materiály na AI cvičení',
     done: true,
     favorite: false,
-    priority: 'MEDIUM',
+    tag: 'MEDIUM',
     deadline: '2026-02-10',
   },
   {
@@ -324,7 +294,7 @@ export const tasksSeed: Task[] = [
     title: 'Nahrát zápisky z přednášky SE',
     done: false,
     favorite: false,
-    priority: 'LOW',
+    tag: 'LOW',
     deadline: '2026-02-20',
   },
   {
@@ -335,7 +305,7 @@ export const tasksSeed: Task[] = [
     title: 'Zkontrolovat termíny deadlinů',
     done: true,
     favorite: false,
-    priority: 'URGENT',
+    tag: 'URGENT',
     deadline: '2026-02-05',
   },
   {
@@ -346,7 +316,7 @@ export const tasksSeed: Task[] = [
     title: 'Napsat projekt na Software Engineering',
     done: false,
     favorite: true,
-    priority: 'URGENT',
+    tag: 'URGENT',
     deadline: '2026-03-25',
   },
 ]

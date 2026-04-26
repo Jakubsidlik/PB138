@@ -13,6 +13,7 @@ import {
   THEME_STORAGE_KEY,
   userProfileSeed,
 } from './data'
+import { useAuth } from '@clerk/clerk-react'
 import {
   AccentPalette,
   AuthSession,
@@ -58,7 +59,7 @@ const readAuthSessionFromStorage = (): AuthSession | null => {
 
     const session = parsed as Partial<AuthSession>
     if (
-      typeof session.userId !== 'number' ||
+      (typeof session.userId !== 'number' && typeof session.userId !== 'string') ||
       (session.role !== 'REGISTERED' && session.role !== 'ADMIN') ||
       typeof session.fullName !== 'string' ||
       typeof session.email !== 'string'
@@ -83,8 +84,8 @@ const toEventMeta = (event: CalendarEvent, fallbackTitle: string): EventMeta => 
   return {
     time: event.time ?? fallback.time,
     location: event.location ?? fallback.location,
-    icon: event.icon ?? fallback.icon,
-    accent: event.accent ?? fallback.accent,
+    icon: fallback.icon,
+    accent: fallback.accent,
   }
 }
 
@@ -113,12 +114,28 @@ export function useDashboardState() {
   const [authSession, setAuthSession] = React.useState<AuthSession | null>(() =>
     readAuthSessionFromStorage(),
   )
+  const { getToken, isLoaded, isSignedIn } = useAuth()
 
   const apiFetch = React.useCallback(
-    (input: string, init?: RequestInit) => {
+    async (input: string, init?: RequestInit) => {
       const headers = new Headers(init?.headers)
-      if (authSession?.userId) {
-        headers.set('x-user-id', String(authSession.userId))
+      
+      let token = null
+      try {
+        token = await getToken()
+      } catch {
+        // Ignorujeme případné chyby získání tokenu
+      }
+
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`)
+      } else {
+        // Zabráníme zbytečnému síťovému spamu a chybám 401 v konzoli
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' }
+        })
       }
 
       return fetch(input, {
@@ -126,7 +143,7 @@ export function useDashboardState() {
         headers,
       })
     },
-    [authSession?.userId],
+    [getToken],
   )
 
   React.useEffect(() => {
@@ -158,7 +175,14 @@ export function useDashboardState() {
   }, [authSession])
 
   React.useEffect(() => {
+    if (!isLoaded) return
+
     const hydrateData = async () => {
+      if (!authSession && !isSignedIn) {
+        setIsHydrated(true)
+        return
+      }
+
       const localTasks = authSession ? (readTasksFromStorage() ?? tasksSeed) : []
       const localEvents = authSession ? (readEventsFromStorage() ?? eventsSeed) : []
       const localProfile = readProfileFromStorage() ?? userProfileSeed
@@ -242,7 +266,7 @@ export function useDashboardState() {
     }
 
     void hydrateData()
-  }, [apiFetch, authSession])
+  }, [apiFetch, authSession, isLoaded, isSignedIn])
 
   React.useEffect(() => {
     if (!isHydrated || !authSession) {
@@ -346,8 +370,6 @@ export function useDashboardState() {
       delete updatedMeta[eventId]
       return updatedMeta
     })
-
-    void apiFetch(`/api/events/${eventId}`, { method: 'DELETE' })
   }
 
   const addDesktopEvent = () => {
@@ -371,8 +393,6 @@ export function useDashboardState() {
       date: selectedDateIso,
       time: time?.trim() || defaultMeta.time,
       location: location?.trim() || defaultMeta.location,
-      icon: defaultMeta.icon,
-      accent: defaultMeta.accent,
       subjectId: null,
     }
 
@@ -386,17 +406,9 @@ export function useDashboardState() {
         location: location?.trim() || defaultMeta.location,
       },
     }))
-
-    void apiFetch('/api/events', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(nextEvent),
-    })
   }
 
-  const onUploadFiles = (incomingFiles: FileList | null) => {
+  const onUploadFiles = async (incomingFiles: FileList | null) => {
     if (!ensureAuthenticated()) {
       return
     }
@@ -405,26 +417,60 @@ export function useDashboardState() {
       return
     }
 
-    const uploadedFiles = Array.from(incomingFiles).map((file) => ({
+    const filesArray = Array.from(incomingFiles)
+
+    const tempFiles = filesArray.map((file) => ({
       id: Date.now() + Math.floor(Math.random() * 100000),
       name: file.name,
       size: formatFileSize(file.size),
-      addedLabel: 'Added now',
+      sizeBytes: file.size,
+      addedLabel: 'Nahrávám na S3...',
       category: getManagedFileCategory(file.name),
       shared: false,
     }))
 
-    setManagedFiles((prevFiles) => [...uploadedFiles, ...prevFiles])
+    setManagedFiles((prevFiles) => [...tempFiles, ...prevFiles])
 
-    uploadedFiles.forEach((file) => {
-      void apiFetch('/api/files', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(file),
-      })
-    })
+    for (const file of filesArray) {
+      try {
+        const urlRes = await apiFetch('/api/files/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name, contentType: file.type || 'application/octet-stream' }),
+        })
+
+        if (!urlRes.ok) {
+          const errData = await urlRes.json().catch(() => null)
+          throw new Error(errData?.error || `Chyba ze serveru: ${urlRes.status} ${urlRes.statusText}`)
+        }
+        const { uploadUrl, fileKey, fileUrl } = await urlRes.json()
+
+        const s3Res = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type || 'application/octet-stream' },
+          body: file,
+        })
+
+        if (!s3Res.ok) throw new Error('Chyba při nahrávání na S3')
+
+        await apiFetch('/api/files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: file.name,
+            size: file.size,
+            addedLabel: 'Přidáno právě teď',
+            shared: false,
+            fileKey,
+            fileUrl,
+          }),
+        })
+      } catch (err) {
+        console.error(`Chyba při nahrávání souboru ${file.name}:`, err)
+      }
+    }
+
+    void refreshFiles()
   }
 
   const onDropToUpload = (event: React.DragEvent<HTMLDivElement>) => {
@@ -496,127 +542,6 @@ export function useDashboardState() {
     }
 
     setProfile(userProfileSeed)
-  }
-
-  const applyAuthPayload = (payload: unknown): string | null => {
-    if (typeof payload !== 'object' || payload === null || !('user' in payload)) {
-      return 'Neplatna odpoved serveru.'
-    }
-
-    const user = (payload as { user?: unknown }).user
-    if (typeof user !== 'object' || user === null) {
-      return 'Neplatna odpoved serveru.'
-    }
-
-    const candidate = user as Partial<AuthSession> & Partial<UserProfile>
-    if (
-      typeof candidate.userId !== 'number' ||
-      (candidate.role !== 'REGISTERED' && candidate.role !== 'ADMIN') ||
-      typeof candidate.fullName !== 'string' ||
-      typeof candidate.email !== 'string'
-    ) {
-      return 'Neplatna odpoved serveru.'
-    }
-
-    const authUserId = candidate.userId
-    const authRole = candidate.role
-    const authFullName = candidate.fullName
-    const authEmail = candidate.email
-
-    setAuthSession({
-      userId: authUserId,
-      role: authRole,
-      fullName: authFullName,
-      email: authEmail,
-    })
-
-    setProfile((prevProfile) => ({
-      ...prevProfile,
-      fullName: authFullName,
-      email: authEmail,
-      school: typeof candidate.school === 'string' ? candidate.school : prevProfile.school,
-      studyMajor: typeof candidate.studyMajor === 'string' ? candidate.studyMajor : prevProfile.studyMajor,
-      studyYear: typeof candidate.studyYear === 'string' ? candidate.studyYear : prevProfile.studyYear,
-      studyType: typeof candidate.studyType === 'string' ? candidate.studyType : prevProfile.studyType,
-      avatarDataUrl:
-        typeof candidate.avatarDataUrl === 'string' || candidate.avatarDataUrl === null
-          ? candidate.avatarDataUrl
-          : prevProfile.avatarDataUrl,
-    }))
-
-    return null
-  }
-
-  const login = async (email: string, password: string): Promise<string | null> => {
-    if (!email.trim() || !password.trim()) {
-      return 'Vypln e-mail i heslo.'
-    }
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email.trim(), password }),
-      })
-
-      const payload: unknown = await response.json().catch(() => null)
-      if (!response.ok) {
-        if (typeof payload === 'object' && payload !== null && 'error' in payload) {
-          const message = (payload as { error?: unknown }).error
-          if (typeof message === 'string') {
-            return message
-          }
-        }
-
-        return 'Prihlaseni selhalo.'
-      }
-
-      return applyAuthPayload(payload)
-    } catch {
-      return 'Nepodarilo se spojit se serverem.'
-    }
-  }
-
-  const register = async (
-    fullName: string,
-    email: string,
-    password: string,
-  ): Promise<string | null> => {
-    if (!fullName.trim() || !email.trim() || !password.trim()) {
-      return 'Vypln jmeno, e-mail i heslo.'
-    }
-
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fullName: fullName.trim(),
-          email: email.trim(),
-          password,
-        }),
-      })
-
-      const payload: unknown = await response.json().catch(() => null)
-      if (!response.ok) {
-        if (typeof payload === 'object' && payload !== null && 'error' in payload) {
-          const message = (payload as { error?: unknown }).error
-          if (typeof message === 'string') {
-            return message
-          }
-        }
-
-        return 'Registrace selhala.'
-      }
-
-      return applyAuthPayload(payload)
-    } catch {
-      return 'Nepodarilo se spojit se serverem.'
-    }
   }
 
   const logout = () => {
@@ -871,7 +796,7 @@ export function useDashboardState() {
   )
 
   const displayedRecentFiles = React.useMemo(
-    () => (fileTab === 'recent' ? filteredManagedFiles : filteredManagedFiles.slice(0, 4)),
+    () => (fileTab === 'recent' ? filteredManagedFiles.slice(0, 4) : filteredManagedFiles),
     [fileTab, filteredManagedFiles],
   )
 
@@ -968,8 +893,6 @@ export function useDashboardState() {
     onUploadProfileAvatar,
     onRemoveProfileAvatar,
     resetProfile,
-    login,
-    register,
     logout,
     setAuthSession,
     createSubject,

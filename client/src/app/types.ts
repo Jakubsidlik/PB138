@@ -1,6 +1,6 @@
 // Auth & User types
 export interface AuthSession {
-  userId: number
+  userId: number | string
   role: 'REGISTERED' | 'ADMIN'
   fullName: string
   email: string
@@ -112,8 +112,6 @@ export interface UpdateEventRequest {
 
 // Subject types
 export interface Subject {
-  events: number
-  archived: any
   id: number
   name: string
   teacher: string
@@ -124,6 +122,8 @@ export interface Subject {
   deletedAt?: string | null
   files?: number
   notes?: number
+  events?: number
+  archived?: boolean
 }
 
 export interface CreateSubjectRequest {
@@ -152,6 +152,9 @@ export interface StudyPlan {
   isShared?: boolean
   createdAt?: string
   updatedAt?: string
+  subjectsCount?: number
+  tasksCount?: number
+  lessonsCount?: number
 }
 
 export interface CreateStudyPlanRequest {
@@ -181,6 +184,10 @@ export interface FileRecord {
   subjectId?: number | null
   lessonId?: number | null
   deletedAt?: string | null
+}
+
+export interface ManagedFile extends FileRecord {
+  shared?: boolean
 }
 
 export interface CreateFileRequest {
@@ -225,6 +232,8 @@ export interface Lesson {
   deletedAt?: string | null
   createdAt?: string
   updatedAt?: string
+  notesCount?: number
+  filesCount?: number
 }
 
 export interface CreateLessonRequest {
@@ -365,8 +374,6 @@ export type DesktopSubjectMeta = {
   tone: DesktopSubjectTone
 }
 
-
-export type UserRole = 'student' | 'registered' | 'public'
 
 export type PlannerCalendarKind = 'lesson' | 'event'
 

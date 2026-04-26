@@ -9,6 +9,7 @@ import { useDashboardState } from './app/useDashboardState'
 import { Sidebar } from './components/shared/Sidebar'
 import { Topbar } from './components/shared/Topbar'
 import { AuthScreen } from './components/authentication/AuthScreen'
+import { useUser, useAuth } from '@clerk/clerk-react'
 
 import { MobileFilesScreen } from './screen/mobile/MobileFiles'
 import { MobileCalendarScreen } from './screen/mobile/MobileCalendar'
@@ -26,26 +27,34 @@ import { DesktopProfileScreen } from './screen/desktop/DesktopProfile'
 function App() {
   const state = useDashboardState()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const { isLoaded, isSignedIn, user } = useUser()
+  const { signOut } = useAuth()
 
-  const handleSkipAsAdmin = () => {
-    // Nastaví mock admin session pro vývoj
-    const mockAdminSession = {
-      userId: 999,
-      role: 'ADMIN' as const,
-      fullName: 'Admin',
-      email: 'admin@dev.local',
+  // Synchronizace Clerk stavu do lokálního Dashboard stavu aplikace
+  React.useEffect(() => {
+    if (isSignedIn && user && !state.authSession) {
+      state.setAuthSession({
+        userId: user.id as any, // Clerk vrací textové ID
+        role: 'REGISTERED',
+        fullName: user.fullName || 'Uživatel',
+        email: user.primaryEmailAddress?.emailAddress || '',
+      })
     }
-    state.setAuthSession(mockAdminSession)
+  }, [isSignedIn, user, state.authSession])
+
+  const handleLogout = async () => {
+    await signOut()
+    state.logout()
   }
 
-  // Pokud uživatel není přihlášený, zobrazí se AuthScreen
-  if (!state.authSession) {
+  if (!isLoaded) {
+    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>Načítám...</div>
+  }
+
+  // Zobrazí AuthScreen, pokud není přihlášen Clerk
+  if (!isSignedIn) {
     return (
-      <AuthScreen
-        onLogin={state.login}
-        onRegister={state.register}
-        onSkipAsAdmin={handleSkipAsAdmin}
-      />
+      <AuthScreen />
     )
   }
 
@@ -60,7 +69,7 @@ function App() {
         onThemeChange={state.setThemeMode}
         accentPalette={state.accentPalette}
         onPaletteChange={state.setAccentPalette}
-        onLogout={state.logout}
+        onLogout={handleLogout}
       />
 
       <main className="main-content">
@@ -106,7 +115,11 @@ function App() {
             removeEvent={state.removeEvent}
           />
 
-          <MobileTasks />
+          <MobileTasks
+            tasks={state.tasks}
+            tasksDone={state.tasksDone}
+            toggleTask={state.toggleTask}
+          />
 
           <MobileStudyPlanScreen
             subjectSearch={state.subjectSearch}
@@ -125,9 +138,7 @@ function App() {
             onChangeProfile={state.onChangeProfile}
             onUploadAvatar={state.onUploadProfileAvatar}
             onRemoveAvatar={state.onRemoveProfileAvatar}
-            onLogin={state.login}
-            onRegister={state.register}
-            onLogout={state.logout}
+            onLogout={handleLogout}
             themeMode={state.themeMode}
             onThemeChange={state.setThemeMode}
             accentPalette={state.accentPalette}
@@ -194,9 +205,7 @@ function App() {
             onUploadAvatar={state.onUploadProfileAvatar}
             onRemoveAvatar={state.onRemoveProfileAvatar}
             onResetProfile={state.resetProfile}
-            onLogin={state.login}
-            onRegister={state.register}
-            onLogout={state.logout}
+            onLogout={handleLogout}
             themeMode={state.themeMode}
             onThemeChange={state.setThemeMode}
             accentPalette={state.accentPalette}

@@ -1,12 +1,12 @@
 import React from 'react'
+import { useSignIn, useSignUp } from '@clerk/clerk-react'
 
-type AuthScreenProps = {
-onLogin: (email: string, password: string) => Promise<string | null>
-onRegister: (fullName: string, email: string, password: string) => Promise<string | null>
-onSkipAsAdmin: () => void
-}
+export function AuthScreen() {
+const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn()
+const { isLoaded: isSignUpLoaded, signUp, setActive: setSignUpActive } = useSignUp()
 
-export function AuthScreen({ onLogin, onRegister, onSkipAsAdmin }: AuthScreenProps) {
+const [pendingVerification, setPendingVerification] = React.useState(false)
+const [code, setCode] = React.useState('')
 const [isSignUp, setIsSignUp] = React.useState(false)
 const [fullName, setFullName] = React.useState('')
 const [email, setEmail] = React.useState('')
@@ -26,33 +26,74 @@ React.useEffect(() => {
 
 const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isSignUpLoaded) return
     setError('')
     setIsLoading(true)
 
     try {
-    const errorMessage = await onRegister(fullName, email, password)
-    if (errorMessage) {
-        setError(errorMessage)
-    }
-    } catch (err) {
-    setError('Došlo k chybě. Zkuste to prosím znovu.')
+      const nameParts = fullName.trim().split(' ')
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || undefined
+
+      const result = await signUp.create({
+        emailAddress: email,
+        password,
+        firstName,
+        lastName,
+      })
+
+      if (result.status === 'complete') {
+        await setSignUpActive({ session: result.createdSessionId })
+      } else {
+        await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+        setPendingVerification(true)
+      }
+    } catch (err: any) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Došlo k chybě při registraci.')
     } finally {
     setIsLoading(false)
     }
 }
 
-const handleSignInSubmit = async (e: React.FormEvent) => {
+const handleVerificationSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isSignUpLoaded) return
     setError('')
     setIsLoading(true)
 
     try {
-    const errorMessage = await onLogin(email, password)
-    if (errorMessage) {
-        setError(errorMessage)
+      const completeSignUp = await signUp.attemptEmailAddressVerification({ code })
+      if (completeSignUp.status === 'complete') {
+        await setSignUpActive({ session: completeSignUp.createdSessionId })
+      } else {
+        setError('Nepodařilo se ověřit účet. Zkuste to prosím znovu.')
+      }
+    } catch (err: any) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Neplatný ověřovací kód.')
+    } finally {
+      setIsLoading(false)
     }
-    } catch (err) {
-    setError('Došlo k chybě. Zkuste to prosím znovu.')
+}
+
+const handleSignInSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!isSignInLoaded) return
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const result = await signIn.create({
+        identifier: email,
+        password,
+      })
+
+      if (result.status === 'complete') {
+        await setSignInActive({ session: result.createdSessionId })
+      } else {
+        setError('Další kroky k přihlášení nejsou aktuálně podporovány.')
+      }
+    } catch (err: any) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Nesprávné přihlašovací údaje.')
     } finally {
     setIsLoading(false)
     }
@@ -75,7 +116,6 @@ return (
                 Registrace
                 </button>
             </div>
-            <button className="auth-skip-btn" onClick={onSkipAsAdmin} type="button">Admin</button>
             </div>
         ) : mobileMode === 'login' ? (
             <div className="auth-form-screen">
@@ -90,15 +130,25 @@ return (
             </div>
         ) : (
             <div className="auth-form-screen">
-            <button className="auth-back-btn" onClick={() => { setMobileMode('choice'); setError(''); }}>← Zpět</button>
-            <form onSubmit={handleSignUpSubmit}>
-                <h1>Registrace</h1>
-                <input type="text" placeholder="Jméno a příjmení" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} />
-                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
-                <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
-                {error && <span className="auth-error">{error}</span>}
-                <button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</button>
-            </form>
+            <button className="auth-back-btn" onClick={() => { pendingVerification ? setPendingVerification(false) : setMobileMode('choice'); setError(''); }}>← Zpět</button>
+            {pendingVerification ? (
+                <form onSubmit={handleVerificationSubmit}>
+                    <h1>Ověření</h1>
+                    <span>Zadej kód zaslaný na email</span>
+                    <input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
+                    {error && <span className="auth-error">{error}</span>}
+                    <button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</button>
+                </form>
+            ) : (
+                <form onSubmit={handleSignUpSubmit}>
+                    <h1>Registrace</h1>
+                    <input type="text" placeholder="Jméno a příjmení" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} />
+                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
+                    <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
+                    {error && <span className="auth-error">{error}</span>}
+                    <button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</button>
+                </form>
+            )}
             </div>
         )}
         </div>
@@ -106,14 +156,24 @@ return (
         // DESKTOP VERSION
         <div className={`auth-main-container ${isSignUp ? 'sign-up-mode' : ''}`}>
         <div className="auth-form-container auth-sign-up-container">
-        <form onSubmit={handleSignUpSubmit}>
-            <h1>Registrace</h1>
-            <input type="text" placeholder="Jméno a příjmení" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} />
-            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
-            <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
-            {error && isSignUp && <span className="auth-error">{error}</span>}
-            <button>{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</button>
-        </form>
+        {pendingVerification ? (
+            <form onSubmit={handleVerificationSubmit}>
+                <h1>Ověření</h1>
+                <span>Zadej kód zaslaný na email</span>
+                <input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
+                {error && isSignUp && <span className="auth-error">{error}</span>}
+                <button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</button>
+            </form>
+        ) : (
+            <form onSubmit={handleSignUpSubmit}>
+                <h1>Registrace</h1>
+                <input type="text" placeholder="Jméno a příjmení" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} />
+                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
+                <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
+                {error && isSignUp && <span className="auth-error">{error}</span>}
+                <button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</button>
+            </form>
+        )}
         </div>
 
         <div className="auth-form-container auth-sign-in-container">
@@ -141,8 +201,6 @@ return (
             </div>
         </div>
         </div>
-
-        <button className="auth-skip-btn" onClick={onSkipAsAdmin} type="button">Admin</button>
     </div>
     )}
 

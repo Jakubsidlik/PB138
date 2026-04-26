@@ -9,8 +9,6 @@ type DesktopProfileScreenProps = {
   onUploadAvatar: (files: FileList | null) => void
   onRemoveAvatar: () => void
   onResetProfile: () => void
-  onLogin: (email: string, password: string) => Promise<string | null>
-  onRegister: (fullName: string, email: string, password: string) => Promise<string | null>
   onLogout: () => void
   themeMode: ThemeMode
   onThemeChange: (theme: ThemeMode) => void
@@ -28,8 +26,6 @@ export function DesktopProfileScreen({
   onUploadAvatar,
   onRemoveAvatar,
   onResetProfile,
-  onLogin,
-  onRegister,
   onLogout,
   themeMode,
   onThemeChange,
@@ -37,38 +33,6 @@ export function DesktopProfileScreen({
   onPaletteChange,
 }: DesktopProfileScreenProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const [authFullName, setAuthFullName] = React.useState(profile.fullName)
-  const [authEmail, setAuthEmail] = React.useState(profile.email)
-  const [authPassword, setAuthPassword] = React.useState('')
-  const [authMessage, setAuthMessage] = React.useState<string | null>(null)
-  const [isAuthBusy, setIsAuthBusy] = React.useState(false)
-
-  React.useEffect(() => {
-    if (!authSession) {
-      setAuthFullName(profile.fullName)
-      setAuthEmail(profile.email)
-    }
-  }, [authSession, profile.email, profile.fullName])
-
-  const handleLogin = async () => {
-    setIsAuthBusy(true)
-    const error = await onLogin(authEmail, authPassword)
-    setIsAuthBusy(false)
-    setAuthMessage(error ?? 'Přihlášení proběhlo úspěšně.')
-    if (!error) {
-      setAuthPassword('')
-    }
-  }
-
-  const handleRegister = async () => {
-    setIsAuthBusy(true)
-    const error = await onRegister(authFullName, authEmail, authPassword)
-    setIsAuthBusy(false)
-    setAuthMessage(error ?? 'Registrace proběhla úspěšně.')
-    if (!error) {
-      setAuthPassword('')
-    }
-  }
 
   return (
     <section className="desktop-profile-screen" id="desktop-profile">
@@ -92,45 +56,7 @@ export function DesktopProfileScreen({
               Odhlásit
             </button>
           </div>
-        ) : (
-          <>
-            <div className="profile-grid">
-              <label>
-                <span>Jméno pro registraci</span>
-                <input
-                  type="text"
-                  value={authFullName}
-                  onChange={(event) => setAuthFullName(event.target.value)}
-                />
-              </label>
-
-              <label>
-                <span>E-mail</span>
-                <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} />
-              </label>
-
-              <label>
-                <span>Heslo</span>
-                <input
-                  type="password"
-                  value={authPassword}
-                  onChange={(event) => setAuthPassword(event.target.value)}
-                />
-              </label>
-            </div>
-
-            <div className="profile-actions-row">
-              <button type="button" onClick={handleLogin} disabled={isAuthBusy}>
-                Přihlásit
-              </button>
-              <button type="button" className="primary" onClick={handleRegister} disabled={isAuthBusy}>
-                Registrovat
-              </button>
-            </div>
-          </>
-        )}
-
-        {authMessage ? <p>{authMessage}</p> : null}
+        ) : null}
       </section>
 
       <section className="profile-card">
@@ -268,4 +194,3 @@ export function DesktopProfileScreen({
     </section>
   )
 }
-

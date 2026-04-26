@@ -1,6 +1,10 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
+import { clerkMiddleware, getAuth, clerkClient } from '@clerk/express'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { v4 as uuidv4 } from 'uuid'
 import {
   AnnotationTargetType,
   CollaborationRole,
@@ -18,6 +22,21 @@ const PORT = Number(process.env.PORT ?? 5000)
 
 app.use(cors())
 app.use(express.json())
+app.use(clerkMiddleware())
+
+const s3Endpoint = process.env.S3_ENDPOINT
+
+const s3Client = new S3Client({
+  region: process.env.S3_REGION || 'eu-west-1',
+  endpoint: s3Endpoint || undefined,
+  forcePathStyle: !!s3Endpoint, // Nutné pro Supabase
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEY || '',
+    secretAccessKey: process.env.S3_SECRET_KEY || '',
+  },
+})
+
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || ''
 
 const defaultUserPayload = {
   fullName: 'Jakub Kowalski',
@@ -434,6 +453,8 @@ const mapFileRecord = (file: {
   size: number
   addedLabel: string
   isShared: boolean
+  fileKey: string | null
+  fileUrl: string | null
   deletedAt: Date | null
 }) => ({
   id: Number(file.id),
@@ -444,6 +465,8 @@ const mapFileRecord = (file: {
   category: inferFileCategory(file.name),
   size: formatFileSize(file.size),
   sizeBytes: file.size,
+  fileKey: file.fileKey,
+  fileUrl: file.fileUrl,
   addedLabel: file.addedLabel,
   isShared: file.isShared,
   shared: file.isShared,
@@ -463,15 +486,55 @@ const toAuthActor = (user: {
 })
 
 const getActorFromRequest = async (req: express.Request): Promise<AuthActor> => {
+  const auth = getAuth(req)
   const requestedUserId = asBigInt(req.header('x-user-id'))
 
-  if (requestedUserId) {
+  // Fallback pro lokální mock (Admin tlačítko)
+  if (requestedUserId && !auth.userId) {
     const requestedUser = await prisma.user.findFirst({
       where: { id: requestedUserId, deletedAt: null },
     })
 
     if (requestedUser) {
       return toAuthActor(requestedUser)
+    }
+  }
+
+  // Ostrá Clerk autentifikace
+  if (auth.userId) {
+    let user = await prisma.user.findUnique({
+      where: { clerkId: auth.userId }
+    })
+
+    if (user && user.deletedAt === null) {
+      return toAuthActor(user)
+    }
+
+    // Pokud uživatel ještě není v Prisma DB, vytvoříme ho nebo ho propojíme přes email
+    if (!user) {
+      try {
+        const clerkUser = await clerkClient.users.getUser(auth.userId)
+        const email = clerkUser.emailAddresses[0]?.emailAddress || ''
+        const fullName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Uživatel'
+
+        if (email) {
+          user = await prisma.user.findUnique({ where: { email } })
+        }
+
+        if (user) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { clerkId: auth.userId, deletedAt: null }
+          })
+        } else {
+          user = await prisma.user.create({
+            data: { clerkId: auth.userId, email, fullName, role: 'REGISTERED' }
+          })
+        }
+        return toAuthActor(user)
+      } catch (err) {
+        console.error(`Chyba při vytváření uživatele z Clerku:`, err)
+      }
     }
   }
 
@@ -624,86 +687,6 @@ app.get('/api/health', async (_req, res) => {
   }
 })
 
-app.post('/api/auth/register', async (req, res, next) => {
-  try {
-    const payload = req.body as {
-      fullName?: string
-      email?: string
-      password?: string
-      school?: string
-      faculty?: string
-      studyMajor?: string
-      studyYear?: string
-      studyType?: string
-      birthDate?: string
-      bio?: string
-    }
-
-    if (!payload.fullName?.trim() || !payload.email?.trim() || !payload.password?.trim()) {
-      res.status(400).json({ error: 'Pole fullName, email a password jsou povinna.' })
-      return
-    }
-
-    const created = await prisma.user.create({
-      data: {
-        fullName: payload.fullName.trim(),
-        email: payload.email.trim().toLowerCase(),
-        passwordHash: payload.password,
-        role: 'REGISTERED',
-        school: payload.school?.trim() || null,
-        faculty: payload.faculty?.trim() || null,
-        studyMajor: payload.studyMajor?.trim() || null,
-        studyYear: payload.studyYear?.trim() || null,
-        studyType: payload.studyType?.trim() || null,
-        birthDate: parseOptionalDate(payload.birthDate) ?? null,
-        bio: payload.bio?.trim() || null,
-        avatarDataUrl: null,
-      },
-    })
-
-    res.status(201).json({
-      user: {
-        id: Number(created.id),
-        fullName: created.fullName,
-        email: created.email,
-        role: created.role,
-      },
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.post('/api/auth/login', async (req, res, next) => {
-  try {
-    const payload = req.body as { email?: string; password?: string }
-    if (!payload.email?.trim() || !payload.password?.trim()) {
-      res.status(400).json({ error: 'Pole email a password jsou povinna.' })
-      return
-    }
-
-    const user = await prisma.user.findFirst({
-      where: { email: payload.email.trim().toLowerCase(), deletedAt: null },
-    })
-
-    if (!user || user.passwordHash !== payload.password) {
-      res.status(401).json({ error: 'Neplatne prihlasovaci udaje.' })
-      return
-    }
-
-    res.json({
-      user: {
-        id: Number(user.id),
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-      },
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-
 app.get('/api/users', async (_req, res, next) => {
   try {
     const admin = await requireAdmin(_req, res)
@@ -853,8 +836,6 @@ app.put('/api/profile', async (req, res, next) => {
       where: { id: BigInt(actor.id) },
       data: {
         fullName: typeof payload.fullName === 'string' ? payload.fullName : undefined,
-        email: typeof payload.email === 'string' ? payload.email.toLowerCase() : undefined,
-        passwordHash: typeof payload.password === 'string' ? payload.password : undefined,
         role:
           actor.role === 'ADMIN' && payload.role !== undefined
             ? parseUserRole(payload.role)
@@ -2364,6 +2345,35 @@ app.patch('/api/admin/files/:id/moderation', async (req, res, next) => {
   }
 })
 
+app.post('/api/files/upload-url', async (req, res, next) => {
+  try {
+    const actor = await requireRegisteredActor(req, res)
+    if (!actor) return
+
+    const { filename, contentType } = req.body as { filename?: string; contentType?: string }
+    if (!filename || !contentType) {
+      res.status(400).json({ error: 'Chybi filename nebo contentType.' })
+      return
+    }
+
+    const fileKey = `${uuidv4()}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: fileKey,
+      ContentType: contentType,
+    })
+
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 })
+    const fileUrl = s3Endpoint 
+      ? `${s3Endpoint}/${BUCKET_NAME}/${fileKey}`
+      : `https://${BUCKET_NAME}.s3.${process.env.S3_REGION || 'eu-west-1'}.amazonaws.com/${fileKey}`
+
+    res.json({ uploadUrl, fileKey, fileUrl })
+  } catch (error) {
+    next(error)
+  }
+})
+
 app.post('/api/files', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
@@ -2371,7 +2381,7 @@ app.post('/api/files', async (req, res, next) => {
       return
     }
 
-    const { name, size, addedLabel, shared, isShared, subjectId, lessonId } = req.body as {
+    const { name, size, addedLabel, shared, isShared, subjectId, lessonId, fileKey, fileUrl } = req.body as {
       name?: string
       size?: string | number
       addedLabel?: string
@@ -2379,6 +2389,8 @@ app.post('/api/files', async (req, res, next) => {
       isShared?: boolean
       subjectId?: number | null
       lessonId?: number | null
+      fileKey?: string | null
+      fileUrl?: string | null
     }
 
     if (!name?.trim()) {
@@ -2401,6 +2413,8 @@ app.post('/api/files', async (req, res, next) => {
         size: parsedSize,
         addedLabel: typeof addedLabel === 'string' ? addedLabel : 'Added now',
         isShared: typeof isShared === 'boolean' ? isShared : typeof shared === 'boolean' ? shared : false,
+        fileKey: typeof fileKey === 'string' ? fileKey : null,
+        fileUrl: typeof fileUrl === 'string' ? fileUrl : null,
       },
     })
 

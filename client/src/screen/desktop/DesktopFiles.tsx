@@ -32,7 +32,7 @@ export function DesktopFilesScreen({
   onDeleteFile,
   onToggleFileShared,
 }: DesktopFilesScreenProps) {
-  const rows = managedFiles.slice(0, 4)
+  const rows = managedFiles
 
   return (
     <section className="desktop-files-screen" id="desktop-files">
