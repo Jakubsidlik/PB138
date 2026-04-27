@@ -90,9 +90,9 @@ const toEventMeta = (event: CalendarEvent, fallbackTitle: string): EventMeta => 
 }
 
 export function useDashboardState() {
-  const [tasks, setTasks] = React.useState<Task[]>(tasksSeed)
-  const [events, setEvents] = React.useState<CalendarEvent[]>(eventsSeed)
-  const [subjects, setSubjects] = React.useState(subjectsSeed)
+  const [tasks, setTasks] = React.useState<Task[]>(() => readTasksFromStorage() ?? [])
+  const [events, setEvents] = React.useState<CalendarEvent[]>(() => readEventsFromStorage() ?? [])
+  const [subjects, setSubjects] = React.useState<typeof subjectsSeed>([])
   const [themeMode, setThemeMode] = React.useState<ThemeMode>(() => readThemeFromStorage())
   const [accentPalette, setAccentPalette] = React.useState<AccentPalette>(() => readPaletteFromStorage())
   const [activeMobileNav, setActiveMobileNav] = React.useState<MobileNavItem>(() =>
@@ -100,10 +100,10 @@ export function useDashboardState() {
   )
   const [displayMonth, setDisplayMonth] = React.useState(() => new Date())
   const [selectedDateIso, setSelectedDateIso] = React.useState(() => formatDateIso(new Date()))
-  const [eventMetaById, setEventMetaById] = React.useState<Record<number, EventMeta>>(eventMetaSeed)
+  const [eventMetaById, setEventMetaById] = React.useState<Record<number, EventMeta>>({})
   const [fileTab, setFileTab] = React.useState<FileTab>('all')
   const [fileTypeFilter, setFileTypeFilter] = React.useState<'all' | 'folder' | 'pdf' | 'image'>('all')
-  const [managedFiles, setManagedFiles] = React.useState<ManagedFile[]>(managedFilesSeed)
+  const [managedFiles, setManagedFiles] = React.useState<ManagedFile[]>([])
   const [subjectSearch, setSubjectSearch] = React.useState('')
   const [subjectFilter, setSubjectFilter] = React.useState<SubjectFilter>('all')
   const [isDragActive, setIsDragActive] = React.useState(false)
@@ -183,14 +183,14 @@ export function useDashboardState() {
         return
       }
 
-      const localTasks = authSession ? (readTasksFromStorage() ?? tasksSeed) : []
-      const localEvents = authSession ? (readEventsFromStorage() ?? eventsSeed) : []
+    const localTasks = authSession ? (readTasksFromStorage() ?? []) : []
+    const localEvents = authSession ? (readEventsFromStorage() ?? []) : []
       const localProfile = readProfileFromStorage() ?? userProfileSeed
 
       let loadedTasks = localTasks
       let loadedEvents = localEvents
-      let loadedSubjects = authSession ? subjectsSeed : []
-      let loadedFiles = authSession ? managedFilesSeed : []
+    let loadedSubjects: typeof subjectsSeed = []
+    let loadedFiles: ManagedFile[] = []
       let loadedProfile = localProfile
 
       try {
@@ -261,7 +261,7 @@ export function useDashboardState() {
       setSubjects(loadedSubjects)
       setManagedFiles(loadedFiles)
       setProfile(loadedProfile)
-      setEventMetaById(Object.keys(nextMetaById).length > 0 ? nextMetaById : eventMetaSeed)
+      setEventMetaById(nextMetaById)
       setIsHydrated(true)
     }
 

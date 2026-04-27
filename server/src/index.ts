@@ -1860,10 +1860,23 @@ app.put('/api/tasks', async (req, res, next) => {
     const incomingIdSet = new Set(incomingIds.map((id) => id.toString()))
 
     await prisma.$transaction(async (transaction) => {
+      // Najdeme, které předměty z odeslaných opravdu existují v DB
+      const subjectIds = Array.from(new Set(typedTasks.map((t) => t.subjectId).filter((id) => id !== null))) as number[]
+      const validSubjects = await transaction.subject.findMany({
+        where: { id: { in: subjectIds.map((id) => BigInt(id)) } },
+        select: { id: true }
+      })
+      const validSubjectIds = new Set(validSubjects.map((s) => s.id.toString()))
+
       for (const task of typedTasks) {
         const taskId = BigInt(task.id)
         const before = existingById.get(taskId.toString())
-        const nextSubjectId = asBigInt(task.subjectId)
+        let nextSubjectId = asBigInt(task.subjectId)
+
+        // Pokud předmět neexistuje, uložíme úkol bez něj, aby DB nespadla na P2003
+        if (nextSubjectId !== null && !validSubjectIds.has(nextSubjectId.toString())) {
+          nextSubjectId = null
+        }
 
         const upserted = await transaction.task.upsert({
           where: { id: taskId },
@@ -2148,10 +2161,23 @@ app.put('/api/events', async (req, res, next) => {
     const incomingIdSet = new Set(typedEvents.map((event) => BigInt(event.id).toString()))
 
     await prisma.$transaction(async (transaction) => {
+      // Zkontrolujeme existenci předmětů pro události
+      const subjectIds = Array.from(new Set(typedEvents.map((e) => e.subjectId).filter((id) => id !== null))) as number[]
+      const validSubjects = await transaction.subject.findMany({
+        where: { id: { in: subjectIds.map((id) => BigInt(id)) } },
+        select: { id: true }
+      })
+      const validSubjectIds = new Set(validSubjects.map((s) => s.id.toString()))
+
       for (const event of typedEvents) {
         const eventId = BigInt(event.id)
         const parsedDate = new Date(event.date)
         const existing = existingById.get(eventId.toString())
+        let nextSubjectId = asBigInt(event.subjectId)
+
+        if (nextSubjectId !== null && !validSubjectIds.has(nextSubjectId.toString())) {
+          nextSubjectId = null
+        }
 
         await transaction.event.upsert({
           where: { id: eventId },
@@ -2162,7 +2188,7 @@ app.put('/api/events', async (req, res, next) => {
             time: event.time,
             location: event.location,
             isShared: typeof event.isShared === 'boolean' ? event.isShared : false,
-            subjectId: asBigInt(event.subjectId),
+            subjectId: nextSubjectId,
             recurrence: 'NONE',
             recurrenceGroupId: null,
             deletedAt: null,
@@ -2175,7 +2201,7 @@ app.put('/api/events', async (req, res, next) => {
             time: event.time,
             location: event.location,
             isShared: typeof event.isShared === 'boolean' ? event.isShared : false,
-            subjectId: asBigInt(event.subjectId),
+            subjectId: nextSubjectId,
             recurrence: 'NONE',
             recurrenceGroupId: null,
             deletedAt: null,
