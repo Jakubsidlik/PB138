@@ -88,24 +88,13 @@ export function MobileProfileScreen({
               Přihlášen: <strong>{authSession.fullName}</strong>
             </p>
             <p>
+              E-mail: <strong>{authSession.email}</strong>
+            </p>
+            <p>
               Role: <strong>{authSession.role}</strong>
             </p>
-            <button type="button" className="mobile-profile-action-row" onClick={onLogout}>
-              <span>Odhlásit</span>
-              <span aria-hidden="true">›</span>
-            </button>
           </>
         ) : null}
-      </section>
-
-      <section className="mobile-profile-section">
-        <h3>Vzhled</h3>
-        <ThemeSelector
-          currentTheme={themeMode}
-          onThemeChange={onThemeChange}
-          currentPalette={accentPalette}
-          onPaletteChange={onPaletteChange}
-        />
       </section>
 
       <section className="mobile-profile-section">
@@ -141,7 +130,14 @@ export function MobileProfileScreen({
             onChange={(event) => onChangeProfile('school', event.target.value)}
           />
         </label>
-
+        <label>
+          <span>Typ studia</span>
+          <input
+            type="text"
+            value={profile.studyType}
+            onChange={(event) => onChangeProfile('studyType', event.target.value)}
+          />
+        </label>
         <label>
           <span>Studijní zaměření</span>
           <input
@@ -150,22 +146,12 @@ export function MobileProfileScreen({
             onChange={(event) => onChangeProfile('studyMajor', event.target.value)}
           />
         </label>
-
         <label>
           <span>Ročník</span>
           <input
             type="text"
             value={profile.studyYear}
             onChange={(event) => onChangeProfile('studyYear', event.target.value)}
-          />
-        </label>
-
-        <label>
-          <span>Typ studia</span>
-          <input
-            type="text"
-            value={profile.studyType}
-            onChange={(event) => onChangeProfile('studyType', event.target.value)}
           />
         </label>
       </section>
@@ -179,6 +165,11 @@ export function MobileProfileScreen({
           onPaletteChange={onPaletteChange}
         />
       </section>
+      <section className="mobile-profile-section">
+        <button type="button" className="mobile-profile-logout" onClick={onLogout}>
+          Odhlásit se
+        </button>
+        </section>
     </section>
   )
 }
