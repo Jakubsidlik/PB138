@@ -14,10 +14,13 @@ type DesktopProfileScreenProps = {
   onThemeChange: (theme: ThemeMode) => void
   accentPalette: AccentPalette
   onPaletteChange: (palette: AccentPalette) => void
+  hasUnsavedChanges: boolean
+  onSaveProfile: () => void
+  isSavingProfile: boolean
 }
 
-const studyYearOptions = ['1. ročník', '2. ročník', '3. ročník', '4. ročník', '5. ročník']
-const studyTypeOptions = ['Bakalářské studium', 'Magisterské studium', 'Doktorské studium']
+const studyYearOptions = ['1. ročník', '2. ročník', '3. ročník', '4. ročník', '5. ročník', '6. ročník', '7. ročník', '8. ročník', '9. ročník', '10. ročník']
+const studyTypeOptions = ['Základní škola', 'Střední škola', 'Bakalářské studium', 'Magisterské studium', 'Doktorské studium']
 
 export function DesktopProfileScreen({
   profile,
@@ -26,11 +29,13 @@ export function DesktopProfileScreen({
   onUploadAvatar,
   onRemoveAvatar,
   onResetProfile,
-  onLogout,
   themeMode,
   onThemeChange,
   accentPalette,
   onPaletteChange,
+  hasUnsavedChanges,
+  onSaveProfile,
+  isSavingProfile,
 }: DesktopProfileScreenProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -38,28 +43,10 @@ export function DesktopProfileScreen({
     <section className="desktop-profile-screen" id="desktop-profile">
       <div className="desktop-profile-head">
         <h2>Nastavení účtu</h2>
-        <p>Spravuj profilové údaje, studium a avatar.</p>
+        <p>Spravuj profilový obrázek, osobní údaje a studijní informace</p>
       </div>
 
-      <section className="profile-card">
-        <h3>Přihlášení a role</h3>
-
-        {authSession ? (
-          <div className="profile-grid">
-            <p>
-              Přihlášen: <strong>{authSession.fullName}</strong> ({authSession.email})
-            </p>
-            <p>
-              Role: <strong>{authSession.role}</strong>
-            </p>
-            <button type="button" onClick={onLogout}>
-              Odhlásit
-            </button>
-          </div>
-        ) : null}
-      </section>
-
-      <section className="profile-card">
+    <section className="profile-card">
         <h3>Profilová fotka</h3>
         <div className="profile-photo-row">
           <div className="profile-photo-preview-wrap">
@@ -106,26 +93,22 @@ export function DesktopProfileScreen({
       </section>
 
       <section className="profile-card">
-        <h3>Osobní údaje</h3>
+        <h3>Registrovaný uživatel</h3>
+        {authSession ? (
+          <div className="profile-grid">
+            <p>
+              Přihlášen/a: <strong>{authSession.fullName}</strong> ({authSession.email})
+            </p>
+            <p>
+              Role: <strong>{authSession.role}</strong>
+            </p>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="profile-card">
+        <h3>Studium</h3>
         <div className="profile-grid">
-          <label>
-            <span>Jméno</span>
-            <input
-              type="text"
-              value={profile.fullName}
-              onChange={(event) => onChangeProfile('fullName', event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>E-mail</span>
-            <input
-              type="email"
-              value={profile.email}
-              onChange={(event) => onChangeProfile('email', event.target.value)}
-            />
-          </label>
-
           <label>
             <span>Škola</span>
             <input
@@ -136,23 +119,9 @@ export function DesktopProfileScreen({
           </label>
 
           <label>
-            <span>Studijní zaměření</span>
-            <input
-              type="text"
-              value={profile.studyMajor}
-              onChange={(event) => onChangeProfile('studyMajor', event.target.value)}
-            />
-          </label>
-        </div>
-      </section>
-
-      <section className="profile-card">
-        <h3>Studium</h3>
-        <div className="profile-grid">
-          <label>
-            <span>Ročník</span>
-            <select value={profile.studyYear} onChange={(event) => onChangeProfile('studyYear', event.target.value)}>
-              {studyYearOptions.map((option) => (
+            <span>Typ studia</span>
+            <select value={profile.studyType} onChange={(event) => onChangeProfile('studyType', event.target.value)}>
+              {studyTypeOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -161,9 +130,18 @@ export function DesktopProfileScreen({
           </label>
 
           <label>
-            <span>Typ studia</span>
-            <select value={profile.studyType} onChange={(event) => onChangeProfile('studyType', event.target.value)}>
-              {studyTypeOptions.map((option) => (
+            <span>Studijní zaměření</span>
+            <input
+              type="text"
+              value={profile.studyMajor}
+              onChange={(event) => onChangeProfile('studyMajor', event.target.value)}
+            />
+          </label>
+
+          <label>
+            <span>Ročník</span>
+            <select value={profile.studyYear} onChange={(event) => onChangeProfile('studyYear', event.target.value)}>
+              {studyYearOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -187,8 +165,13 @@ export function DesktopProfileScreen({
         <button type="button" className="secondary" onClick={onResetProfile}>
           Zahodit změny
         </button>
-        <button type="button" className="primary" disabled>
-          Uloženo automaticky
+        <button 
+          type="button" 
+          className="primary" 
+          disabled={!hasUnsavedChanges || isSavingProfile}
+          onClick={onSaveProfile}
+        >
+          {isSavingProfile ? 'Ukládám...' : 'Uložit'}
         </button>
       </div>
     </section>

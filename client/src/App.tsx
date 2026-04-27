@@ -138,11 +138,15 @@ function App() {
             onChangeProfile={state.onChangeProfile}
             onUploadAvatar={state.onUploadProfileAvatar}
             onRemoveAvatar={state.onRemoveProfileAvatar}
+            onResetProfile={state.resetProfile}
             onLogout={handleLogout}
             themeMode={state.themeMode}
             onThemeChange={state.setThemeMode}
             accentPalette={state.accentPalette}
             onPaletteChange={state.setAccentPalette}
+            hasUnsavedChanges={state.hasUnsavedProfileChanges}
+            onSaveProfile={state.onSaveProfile}
+            isSavingProfile={state.isSavingProfile}
           />
 
           <DashboardHomeContent
@@ -210,6 +214,9 @@ function App() {
             onThemeChange={state.setThemeMode}
             accentPalette={state.accentPalette}
             onPaletteChange={state.setAccentPalette}
+            hasUnsavedChanges={state.hasUnsavedProfileChanges}
+            onSaveProfile={state.onSaveProfile}
+            isSavingProfile={state.isSavingProfile}
           />
         </div>
 

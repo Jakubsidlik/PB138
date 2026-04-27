@@ -8,11 +8,15 @@ type MobileProfileScreenProps = {
   onChangeProfile: (field: keyof Omit<UserProfile, 'avatarDataUrl'>, value: string) => void
   onUploadAvatar: (files: FileList | null) => void
   onRemoveAvatar: () => void
+  onResetProfile: () => void
   onLogout: () => void
   themeMode: ThemeMode
   onThemeChange: (theme: ThemeMode) => void
   accentPalette: AccentPalette
   onPaletteChange: (palette: AccentPalette) => void
+  hasUnsavedChanges: boolean
+  onSaveProfile: () => void
+  isSavingProfile: boolean
 }
 
 const initialsFromName = (fullName: string) =>
@@ -24,17 +28,25 @@ const initialsFromName = (fullName: string) =>
     .join('')
     .toUpperCase() || 'U'
 
+const studyYearOptions = ['1. ročník', '2. ročník', '3. ročník', '4. ročník', '5. ročník', '6. ročník', '7. ročník', '8. ročník', '9. ročník', '10. ročník']
+const studyTypeOptions = ['Základní škola', 'Střední škola', 'Bakalářské studium', 'Magisterské studium', 'Doktorské studium']
+
+
 export function MobileProfileScreen({
   profile,
   authSession,
   onChangeProfile,
   onUploadAvatar,
   onRemoveAvatar,
+  onResetProfile,
   onLogout,
   themeMode,
   onThemeChange,
   accentPalette,
   onPaletteChange,
+  hasUnsavedChanges,
+  onSaveProfile,
+  isSavingProfile,
 }: MobileProfileScreenProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -80,12 +92,12 @@ export function MobileProfileScreen({
       </div>
 
       <section className="mobile-profile-section">
-        <h3>Přihlášení</h3>
+        <h3>Registrovaný uživatel</h3>
 
         {authSession ? (
           <>
             <p>
-              Přihlášen: <strong>{authSession.fullName}</strong>
+              Přihlášen/a: <strong>{authSession.fullName}</strong>
             </p>
             <p>
               E-mail: <strong>{authSession.email}</strong>
@@ -95,28 +107,6 @@ export function MobileProfileScreen({
             </p>
           </>
         ) : null}
-      </section>
-
-      <section className="mobile-profile-section">
-        <h3>Osobní informace</h3>
-
-        <label>
-          <span>Celé jméno</span>
-          <input
-            type="text"
-            value={profile.fullName}
-            onChange={(event) => onChangeProfile('fullName', event.target.value)}
-          />
-        </label>
-
-        <label>
-          <span>E-mail</span>
-          <input
-            type="email"
-            value={profile.email}
-            onChange={(event) => onChangeProfile('email', event.target.value)}
-          />
-        </label>
       </section>
 
       <section className="mobile-profile-section">
@@ -132,11 +122,13 @@ export function MobileProfileScreen({
         </label>
         <label>
           <span>Typ studia</span>
-          <input
-            type="text"
-            value={profile.studyType}
-            onChange={(event) => onChangeProfile('studyType', event.target.value)}
-          />
+          <select value={profile.studyType} onChange={(event) => onChangeProfile('studyType', event.target.value)}>
+            {studyTypeOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}  
+              </option>
+            ))}
+          </select>
         </label>
         <label>
           <span>Studijní zaměření</span>
@@ -148,11 +140,13 @@ export function MobileProfileScreen({
         </label>
         <label>
           <span>Ročník</span>
-          <input
-            type="text"
-            value={profile.studyYear}
-            onChange={(event) => onChangeProfile('studyYear', event.target.value)}
-          />
+          <select value={profile.studyYear} onChange={(event) => onChangeProfile('studyYear', event.target.value)}>
+            {studyYearOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </label>
       </section>
 
@@ -166,10 +160,23 @@ export function MobileProfileScreen({
         />
       </section>
       <section className="mobile-profile-section">
+        <div className="profile-actions-row">
+          <button type="button" className="secondary" onClick={onResetProfile}>
+            Zahodit změny
+          </button>
+          <button
+            type="button"
+            className="primary"
+            disabled={!hasUnsavedChanges || isSavingProfile}
+            onClick={onSaveProfile}
+          >
+            {isSavingProfile ? 'Ukládám...' : 'Uložit'}
+          </button>
+        </div>
         <button type="button" className="mobile-profile-logout" onClick={onLogout}>
           Odhlásit se
         </button>
-        </section>
+      </section>
     </section>
   )
 }

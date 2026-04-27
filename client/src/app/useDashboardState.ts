@@ -1,14 +1,10 @@
 import React from 'react'
 import {
   desktopSubjectMetaByCode,
-  eventMetaSeed,
-  eventsSeed,
   EVENTS_STORAGE_KEY,
-  managedFilesSeed,
   PALETTE_STORAGE_KEY,
   PROFILE_STORAGE_KEY,
   subjectsSeed,
-  tasksSeed,
   TASKS_STORAGE_KEY,
   THEME_STORAGE_KEY,
   userProfileSeed,
@@ -111,9 +107,13 @@ export function useDashboardState() {
   const [profile, setProfile] = React.useState<UserProfile>(() =>
     readProfileFromStorage() ?? userProfileSeed,
   )
+  const [savedProfile, setSavedProfile] = React.useState<UserProfile>(() =>
+    readProfileFromStorage() ?? userProfileSeed,
+  )
   const [authSession, setAuthSession] = React.useState<AuthSession | null>(() =>
     readAuthSessionFromStorage(),
   )
+  const [isSavingProfile, setIsSavingProfile] = React.useState(false)
   const { getToken, isLoaded, isSignedIn } = useAuth()
 
   const apiFetch = React.useCallback(
@@ -261,6 +261,7 @@ export function useDashboardState() {
       setSubjects(loadedSubjects)
       setManagedFiles(loadedFiles)
       setProfile(loadedProfile)
+      setSavedProfile(loadedProfile)
       setEventMetaById(nextMetaById)
       setIsHydrated(true)
     }
@@ -306,15 +307,32 @@ export function useDashboardState() {
     }
 
     localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+  }, [profile, isHydrated, authSession])
 
-    void apiFetch('/api/profile', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(profile),
-    })
-  }, [profile, isHydrated, apiFetch, authSession])
+  const onSaveProfile = async () => {
+    if (!ensureAuthenticated() || isSavingProfile) {
+      return
+    }
+
+    setIsSavingProfile(true)
+    try {
+      const response = await apiFetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profile),
+      })
+
+      if (response.ok) {
+        setSavedProfile(profile)
+      }
+    } catch (error) {
+      console.error('Chyba při ukládání profilu:', error)
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
 
   const ensureAuthenticated = () => {
     if (authSession) {
@@ -748,6 +766,7 @@ export function useDashboardState() {
   const isTasksScreen = activeMobileNav === 'tasks'
   const isStudyPlanScreen = activeMobileNav === 'study-plan'
   const isProfileScreen = activeMobileNav === 'profile'
+  const hasUnsavedProfileChanges = JSON.stringify(profile) !== JSON.stringify(savedProfile)
 
   const monthLabel = new Intl.DateTimeFormat('en-US', {
     month: 'long',
@@ -893,6 +912,9 @@ export function useDashboardState() {
     onUploadProfileAvatar,
     onRemoveProfileAvatar,
     resetProfile,
+    onSaveProfile,
+    hasUnsavedProfileChanges,
+    isSavingProfile,
     logout,
     setAuthSession,
     createSubject,

@@ -1,5 +1,4 @@
 import React from 'react'
-import { Topbar } from '../../components/shared/Topbar'
 import { useDashboardState } from '../../app/useDashboardState'
 
 export function MobileTasks() {
@@ -8,21 +7,6 @@ export function MobileTasks() {
 
   return (
     <div className={`mobile-screen mobile-tasks-screen theme-${state.themeMode} palette-${state.accentPalette}`}>
-      <Topbar
-        isCalendarScreen={state.isCalendarScreen}
-        isFilesScreen={state.isFilesScreen}
-        isTasksScreen={state.isTasksScreen}
-        isStudyPlanScreen={state.isStudyPlanScreen}
-        isProfileScreen={state.isProfileScreen}
-        fileInputRef={fileInputRef}
-        setActiveMobileNav={state.setActiveMobileNav}
-        profileName={state.profile?.fullName || 'Uživatel'}
-        profileAvatarDataUrl={state.profile?.avatarDataUrl || null}
-        onOpenProfile={() => {
-          state.setActiveMobileNav('profile')
-          window.location.hash = '#profile'
-        }}
-      />
       <div className="mobile-tasks-content">
         <div className="mobile-tasks-stats">
           <div className="mobile-task-stat">

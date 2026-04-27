@@ -1369,6 +1369,26 @@ th {
     box-sizing: border-box;
   }
 
+  .mobile-profile-section select {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-subtle);
+    color: var(--text-main);
+    border-radius: 0.7rem;
+    min-height: 2.65rem;
+    padding: 0.56rem 0.72rem;
+    box-sizing: border-box;
+    font-size: 0.86rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .mobile-profile-section select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(36, 47, 73, 0.1);
+  }
+
   .mobile-profile-action-row {
     border: 1px solid var(--border-color);
     background: var(--bg-subtle);
@@ -1436,6 +1456,72 @@ th {
     color: var(--text-contrast);
     font-size: 0.88rem;
     font-weight: 800;
+  }
+
+  .primary {
+    min-height: 2.65rem;
+    border: none;
+    border-radius: 0.82rem;
+    background: var(--accent);
+    color: var(--text-contrast);
+    font-size: 0.82rem;
+    font-weight: 800;
+    padding: 0.56rem 1.2rem;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .primary:hover {
+    opacity: 0.9;
+  }
+
+  .primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .secondary {
+    min-height: 2.65rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.82rem;
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-size: 0.82rem;
+    font-weight: 800;
+    padding: 0.56rem 1.2rem;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .secondary:hover {
+    background: var(--bg-subtle);
+  }
+
+  .secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .mobile-profile-logout {
+    width: 100%;
+    min-height: 2.65rem;
+    border: 1px solid var(--danger);
+    border-radius: 0.82rem;
+    background: rgba(211, 47, 47, 0.1);
+    color: var(--danger);
+    font-size: 0.82rem;
+    font-weight: 800;
+    padding: 0.56rem 1.2rem;
+    cursor: pointer;
+  }
+
+  .mobile-profile-logout:hover {
+    background: rgba(211, 47, 47, 0.2);
+  }
+
+  .profile-actions-row {
+    display: flex;
+    gap: 0.75rem;
   }
 
   .mobile-calendar-panel {
@@ -2610,6 +2696,47 @@ th {
     font-size: 1.05rem;
   }
 
+  .profile-card > label {
+    display: grid;
+    gap: 0.28rem;
+    margin-top: 0.8rem;
+  }
+
+  .profile-card > label span {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .profile-card > label input,
+  .profile-card > label select {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-subtle);
+    color: var(--text-main);
+    border-radius: 0.55rem;
+    padding: 0.56rem 0.7rem;
+    font-size: 0.83rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .profile-card > label select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23242f49' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    padding-right: 2rem;
+  }
+
+  .profile-card > label input:focus,
+  .profile-card > label select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(36, 47, 73, 0.1);
+  }
+
   .profile-photo-row {
     margin-top: 0.9rem;
     display: flex;
@@ -2675,23 +2802,42 @@ th {
   .profile-actions-row button {
     border: none;
     border-radius: 0.55rem;
-    padding: 0.48rem 0.78rem;
-    font-size: 0.78rem;
+    padding: 0.56rem 1rem;
+    font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
+    transition: all 0.2s ease;
   }
 
   .profile-photo-actions button.primary,
   .profile-actions-row .primary {
     background: var(--accent);
     color: #fff;
+    border: none;
+  }
+
+  .profile-photo-actions button.primary:hover:not(:disabled),
+  .profile-actions-row .primary:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .profile-photo-actions button.primary:disabled,
+  .profile-actions-row .primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .profile-photo-actions button:not(.primary),
   .profile-actions-row .secondary {
-    background: var(--bg-subtle);
+    background: var(--bg-card);
     color: var(--text-main);
     border: 1px solid var(--border-color);
+  }
+
+  .profile-photo-actions button:not(.primary):hover,
+  .profile-actions-row .secondary:hover {
+    border-color: var(--accent);
+    background: var(--bg-subtle);
   }
 
   .profile-grid {
@@ -2721,6 +2867,28 @@ th {
     border-radius: 0.55rem;
     padding: 0.56rem 0.7rem;
     font-size: 0.83rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .profile-grid select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23242f49' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    padding-right: 2rem;
+  }
+
+  .dashboard-root.theme-dark .profile-grid select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23e2e8f0' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  }
+
+  .profile-grid input:focus,
+  .profile-grid select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(36, 47, 73, 0.1);
   }
 
   .profile-actions-row {
@@ -2728,6 +2896,27 @@ th {
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
+  }
+
+  .profile-actions-row .secondary {
+    background: var(--bg-subtle);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+  }
+
+  .profile-actions-row .secondary:hover {
+    border-color: var(--accent);
+    background: var(--bg-card);
+  }
+
+  .profile-actions-row .primary:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .profile-actions-row .primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .dashboard-root.theme-dark .profile-card {
@@ -2750,11 +2939,40 @@ th {
     color: #e2e8f0;
   }
 
+  .dashboard-root.theme-dark .profile-photo-actions button:not(.primary):hover,
+  .dashboard-root.theme-dark .profile-actions-row .secondary:hover {
+    background: #475569;
+    border-color: #64748b;
+  }
+
   .dashboard-root.theme-dark .profile-grid input,
   .dashboard-root.theme-dark .profile-grid select {
     background: #0f172a;
     border-color: #334155;
     color: #e2e8f0;
+  }
+
+  .dashboard-root.theme-dark .profile-grid input:focus,
+  .dashboard-root.theme-dark .profile-grid select:focus {
+    border-color: #64748b;
+    box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.1);
+  }
+
+  .dashboard-root.theme-dark .profile-card > label select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23e2e8f0' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  }
+
+  .dashboard-root.theme-dark .profile-card > label input,
+  .dashboard-root.theme-dark .profile-card > label select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .dashboard-root.theme-dark .profile-card > label input:focus,
+  .dashboard-root.theme-dark .profile-card > label select:focus {
+    border-color: #64748b;
+    box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.1);
   }
 
   .desktop-files-head h2 {
