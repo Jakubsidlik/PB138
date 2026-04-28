@@ -3619,6 +3619,7 @@ th {
     flex-direction: column;
     min-height: 17.4rem;
     transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
   }
 
   .desktop-subject-card:hover {

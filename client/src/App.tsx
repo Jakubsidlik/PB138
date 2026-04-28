@@ -1,5 +1,6 @@
 import React from 'react';
 import './App.css'
+import './App-subject-modal.css'
 import {
   calendarWeekDays,
   subjectVisualByCode,
@@ -130,6 +131,7 @@ function App() {
             onEditSubject={state.updateSubject}
             onToggleArchiveSubject={state.toggleSubjectArchived}
             onDeleteSubject={state.deleteSubject}
+            managedFiles={state.managedFiles}
           />
 
           <MobileProfileScreen
@@ -199,6 +201,7 @@ function App() {
             onEditSubject={state.updateSubject}
             onToggleArchiveSubject={state.toggleSubjectArchived}
             onDeleteSubject={state.deleteSubject}
+            managedFiles={state.managedFiles}
           />
 
           <DesktopProfileScreen

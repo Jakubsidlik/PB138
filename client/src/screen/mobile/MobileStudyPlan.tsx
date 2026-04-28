@@ -1,6 +1,7 @@
 
 import React from 'react'
-import { Subject, SubjectVisual } from '../../app/types'
+import { Subject, SubjectVisual, ManagedFile } from '../../app/types'
+import { SubjectDetailModal } from '../../components/shared/SubjectDetailModal'
 
 type MobileStudyPlanScreenProps = {
     subjectSearch: string
@@ -11,6 +12,7 @@ type MobileStudyPlanScreenProps = {
     onEditSubject: (subjectId: number) => void
     onToggleArchiveSubject: (subjectId: number) => void
     onDeleteSubject: (subjectId: number) => void
+    managedFiles: ManagedFile[]
 }
 
 export function MobileStudyPlanScreen({
@@ -22,7 +24,19 @@ export function MobileStudyPlanScreen({
     onEditSubject,
     onToggleArchiveSubject,
     onDeleteSubject,
+    managedFiles,
 }: MobileStudyPlanScreenProps) {
+    const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
+    const selectedSubject = filteredSubjects.find(s => s.id === selectedSubjectId) || null
+
+    const handleAddNote = (subjectId: number, note: string) => {
+        console.log(`Přidána poznámka k předmětu ${subjectId}: ${note}`)
+    }
+
+    const handleAddFile = (subjectId: number, file: File) => {
+        console.log(`Přidán soubor k předmětu ${subjectId}:`, file.name)
+    }
+
 return (
     <section className="mobile-study-plan-screen" id="study-plan-mobile">
     <div className="subjects-search-wrap">
@@ -45,14 +59,18 @@ return (
         }
 
         return (
-            <article key={subject.id} className="subject-mobile-card">
+            <article 
+                key={subject.id} 
+                className="subject-mobile-card"
+                onClick={() => setSelectedSubjectId(subject.id)}
+            >
             <div className={`subject-mobile-visual ${visual.tone}`}>{visual.icon}</div>
             <h3>{subject.name}</h3>
             <div className="subject-mobile-meta">
                 <p>📄 {subject.files} souborů</p>
                 <p>📝 {subject.notes} poznámek</p>
             </div>
-            <div className="desktop-files-tabs">
+            <div className="desktop-files-tabs" onClick={(e) => e.stopPropagation()}>
                 <button type="button" onClick={() => onEditSubject(subject.id)}>Upravit</button>
                 <button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
                 {subject.archived ? 'Obnovit' : 'Archivovat'}
@@ -71,6 +89,14 @@ return (
     <button type="button" className="subjects-fab" aria-label="Přidat předmět" onClick={onCreateSubject}>
         +
     </button>
+
+    <SubjectDetailModal 
+        subject={selectedSubject}
+        files={managedFiles}
+        onClose={() => setSelectedSubjectId(null)}
+        onAddNote={handleAddNote}
+        onAddFile={handleAddFile}
+    />
     </section>
 )
 }

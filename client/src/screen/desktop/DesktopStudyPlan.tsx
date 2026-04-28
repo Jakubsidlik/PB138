@@ -1,5 +1,6 @@
 import React from 'react'
-import { DesktopSubjectMeta, DesktopSubjectTone, Subject } from '../../app/types'
+import { DesktopSubjectMeta, DesktopSubjectTone, Subject, ManagedFile } from '../../app/types'
+import { SubjectDetailModal } from '../../components/shared/SubjectDetailModal'
 
 type DesktopSubject = Subject & {
   meta: DesktopSubjectMeta
@@ -16,6 +17,7 @@ type DesktopStudyPlanProps = {
   onEditSubject: (subjectId: number) => void
   onToggleArchiveSubject: (subjectId: number) => void
   onDeleteSubject: (subjectId: number) => void
+  managedFiles: ManagedFile[]
 }
 
 export function DesktopStudyPlan({
@@ -26,7 +28,21 @@ export function DesktopStudyPlan({
   onEditSubject,
   onToggleArchiveSubject,
   onDeleteSubject,
+  managedFiles,
 }: DesktopStudyPlanProps) {
+  const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
+  const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
+
+  const handleAddNote = (subjectId: number, note: string) => {
+    console.log(`Přidána poznámka k předmětu ${subjectId}: ${note}`)
+    // V budoucnu lze zde přidat API call pro uložení poznámky
+  }
+
+  const handleAddFile = (subjectId: number, file: File) => {
+    console.log(`Přidán soubor k předmětu ${subjectId}:`, file.name)
+    // V budoucnu lze zde přidat API call pro nahrání souboru
+  }
+
   return (
     <section className="desktop-study-plan" id="desktop-study-plan">
       <div className="desktop-study-plan-head">
@@ -60,7 +76,11 @@ export function DesktopStudyPlan({
 
       <div className="desktop-subjects-grid">
         {desktopSubjects.map((subject) => (
-          <article key={subject.id} className="desktop-subject-card">
+          <article 
+            key={subject.id} 
+            className="desktop-subject-card"
+            onClick={() => setSelectedSubjectId(subject.id)}
+          >
             <span className={`subject-strip ${subject.meta.tone}`} />
             <div className="desktop-subject-card-body">
               <div className="desktop-subject-card-top">
@@ -83,13 +103,19 @@ export function DesktopStudyPlan({
                 )}
               </div>
 
-              <div className="desktop-files-tabs">
+              <div className="desktop-files-tabs" onClick={(e) => e.stopPropagation()}>
                 <button type="button" onClick={() => onEditSubject(subject.id)}>
                   Upravit
                 </button>
-                <button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
-                  {subject.archived ? 'Obnovit' : 'Archivovat'}
-                </button>
+                {subject.archived ? (
+                  <button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
+                    Obnovit
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
+                    Archivovat
+                  </button>
+                )}
                 <button type="button" onClick={() => onDeleteSubject(subject.id)}>
                   Smazat
                 </button>
@@ -103,6 +129,14 @@ export function DesktopStudyPlan({
           <span>Zapsat další předmět</span>
         </button>
       </div>
+
+      <SubjectDetailModal 
+        subject={selectedSubject}
+        files={managedFiles}
+        onClose={() => setSelectedSubjectId(null)}
+        onAddNote={handleAddNote}
+        onAddFile={handleAddFile}
+      />
     </section>
   )
 }
