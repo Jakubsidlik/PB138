@@ -404,13 +404,23 @@ export function useDashboardState() {
       return
     }
 
-    const title = window.prompt('Event title')?.trim()
+    const title = window.prompt('Název události')?.trim()
     if (!title) {
       return
     }
 
-    const time = window.prompt('Time range (e.g. 09:00 AM - 10:30 AM)', '09:00 AM - 10:30 AM')
-    const location = window.prompt('Location', 'Science Building, Room 402')
+    const time = window.prompt('Čas (např. 09:00 - 10:30)')
+    const location = window.prompt('Místo')
+    
+    let priority: 'low' | 'medium' | 'high' = 'medium'
+    const priorityInput = window.prompt('Priorita (nízká/střední/vysoká)')?.toLowerCase().trim()
+    if (priorityInput === 'nízká' || priorityInput === 'low') {
+      priority = 'low'
+    } else if (priorityInput === 'střední' || priorityInput === 'medium') {
+      priority = 'medium'
+    } else if (priorityInput === 'vysoká' || priorityInput === 'high') {
+      priority = 'high'
+    }
 
     const newEventId = Date.now()
     const defaultMeta = getDefaultMetaForTitle(title)
@@ -421,6 +431,7 @@ export function useDashboardState() {
       time: time?.trim() || defaultMeta.time,
       location: location?.trim() || defaultMeta.location,
       subjectId: null,
+      priority,
     }
 
     setEvents((prevEvents) => [...prevEvents, nextEvent])
@@ -787,13 +798,19 @@ export function useDashboardState() {
   const isProfileScreen = activeMobileNav === 'profile'
   const hasUnsavedProfileChanges = JSON.stringify(profile) !== JSON.stringify(savedProfile)
 
-  const monthLabel = new Intl.DateTimeFormat('en-US', {
+  const monthLabel = new Intl.DateTimeFormat('cs-CZ', {
     month: 'long',
     year: 'numeric',
   }).format(displayMonth)
 
   const upcomingEvents = React.useMemo(
-    () => events.slice().sort((a, b) => a.date.localeCompare(b.date)),
+    () => {
+      const today = formatDateIso(new Date())
+      return events
+        .filter((event) => event.date >= today)
+        .slice()
+        .sort((a, b) => a.date.localeCompare(b.date))
+    },
     [events],
   )
 

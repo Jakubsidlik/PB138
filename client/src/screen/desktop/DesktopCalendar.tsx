@@ -30,9 +30,9 @@ export function DesktopCalendarScreen({
   eventMetaById,
   getDefaultMetaForTitle,
   removeEvent,
-  goToToday,
   addDesktopEvent,
 }: DesktopCalendarScreenProps) {
+  const [eventFilter, setEventFilter] = React.useState<'future' | 'past'>('future')
   return (
     <section className="desktop-calendar-screen" id="desktop-calendar">
       <div className="desktop-calendar-head">
@@ -41,7 +41,6 @@ export function DesktopCalendarScreen({
           <p>Správa studijních událostí a termínů.</p>
         </div>
         <div className="desktop-calendar-controls">
-          <button type="button" onClick={goToToday}>Dnes</button>
           <div className="month-switch">
             <button
               type="button"
@@ -118,8 +117,8 @@ export function DesktopCalendarScreen({
             <h3>
               Události pro{' '}
               {new Intl.DateTimeFormat('cs-CZ', {
-                month: 'short',
                 day: 'numeric',
+                month: 'short',
                 year: 'numeric',
               }).format(new Date(selectedDateIso))}
             </h3>
@@ -134,7 +133,14 @@ export function DesktopCalendarScreen({
                     <article key={event.id} className={`desktop-event-item accent-${meta.accent}`}>
                       <div className="desktop-event-icon">{meta.icon}</div>
                       <div className="desktop-event-content">
-                        <h4>{event.title}</h4>
+                        <h4>
+                          {event.title}
+                          {event.priority && (
+                            <span className={`event-priority-badge ${event.priority}`}>
+                              {event.priority === 'high' ? '!' : event.priority === 'medium' ? '◆' : '○'}
+                            </span>
+                          )}
+                        </h4>
                         <p>{meta.time}</p>
                         <small>{meta.location}</small>
                       </div>
@@ -145,6 +151,70 @@ export function DesktopCalendarScreen({
                   )
                 })
               )}
+            </div>
+          </section>
+
+          <section className="events-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3>Události</h3>
+              <div className="event-filter-buttons">
+                <button
+                  type="button"
+                  onClick={() => setEventFilter('future')}
+                  className={eventFilter === 'future' ? 'active' : ''}
+                >
+                  Budoucí
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEventFilter('past')}
+                  className={eventFilter === 'past' ? 'active' : ''}
+                >
+                  Minulé
+                </button>
+              </div>
+            </div>
+
+            <div className="events-list-desktop">
+              {(() => {
+                const today = formatDateIso(new Date())
+                const allEvents = Object.values(eventsByDate).flat()
+                const filteredEvents = allEvents.filter((event) => {
+                  const eventDate = event.date || Object.keys(eventsByDate).find((date) => eventsByDate[date]?.some((e) => e.id === event.id))
+                  const isInFuture = eventDate && eventDate >= today
+                  return eventFilter === 'future' ? isInFuture : !isInFuture
+                })
+
+                return filteredEvents.length === 0 ? (
+                  <p className="empty-events">
+                    {eventFilter === 'future' ? 'Žádné budoucí události.' : 'Žádné minulé události.'}
+                  </p>
+                ) : (
+                  filteredEvents.map((event) => {
+                    const meta = eventMetaById[event.id] ?? getDefaultMetaForTitle(event.title)
+                    return (
+                      <article key={event.id} className={`desktop-event-item accent-${meta.accent}`}>
+                        <div className="desktop-event-icon">{meta.icon}</div>
+                        <div className="desktop-event-content">
+                          <h4>
+                            {event.title}
+                            {event.priority && (
+                              <span className={`event-priority-badge ${event.priority}`}>
+                                {event.priority === 'high' ? '!' : event.priority === 'medium' ? '◆' : '○'}
+                              </span>
+                            )}
+                          </h4>
+                          <p>{meta.time}</p>
+                          <small>{meta.location}</small>
+                        </div>
+                        <button type="button" className="desktop-event-remove" onClick={() => removeEvent(event.id)}>
+                          Odebrat
+                        </button>
+                      </article>
+                    )
+                  })
+                )
+              })()}
             </div>
           </section>
         </aside>

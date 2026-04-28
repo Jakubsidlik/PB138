@@ -1668,6 +1668,13 @@ th {
   .mobile-calendar-event-content h4 {
     margin: 0;
     font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    overflow: hidden;
+  }
+
+  .mobile-calendar-event-content h4 > :first-child {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1720,6 +1727,46 @@ th {
 
   .dashboard-root:not(.mobile-nav-calendar) .mobile-calendar-fab {
     display: none;
+  }
+
+  .mobile-calendar-events .event-filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .mobile-calendar-events .event-filter-buttons button {
+    flex: 1;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-main);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.78rem;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-calendar-events .event-filter-buttons button:hover:not(.active) {
+    background: var(--bg-subtle);
+    border-color: var(--border-soft);
+  }
+
+  .mobile-calendar-events .event-filter-buttons button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-contrast);
+  }
+
+  .dashboard-root.theme-dark .mobile-calendar-events .event-filter-buttons button {
+    background: #1f2a3d;
+    border-color: #2e3e52;
+    color: #fffdf6;
+  }
+
+  .dashboard-root.theme-dark .mobile-calendar-events .event-filter-buttons button:hover:not(.active) {
+    background: #242f49;
   }
 
   .subjects-search-wrap {
@@ -3884,6 +3931,44 @@ th {
     border-color: #1e293b;
   }
 
+  .event-filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .event-filter-buttons button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-subtle);
+    color: var(--text-main);
+    border-radius: 0.4rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.82rem;
+    transition: all 0.2s ease;
+  }
+
+  .event-filter-buttons button:hover:not(.active) {
+    background: var(--bg-soft);
+    border-color: var(--border-soft);
+  }
+
+  .event-filter-buttons button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-contrast);
+  }
+
+  .dashboard-root.theme-dark .event-filter-buttons button {
+    background: #1f2a3d;
+    border-color: #2e3e52;
+    color: #fffdf6;
+  }
+
+  .dashboard-root.theme-dark .event-filter-buttons button:hover:not(.active) {
+    background: #242f49;
+  }
+
   .events-card h3,
   .exam-callout h3 {
     margin: 0;
@@ -3963,6 +4048,57 @@ th {
     margin: 0;
     font-size: 0.8rem;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .event-priority-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 0.3rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+
+  .event-priority-badge.high {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .dashboard-root.theme-dark .event-priority-badge.high {
+    background: rgba(153, 27, 27, 0.3);
+    color: #fca5a5;
+  }
+
+  .event-priority-badge.medium {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .dashboard-root.theme-dark .event-priority-badge.medium {
+    background: rgba(146, 64, 14, 0.3);
+    color: #fcd34d;
+  }
+
+  .event-priority-badge.low {
+    background: #dbeafe;
+    color: #0c4a6e;
+  }
+
+  .dashboard-root.theme-dark .event-priority-badge.low {
+    background: rgba(12, 74, 110, 0.3);
+    color: #7dd3fc;
+  }
+
+  .mobile-calendar-event-content .event-priority-badge {
+    width: 1rem;
+    height: 1rem;
+    font-size: 0.6rem;
+    flex-shrink: 0;
   }
 
   .desktop-event-content p {

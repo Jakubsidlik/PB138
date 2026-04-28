@@ -1,5 +1,6 @@
 import React from 'react'
 import { CalendarCell, CalendarEvent, EventMeta } from '../../app/types'
+import { formatDateIso } from '../../app/utils'
 
 type MobileCalendarScreenProps = {
   monthLabel: string
@@ -30,6 +31,7 @@ export function MobileCalendarScreen({
   addDesktopEvent,
   removeEvent,
 }: MobileCalendarScreenProps) {
+  const [eventFilter, setEventFilter] = React.useState<'future' | 'past'>('future')
   return (
     <section className="mobile-calendar-screen" id="calendar-mobile">
       <div className="mobile-calendar-panel">
@@ -98,6 +100,7 @@ export function MobileCalendarScreen({
             {new Intl.DateTimeFormat('cs-CZ', {
               day: 'numeric',
               month: 'short',
+              year: 'numeric',
             }).format(new Date(selectedDateIso))}
           </span>
         </div>
@@ -113,7 +116,15 @@ export function MobileCalendarScreen({
                 <article key={event.id} className="mobile-calendar-event-card">
                   <div className="mobile-calendar-event-icon">{meta.icon}</div>
                   <div className="mobile-calendar-event-content">
-                    <h4>{event.title}</h4>
+                    <h4>
+                      {event.title}
+                      {event.priority && (
+                        <span className={`event-priority-badge ${event.priority}`}>
+                          {event.priority === 'high' ? '!' : event.priority === 'medium' ? '◆' : '○'}
+                        </span>
+                      )}
+                    </h4>
+                    <p>{meta.time}</p>
                     <p>{meta.location}</p>
                   </div>
                   <div className="mobile-calendar-event-time">{meta.time.split(' - ')[0]}</div>
@@ -129,6 +140,78 @@ export function MobileCalendarScreen({
               )
             })
           )}
+        </div>
+      </section>
+
+      <section className="mobile-calendar-events">
+        <div className="mobile-calendar-events-head">
+          <h3>Všechny události</h3>
+        </div>
+
+        <div className="event-filter-buttons">
+          <button
+            type="button"
+            onClick={() => setEventFilter('future')}
+            className={eventFilter === 'future' ? 'active' : ''}
+          >
+            Budoucí
+          </button>
+          <button
+            type="button"
+            onClick={() => setEventFilter('past')}
+            className={eventFilter === 'past' ? 'active' : ''}
+          >
+            Minulé
+          </button>
+        </div>
+
+        <div className="mobile-calendar-events-list">
+          {(() => {
+            const today = formatDateIso(new Date())
+            const allEvents = Object.values(eventsByDate).flat()
+            const filteredEvents = allEvents.filter((event) => {
+              const eventDate = event.date || Object.keys(eventsByDate).find((date) => eventsByDate[date]?.some((e) => e.id === event.id))
+              const isInFuture = eventDate && eventDate >= today
+              return eventFilter === 'future' ? isInFuture : !isInFuture
+            })
+
+            return filteredEvents.length === 0 ? (
+              <p className="mobile-calendar-empty">
+                {eventFilter === 'future' ? 'Žádné budoucí události.' : 'Žádné minulé události.'}
+              </p>
+            ) : (
+              filteredEvents.map((event) => {
+                const meta = eventMetaById[event.id] ?? getDefaultMetaForTitle(event.title)
+
+                return (
+                  <article key={event.id} className="mobile-calendar-event-card">
+                    <div className="mobile-calendar-event-icon">{meta.icon}</div>
+                    <div className="mobile-calendar-event-content">
+                      <h4>
+                        {event.title}
+                        {event.priority && (
+                          <span className={`event-priority-badge ${event.priority}`}>
+                            {event.priority === 'high' ? '!' : event.priority === 'medium' ? '◆' : '○'}
+                          </span>
+                        )}
+                      </h4>
+                      <p>{meta.time}</p>
+                      <p>{meta.location}</p>
+                    </div>
+                    <div className="mobile-calendar-event-time">{meta.time.split(' - ')[0]}</div>
+                    <button
+                      type="button"
+                      className="recent-file-more"
+                      aria-label="Odstranit událost"
+                      onClick={() => removeEvent(event.id)}
+                    >
+                      ×
+                    </button>
+                  </article>
+                )
+              })
+            )
+          })()}
         </div>
       </section>
 

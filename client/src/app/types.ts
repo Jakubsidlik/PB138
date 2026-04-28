@@ -77,6 +77,7 @@ export interface UpdateTaskRequest {
 
 // Event types
 export type EventRecurrence = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
+export type EventPriority = 'low' | 'medium' | 'high'
 
 export interface CalendarEvent {
   id: number
@@ -90,6 +91,7 @@ export interface CalendarEvent {
   recurrenceGroupId?: string | null
   userId?: number
   deletedAt?: string | null
+  priority?: EventPriority
 }
 
 export interface CreateEventRequest {
@@ -99,6 +101,7 @@ export interface CreateEventRequest {
   location?: string | null
   subjectId?: number | null
   recurrence?: EventRecurrence
+  priority?: EventPriority
 }
 
 export interface UpdateEventRequest {
@@ -108,6 +111,7 @@ export interface UpdateEventRequest {
   location?: string | null
   recurrence?: EventRecurrence
   subjectId?: number | null
+  priority?: EventPriority
 }
 
 // Subject types
