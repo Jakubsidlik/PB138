@@ -386,6 +386,25 @@ export function useDashboardState() {
     )
   }
 
+  const addTask = () => {
+    if (!ensureAuthenticated()) {
+      return
+    }
+
+    const title = window.prompt('Název nového úkolu')?.trim()
+    if (!title) {
+      return
+    }
+
+    const newTask: Task = {
+      id: Math.max(...tasks.map(t => t.id), 0) + 1,
+      title,
+      done: false,
+    }
+
+    setTasks((prevTasks) => [...prevTasks, newTask])
+  }
+
   const removeEvent = (eventId: number) => {
     if (!ensureAuthenticated()) {
       return
@@ -938,6 +957,7 @@ export function useDashboardState() {
     filteredSubjects,
     desktopSubjects,
     toggleTask,
+    addTask,
     removeEvent,
     addDesktopEvent,
     onUploadFiles,

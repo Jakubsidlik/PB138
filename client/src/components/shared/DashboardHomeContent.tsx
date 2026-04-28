@@ -1,7 +1,6 @@
+import React from 'react'
 import {
   CalendarEvent,
-  ManagedFile,
-  Subject,
   Task,
 } from '../../app/types'
 import { CircularProgress } from './CircularProgress'
@@ -13,8 +12,6 @@ type DashboardHomeContentProps = {
   upcomingEvents: CalendarEvent[]
   getDeadlineMeta: (index: number) => { label: string; className: string; progress: number }
   getRelativeDaysLabel: (date: string) => string
-  managedFiles: ManagedFile[]
-  subjects: Subject[]
   toggleTask: (taskId: number) => void
 }
 
@@ -25,8 +22,6 @@ export function DashboardHomeContent({
   upcomingEvents,
   getDeadlineMeta,
   getRelativeDaysLabel,
-  managedFiles,
-  subjects,
   toggleTask,
 }: DashboardHomeContentProps) {
   return (

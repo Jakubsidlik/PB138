@@ -1,12 +1,14 @@
+import React from 'react'
 import { Task } from '../../app/types'
 
 type DesktopTasksScreenProps = {
     tasks: Task[]
     tasksDone: number
     toggleTask: (taskId: number) => void
+    addTask: () => void
 }
 
-export function DesktopTasksScreen({ tasks, tasksDone, toggleTask }: DesktopTasksScreenProps) {
+export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask }: DesktopTasksScreenProps) {
   const completionPercentage = tasks.length > 0 ? (tasksDone / tasks.length) * 100 : 0
 
 return (
@@ -29,16 +31,10 @@ return (
         <span className="stat-label">Zbývá</span>
         <span className="stat-value">{tasks.length - tasksDone}</span>
         </div>
-        <div className="task-stat progress">
-        <span className="stat-label">Postup</span>
-        <div className="progress-bar">
-            <div
-            className="progress-fill"
-            style={{ width: `${completionPercentage}%` }}
-            />
-        </div>
-        <span className="stat-value">{Math.round(completionPercentage)}%</span>
-        </div>
+    </div>
+
+    <div className="desktop-tasks-controls">
+        <button onClick={addTask} className="btn btn-primary">+ Přidat úkol</button>
     </div>
 
     <div className="desktop-tasks-list">

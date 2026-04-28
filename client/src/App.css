@@ -1896,6 +1896,35 @@ th {
     color: var(--accent);
   }
 
+  .mobile-tasks-fab {
+    position: fixed;
+    right: 1.1rem;
+    bottom: 5.9rem;
+    width: 3.35rem;
+    height: 3.35rem;
+    border: none;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--text-contrast);
+    font-size: 1.8rem;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 40%, transparent);
+    z-index: 21;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-tasks-fab:active {
+    transform: scale(0.92);
+    box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+
+  .dashboard-root:not(.mobile-nav-tasks) .mobile-tasks-fab {
+    display: none;
+  }
+
   .mobile-tasks-list {
     margin-top: 0.8rem;
   }
@@ -2659,6 +2688,10 @@ th {
     display: none;
   }
 
+  .dashboard-root.nav-tasks .desktop-dashboard-content {
+    display: none;
+  }
+
   .dashboard-root.nav-calendar .sidebar {
     background: var(--bg-sidebar);
     border-right: 1px solid var(--border-color);
@@ -3388,6 +3421,50 @@ th {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 1rem;
+  }
+
+  .desktop-tasks-controls {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .desktop-tasks-controls button {
+    padding: 0.7rem 1.5rem;
+    border: none;
+    background: var(--accent);
+    color: var(--text-contrast);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .desktop-tasks-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0.9;
+  }
+
+  .desktop-tasks-controls button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .dashboard-root.theme-dark .desktop-tasks-controls button {
+    background: var(--accent);
+    color: var(--text-contrast);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .dashboard-root.theme-dark .desktop-tasks-controls button:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 
   .task-stat {

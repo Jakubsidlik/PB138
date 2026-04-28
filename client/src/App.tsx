@@ -156,8 +156,6 @@ function App() {
             upcomingEvents={state.upcomingEvents}
             getDeadlineMeta={getDeadlineMeta}
             getRelativeDaysLabel={getRelativeDaysLabel}
-            managedFiles={state.managedFiles}
-            subjects={state.subjects}
             toggleTask={state.toggleTask}
           />
 
@@ -190,6 +188,7 @@ function App() {
             tasks={state.tasks}
             tasksDone={state.tasksDone}
             toggleTask={state.toggleTask}
+            addTask={state.addTask}
           />
 
           <DesktopStudyPlan

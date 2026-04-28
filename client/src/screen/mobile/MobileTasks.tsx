@@ -43,6 +43,10 @@ export function MobileTasks() {
             <p className="tasks-empty">Zatím nejsou evidované žádné úkoly. Paráda! 🎉</p>
           )}
         </div>
+
+        <button type="button" className="mobile-tasks-fab" aria-label="Přidat úkol" onClick={state.addTask}>
+          +
+        </button>
       </div>
     </div>
   )
