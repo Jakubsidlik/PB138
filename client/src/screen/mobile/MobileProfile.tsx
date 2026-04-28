@@ -110,6 +110,19 @@ export function MobileProfileScreen({
       </section>
 
       <section className="mobile-profile-section">
+        <h3>Osobní údaje</h3>
+
+        <label>
+          <span>Jméno a příjmení</span>
+          <input
+            type="text"
+            value={profile.fullName}
+            onChange={(event) => onChangeProfile('fullName', event.target.value)}
+          />
+        </label>
+      </section>
+
+      <section className="mobile-profile-section">
         <h3>Studijní údaje</h3>
 
         <label>

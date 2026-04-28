@@ -107,6 +107,20 @@ export function DesktopProfileScreen({
       </section>
 
       <section className="profile-card">
+        <h3>Osobní údaje</h3>
+        <div className="profile-grid">
+          <label>
+            <span>Jméno a příjmení</span>
+            <input
+              type="text"
+              value={profile.fullName}
+              onChange={(event) => onChangeProfile('fullName', event.target.value)}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="profile-card">
         <h3>Studium</h3>
         <div className="profile-grid">
           <label>

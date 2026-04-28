@@ -306,6 +306,15 @@ export function useDashboardState() {
       return
     }
 
+    // Inicializuj fullName z authSession pokud je prázdný
+    if (!profile.fullName && authSession.fullName) {
+      setProfile((prevProfile) => ({
+        ...prevProfile,
+        fullName: authSession.fullName,
+      }))
+      return
+    }
+
     localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
   }, [profile, isHydrated, authSession])
 
