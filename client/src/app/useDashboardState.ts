@@ -113,7 +113,6 @@ export function useDashboardState() {
   const [authSession, setAuthSession] = React.useState<AuthSession | null>(() =>
     readAuthSessionFromStorage(),
   )
-  const [isSavingProfile, setIsSavingProfile] = React.useState(false)
   const { getToken, isLoaded, isSignedIn } = useAuth()
 
   const apiFetch = React.useCallback(
@@ -571,8 +570,18 @@ export function useDashboardState() {
     setProfile(userProfileSeed)
   }
 
-  const logout = () => {
+  const logout = async () => {
     setAuthSession(null)
+    setIsHydrated(false)
+    setTasks([])
+    setEvents([])
+    setSubjects([])
+    setManagedFiles([])
+    setProfile(userProfileSeed)
+    localStorage.removeItem(TASKS_STORAGE_KEY)
+    localStorage.removeItem(EVENTS_STORAGE_KEY)
+    localStorage.removeItem(PROFILE_STORAGE_KEY)
+    await signOut()
   }
 
   const createSubject = () => {
