@@ -42,7 +42,7 @@ export function DesktopProfileScreen({
   return (
     <section className="desktop-profile-screen" id="desktop-profile">
       <div className="desktop-profile-head">
-        <h2>Nastavení účtu</h2>
+        <h2>Nastavení profilu</h2>
         <p>Spravuj profilový obrázek, osobní údaje a studijní informace</p>
       </div>
 
@@ -69,7 +69,7 @@ export function DesktopProfileScreen({
           </div>
 
           <div className="profile-photo-actions">
-            <p>Nahraj JPG/PNG/GIF (max 5MB) nebo odeber současný avatar.</p>
+            <p>Nahraj JPG nebo PNG (max 5MB) nebo odeber současný avatar.</p>
             <div>
               <button type="button" className="primary" onClick={() => fileInputRef.current?.click()}>
                 Nahrát novou fotku
@@ -97,7 +97,10 @@ export function DesktopProfileScreen({
         {authSession ? (
           <div className="profile-grid">
             <p>
-              Přihlášen/a: <strong>{authSession.fullName}</strong> ({authSession.email})
+              Přihlášen/a: <strong>{authSession.fullName}</strong>
+            </p>
+            <p>
+              E-mail: <strong>{authSession.email}</strong>
             </p>
             <p>
               Role: <strong>{authSession.role}</strong>
@@ -107,21 +110,7 @@ export function DesktopProfileScreen({
       </section>
 
       <section className="profile-card">
-        <h3>Osobní údaje</h3>
-        <div className="profile-grid">
-          <label>
-            <span>Jméno a příjmení</span>
-            <input
-              type="text"
-              value={profile.fullName}
-              onChange={(event) => onChangeProfile('fullName', event.target.value)}
-            />
-          </label>
-        </div>
-      </section>
-
-      <section className="profile-card">
-        <h3>Studium</h3>
+        <h3>Studijní informace</h3>
         <div className="profile-grid">
           <label>
             <span>Škola</span>

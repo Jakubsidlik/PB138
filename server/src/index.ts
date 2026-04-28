@@ -39,15 +39,13 @@ const s3Client = new S3Client({
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || ''
 
 const defaultUserPayload = {
-  fullName: 'Jakub Kowalski',
-  email: 'jakub.kowalski@muni.cz',
   passwordHash: 'demo-password',
   role: 'REGISTERED' as UserRole,
-  school: 'Masarykova univerzita' as string | null,
-  faculty: 'FI' as string | null,
-  studyMajor: 'Informatika' as string | null,
-  studyYear: '3. rocnik' as string | null,
-  studyType: 'Bakalarske studium' as string | null,
+  school: null as string | null,
+  faculty: null as string | null,
+  studyMajor: null as string | null,
+  studyYear: null as string | null,
+  studyType: null as string | null,
   birthDate: null as Date | null,
   bio: null as string | null,
   avatarDataUrl: null as string | null,

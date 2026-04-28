@@ -95,7 +95,7 @@ export function MobileProfileScreen({
         <h3>Registrovaný uživatel</h3>
 
         {authSession ? (
-          <>
+          <div className="profile-grid">
             <p>
               Přihlášen/a: <strong>{authSession.fullName}</strong>
             </p>
@@ -105,28 +105,15 @@ export function MobileProfileScreen({
             <p>
               Role: <strong>{authSession.role}</strong>
             </p>
-          </>
+          </div>
         ) : null}
       </section>
 
       <section className="mobile-profile-section">
-        <h3>Osobní údaje</h3>
+        <h3>Studijní informace</h3>
 
         <label>
-          <span>Jméno a příjmení</span>
-          <input
-            type="text"
-            value={profile.fullName}
-            onChange={(event) => onChangeProfile('fullName', event.target.value)}
-          />
-        </label>
-      </section>
-
-      <section className="mobile-profile-section">
-        <h3>Studijní údaje</h3>
-
-        <label>
-          <span>Univerzita</span>
+          <span>Škola</span>
           <input
             type="text"
             value={profile.school}
@@ -172,6 +159,7 @@ export function MobileProfileScreen({
           onPaletteChange={onPaletteChange}
         />
       </section>
+      
       <section className="mobile-profile-section">
         <div className="profile-actions-row">
           <button type="button" className="secondary" onClick={onResetProfile}>
