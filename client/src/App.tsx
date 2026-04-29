@@ -203,6 +203,7 @@ function App() {
             onToggleArchiveSubject={state.toggleSubjectArchived}
             onDeleteSubject={state.deleteSubject}
             managedFiles={state.managedFiles}
+            onUploadFiles={state.onUploadFiles}
           />
 
           <DesktopProfileScreen

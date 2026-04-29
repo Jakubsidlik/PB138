@@ -18,6 +18,7 @@ type DesktopStudyPlanProps = {
   onToggleArchiveSubject: (subjectId: number) => void
   onDeleteSubject: (subjectId: number) => void
   managedFiles: ManagedFile[]
+  onUploadFiles: (files: FileList | File[] | null, options?: { subjectId?: number; lessonId?: number }) => Promise<void>
 }
 
 export function DesktopStudyPlan({
@@ -29,6 +30,7 @@ export function DesktopStudyPlan({
   onToggleArchiveSubject,
   onDeleteSubject,
   managedFiles,
+  onUploadFiles,
 }: DesktopStudyPlanProps) {
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
@@ -39,8 +41,7 @@ export function DesktopStudyPlan({
   }
 
   const handleAddFile = (subjectId: number, file: File) => {
-    console.log(`Přidán soubor k předmětu ${subjectId}:`, file.name)
-    // V budoucnu lze zde přidat API call pro nahrání souboru
+    void onUploadFiles([file], { subjectId })
   }
 
   return (

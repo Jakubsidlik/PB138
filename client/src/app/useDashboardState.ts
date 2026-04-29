@@ -473,7 +473,7 @@ export function useDashboardState() {
     }))
   }
 
-  const onUploadFiles = async (incomingFiles: FileList | null) => {
+  const onUploadFiles = async (incomingFiles: FileList | File[] | null, options?: { subjectId?: number; lessonId?: number }) => {
     if (!ensureAuthenticated()) {
       return
     }
@@ -482,7 +482,7 @@ export function useDashboardState() {
       return
     }
 
-    const filesArray = Array.from(incomingFiles)
+    const filesArray = incomingFiles instanceof FileList ? Array.from(incomingFiles) : incomingFiles
 
     const tempFiles = filesArray.map((file) => ({
       id: Date.now() + Math.floor(Math.random() * 100000),
@@ -492,6 +492,8 @@ export function useDashboardState() {
       addedLabel: 'Nahrávám na S3...',
       category: getManagedFileCategory(file.name),
       shared: false,
+      subjectId: options?.subjectId ?? null,
+      lessonId: options?.lessonId ?? null,
     }))
 
     setManagedFiles((prevFiles) => [...tempFiles, ...prevFiles])
@@ -528,6 +530,8 @@ export function useDashboardState() {
             shared: false,
             fileKey,
             fileUrl,
+            subjectId: options?.subjectId,
+            lessonId: options?.lessonId,
           }),
         })
       } catch (err) {
