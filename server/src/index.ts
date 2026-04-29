@@ -13,30 +13,42 @@ import {
   TaskPriority,
   UserRole,
 } from '@prisma/client'
+import { z } from 'zod'
 import { prisma } from './prisma.js'
 
 dotenv.config()
 
+// Validace proměnných prostředí hned při startu
+const envSchema = z.object({
+  PORT: z.string().optional().default('5000').transform(Number),
+  S3_REGION: z.string().optional().default('eu-west-1'),
+  S3_ENDPOINT: z.string().optional(),
+  S3_ACCESS_KEY: z.string().optional().default(''), // Default fallback pro vývoj bez S3
+  S3_SECRET_KEY: z.string().optional().default(''),
+  S3_BUCKET_NAME: z.string().optional().default('pb138-bucket'),
+})
+
+// Aplikace spadne s jasnou chybou v konzoli, pokud např. chybí povinná proměnná
+const env = envSchema.parse(process.env)
+
 const app = express()
-const PORT = Number(process.env.PORT ?? 5000)
+const PORT = env.PORT
 
 app.use(cors())
 app.use(express.json())
 app.use(clerkMiddleware())
 
-const s3Endpoint = process.env.S3_ENDPOINT
-
 const s3Client = new S3Client({
-  region: process.env.S3_REGION || 'eu-west-1',
-  endpoint: s3Endpoint || undefined,
-  forcePathStyle: !!s3Endpoint, // Nutné pro Supabase
+  region: env.S3_REGION,
+  endpoint: env.S3_ENDPOINT || undefined,
+  forcePathStyle: !!env.S3_ENDPOINT, // Nutné pro Supabase
   credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY || '',
-    secretAccessKey: process.env.S3_SECRET_KEY || '',
+    accessKeyId: env.S3_ACCESS_KEY,
+    secretAccessKey: env.S3_SECRET_KEY,
   },
 })
 
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || ''
+const BUCKET_NAME = env.S3_BUCKET_NAME
 
 const defaultUserPayload = {
   passwordHash: 'demo-password',
@@ -77,6 +89,147 @@ type AuthActor = {
   email: string
   role: UserRole | 'PUBLIC'
 }
+
+// --- Zod Schemata ---
+const studyPlanSchema = z.object({
+  name: z.string().trim().min(1, 'Pole name je povinne.'),
+  description: z.string().trim().nullable().optional(),
+  faculty: z.string().trim().nullable().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  isActive: z.boolean().optional().default(true),
+  isShared: z.boolean().optional().default(false),
+})
+const updateStudyPlanSchema = studyPlanSchema.partial()
+
+const subjectSchema = z.object({
+  name: z.string().trim().min(1, 'Pole name je povinne.'),
+  teacher: z.string().trim().min(1, 'Pole teacher je povinne.'),
+  code: z.string().trim().min(1, 'Pole code je povinne.').toUpperCase(),
+  studyPlanId: z.number().nullable().optional(),
+  isShared: z.boolean().optional().default(false),
+})
+const updateSubjectSchema = subjectSchema.partial().extend({
+  archived: z.boolean().optional()
+})
+
+const taskSchema = z.object({
+  title: z.string().trim().min(1, 'Pole title je povinne.'),
+  done: z.boolean().optional().default(false),
+  subjectId: z.number().nullable().optional(),
+  studyPlanId: z.number().nullable().optional(),
+  favorite: z.boolean().optional().default(false),
+  tag: z.string().trim().nullable().optional(),
+  priority: z.enum(['NONE', 'LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
+  deadline: z.string().nullable().optional(),
+})
+const updateTaskSchema = taskSchema.partial()
+
+const eventSchema = z.object({
+  title: z.string().trim().min(1, 'Pole title a date jsou povinna.'),
+  date: z.string().trim().min(1, 'Pole title a date jsou povinna.'),
+  time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  subjectId: z.number().nullable().optional(),
+  recurrence: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']).optional(),
+  repeatCount: z.number().optional(),
+  isShared: z.boolean().optional().default(false),
+})
+const updateEventSchema = eventSchema.partial()
+
+const fileSchema = z.object({
+  name: z.string().trim().min(1, 'Pole name je povinne.'),
+  size: z.union([z.string(), z.number()]).optional(),
+  addedLabel: z.string().optional().default('Added now'),
+  shared: z.boolean().optional(),
+  isShared: z.boolean().optional(),
+  subjectId: z.number().nullable().optional(),
+  lessonId: z.number().nullable().optional(),
+  fileKey: z.string().nullable().optional(),
+  fileUrl: z.string().nullable().optional(),
+})
+const updateFileSchema = fileSchema.partial()
+
+const fileCommentSchema = z.object({
+  comment: z.string().trim().min(1, 'Pole comment je povinne.')
+})
+
+const lessonSchema = z.object({
+  title: z.string().trim().min(1, 'Pole title je povinne.'),
+  content: z.string().nullable().optional(),
+  subjectId: z.number().nullable().optional(),
+  studyPlanId: z.number().nullable().optional(),
+  isShared: z.boolean().optional().default(false),
+  orderIndex: z.number().optional().default(0),
+})
+const updateLessonSchema = lessonSchema.partial()
+
+const lessonNoteSchema = z.object({
+  note: z.string().trim().min(1, 'Pole note je povinne.'),
+  isPinned: z.boolean().optional().default(false),
+})
+const updateLessonNoteSchema = lessonNoteSchema.partial()
+
+const textAnnotationSchema = z.object({
+  targetType: z.enum(['LESSON', 'LESSON_NOTE', 'FILE_COMMENT']),
+  targetId: z.union([z.string(), z.number()]),
+  startOffset: z.number().min(0, 'Neplatny interval oznaceni textu.'),
+  endOffset: z.number().min(0, 'Neplatny interval oznaceni textu.'),
+  selectedText: z.string().trim().min(1, 'Pole selectedText a comment jsou povinna.'),
+  comment: z.string().trim().min(1, 'Pole selectedText a comment jsou povinna.'),
+})
+
+const profileSchema = z.object({
+  fullName: z.string().trim().min(1, 'Pole fullName je povinne.'),
+  email: z.string().trim().email('Neplatny format emailu.'),
+  password: z.string().optional(),
+  role: z.enum(['REGISTERED', 'ADMIN']).optional(),
+  school: z.string().trim().nullable().optional(),
+  faculty: z.string().trim().nullable().optional(),
+  studyMajor: z.string().trim().nullable().optional(),
+  studyYear: z.string().trim().nullable().optional(),
+  studyType: z.string().trim().nullable().optional(),
+  birthDate: z.string().nullable().optional(),
+  bio: z.string().trim().nullable().optional(),
+  avatarDataUrl: z.string().nullable().optional(),
+})
+const updateProfileSchema = profileSchema.partial()
+
+const shareStudyPlanSchema = z.object({
+  email: z.string().trim().min(1, 'Pole email je povinne.'),
+  role: z.enum(['VIEWER', 'CONTRIBUTOR']).optional().default('VIEWER')
+})
+
+const uploadUrlSchema = z.object({
+  filename: z.string().trim().min(1, 'Chybi filename.'),
+  contentType: z.string().trim().min(1, 'Chybi contentType.')
+})
+
+const fileModerationSchema = z.object({
+  isShared: z.boolean().optional(),
+  deleted: z.boolean().optional()
+})
+
+const bulkTasksSchema = z.object({
+  tasks: z.array(z.object({
+    id: z.number(),
+    title: z.string().trim().min(1, 'Nazev ukolu nesmi byt prazdny.'),
+    done: z.boolean(),
+    subjectId: z.number().nullable().optional()
+  }))
+})
+
+const bulkEventsSchema = z.object({
+  events: z.array(z.object({
+    id: z.number(),
+    title: z.string().trim().min(1, 'Nazev udalosti nesmi byt prazdny.'),
+    date: z.string().refine((val) => !Number.isNaN(new Date(val).getTime()), { message: 'Neplatny format data.' }),
+    time: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    isShared: z.boolean().optional().default(false),
+    subjectId: z.number().nullable().optional()
+  }))
+})
 
 const asBigInt = (value: unknown): bigint | null => {
   if (typeof value === 'bigint') {
@@ -574,70 +727,6 @@ const requireAdmin = async (req: express.Request, res: express.Response) => {
   return actor
 }
 
-const parseIncomingTask = (value: unknown): ApiTask | null => {
-  if (typeof value !== 'object' || value === null) {
-    return null
-  }
-
-  const candidate = value as Partial<ApiTask>
-
-  if (
-    typeof candidate.id !== 'number' ||
-    typeof candidate.title !== 'string' ||
-    typeof candidate.done !== 'boolean'
-  ) {
-    return null
-  }
-
-  if (
-    candidate.subjectId !== null &&
-    candidate.subjectId !== undefined &&
-    typeof candidate.subjectId !== 'number'
-  ) {
-    return null
-  }
-
-  return {
-    id: candidate.id,
-    title: candidate.title,
-    done: candidate.done,
-    subjectId: candidate.subjectId ?? null,
-  }
-}
-
-const parseIncomingEvent = (value: unknown): ApiEvent | null => {
-  if (typeof value !== 'object' || value === null) {
-    return null
-  }
-
-  const candidate = value as Partial<ApiEvent>
-  if (
-    typeof candidate.id !== 'number' ||
-    typeof candidate.title !== 'string' ||
-    typeof candidate.date !== 'string'
-  ) {
-    return null
-  }
-
-  const parsedDate = new Date(candidate.date)
-  if (Number.isNaN(parsedDate.getTime())) {
-    return null
-  }
-
-  return {
-    id: candidate.id,
-    title: candidate.title,
-    date: toDateOnlyIso(parsedDate),
-    time: typeof candidate.time === 'string' ? candidate.time : null,
-    location: typeof candidate.location === 'string' ? candidate.location : null,
-    isShared: typeof candidate.isShared === 'boolean' ? candidate.isShared : false,
-    subjectId:
-      typeof candidate.subjectId === 'number' || candidate.subjectId === null
-        ? candidate.subjectId
-        : null,
-  }
-}
-
 type CursorPagination = {
   enabled: boolean
   limit: number
@@ -767,22 +856,19 @@ app.post('/api/profile', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as Partial<typeof defaultUserPayload> & {
-      password?: string
-      role?: UserRole
-    }
-
-    if (!payload.fullName || !payload.email) {
-      res.status(400).json({ error: 'Pole fullName, email a school jsou povinna.' })
+    const parsed = profileSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const payload = parsed.data
 
     const created = await prisma.user.create({
       data: {
         fullName: payload.fullName,
         email: payload.email.toLowerCase(),
         passwordHash: payload.password ?? defaultUserPayload.passwordHash,
-        role: parseUserRole(payload.role) ?? defaultUserPayload.role,
+        role: payload.role ?? defaultUserPayload.role,
         school: payload.school ?? null,
         faculty: payload.faculty ?? null,
         studyMajor: payload.studyMajor ?? null,
@@ -790,10 +876,7 @@ app.post('/api/profile', async (req, res, next) => {
         studyType: payload.studyType ?? null,
         birthDate: parseOptionalDate(payload.birthDate) ?? null,
         bio: payload.bio ?? null,
-        avatarDataUrl:
-          typeof payload.avatarDataUrl === 'string' || payload.avatarDataUrl === null
-            ? payload.avatarDataUrl
-            : null,
+        avatarDataUrl: payload.avatarDataUrl ?? null,
       },
     })
 
@@ -823,10 +906,12 @@ app.put('/api/profile', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as Partial<typeof defaultUserPayload> & {
-      password?: string
-      role?: UserRole
+    const parsed = updateProfileSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
     }
+    const payload = parsed.data
 
     const parsedBirthDate = parseOptionalDate(payload.birthDate)
     if (payload.birthDate !== undefined && parsedBirthDate === undefined) {
@@ -837,22 +922,16 @@ app.put('/api/profile', async (req, res, next) => {
     const updated = await prisma.user.update({
       where: { id: BigInt(actor.id) },
       data: {
-        fullName: typeof payload.fullName === 'string' ? payload.fullName : undefined,
-        role:
-          actor.role === 'ADMIN' && payload.role !== undefined
-            ? parseUserRole(payload.role)
-            : undefined,
-        school: typeof payload.school === 'string' ? payload.school : undefined,
-        faculty: typeof payload.faculty === 'string' || payload.faculty === null ? payload.faculty : undefined,
-        studyMajor: typeof payload.studyMajor === 'string' ? payload.studyMajor : undefined,
-        studyYear: typeof payload.studyYear === 'string' ? payload.studyYear : undefined,
-        studyType: typeof payload.studyType === 'string' ? payload.studyType : undefined,
-        birthDate: parsedBirthDate,
-        bio: typeof payload.bio === 'string' || payload.bio === null ? payload.bio : undefined,
-        avatarDataUrl:
-          typeof payload.avatarDataUrl === 'string' || payload.avatarDataUrl === null
-            ? payload.avatarDataUrl
-            : undefined,
+        fullName: payload.fullName,
+        role: actor.role === 'ADMIN' ? payload.role : undefined,
+        school: payload.school,
+        faculty: payload.faculty,
+        studyMajor: payload.studyMajor,
+        studyYear: payload.studyYear,
+        studyType: payload.studyType,
+        birthDate: parsedBirthDate ?? undefined,
+        bio: payload.bio,
+        avatarDataUrl: payload.avatarDataUrl,
       },
     })
 
@@ -989,20 +1068,12 @@ app.post('/api/study-plans', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as {
-      name?: string
-      description?: string | null
-      faculty?: string | null
-      startDate?: string
-      endDate?: string | null
-      isActive?: boolean
-      isShared?: boolean
-    }
-
-    if (!payload.name?.trim()) {
-      res.status(400).json({ error: 'Pole name je povinne.' })
+    const parsed = studyPlanSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const payload = parsed.data
 
     const parsedStartDate = parseOptionalDate(payload.startDate)
     if (payload.startDate !== undefined && parsedStartDate === undefined) {
@@ -1019,13 +1090,13 @@ app.post('/api/study-plans', async (req, res, next) => {
     const created = await prisma.studyPlan.create({
       data: {
         userId: BigInt(actor.id),
-        name: payload.name.trim(),
-        description: typeof payload.description === 'string' ? payload.description.trim() : null,
-        faculty: typeof payload.faculty === 'string' ? payload.faculty.trim() : null,
+        name: payload.name,
+        description: payload.description ?? null,
+        faculty: payload.faculty ?? null,
         startDate: parsedStartDate,
         endDate: parsedEndDate,
-        isActive: typeof payload.isActive === 'boolean' ? payload.isActive : true,
-        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : false,
+        isActive: payload.isActive,
+        isShared: payload.isShared,
       },
     })
 
@@ -1073,15 +1144,12 @@ app.patch('/api/study-plans/:id', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as {
-      name?: string
-      description?: string | null
-      faculty?: string | null
-      startDate?: string
-      endDate?: string | null
-      isActive?: boolean
-      isShared?: boolean
+    const parsed = updateStudyPlanSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
     }
+    const payload = parsed.data
 
     const parsedStartDate = parseOptionalDate(payload.startDate)
     if (payload.startDate !== undefined && (parsedStartDate === undefined || parsedStartDate === null)) {
@@ -1098,23 +1166,13 @@ app.patch('/api/study-plans/:id', async (req, res, next) => {
     const updated = await prisma.studyPlan.update({
       where: { id: studyPlanId },
       data: {
-        name: typeof payload.name === 'string' ? payload.name.trim() : undefined,
-        description:
-          typeof payload.description === 'string'
-            ? payload.description.trim()
-            : payload.description === null
-              ? null
-              : undefined,
-        faculty:
-          typeof payload.faculty === 'string'
-            ? payload.faculty.trim()
-            : payload.faculty === null
-              ? null
-              : undefined,
+        name: payload.name,
+        description: payload.description,
+        faculty: payload.faculty,
         startDate: parsedStartDate ?? undefined,
         endDate: parsedEndDate,
-        isActive: typeof payload.isActive === 'boolean' ? payload.isActive : undefined,
-        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : undefined,
+        isActive: payload.isActive,
+        isShared: payload.isShared,
       },
     })
 
@@ -1258,13 +1316,14 @@ app.post('/api/study-plans/:id/share', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as { email?: string; role?: CollaborationRole }
-    if (!payload.email?.trim()) {
-      res.status(400).json({ error: 'Pole email je povinne.' })
+    const parsed = shareStudyPlanSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const payload = parsed.data
 
-    const user = await prisma.user.findFirst({ where: { email: payload.email.trim().toLowerCase(), deletedAt: null } })
+    const user = await prisma.user.findFirst({ where: { email: payload.email.toLowerCase(), deletedAt: null } })
     if (!user) {
       res.status(404).json({ error: 'Uzivatel s danym emailem nebyl nalezen.' })
       return
@@ -1275,7 +1334,7 @@ app.post('/api/study-plans/:id/share', async (req, res, next) => {
       return
     }
 
-    const role = parseCollaborationRole(payload.role) ?? 'VIEWER'
+    const role = payload.role
     const collaborator = await prisma.studyPlanCollaborator.upsert({
       where: {
         studyPlanId_userId: {
@@ -1438,18 +1497,12 @@ app.post('/api/subjects', async (req, res, next) => {
       return
     }
 
-    const { name, teacher, code, studyPlanId, isShared } = req.body as {
-      name?: string
-      teacher?: string
-      code?: string
-      studyPlanId?: number | null
-      isShared?: boolean
-    }
-
-    if (!name?.trim() || !teacher?.trim() || !code?.trim()) {
-      res.status(400).json({ error: 'Pole name, teacher a code jsou povinna.' })
+    const parsed = subjectSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const { name, teacher, code, studyPlanId, isShared } = parsed.data
 
     const parsedStudyPlanId = asBigInt(studyPlanId)
     let ownerUserId = BigInt(actor.id)
@@ -1482,10 +1535,10 @@ app.post('/api/subjects', async (req, res, next) => {
       data: {
         userId: ownerUserId,
         studyPlanId: parsedStudyPlanId,
-        name: name.trim(),
-        teacher: teacher.trim(),
-        code: code.trim().toUpperCase(),
-        isShared: typeof isShared === 'boolean' ? isShared : false,
+        name,
+        teacher,
+        code,
+        isShared,
       },
     })
 
@@ -1530,24 +1583,22 @@ app.put('/api/subjects/:id', async (req, res, next) => {
       return
     }
 
-    const { name, teacher, code, archived, studyPlanId, isShared } = req.body as {
-      name?: string
-      teacher?: string
-      code?: string
-      archived?: boolean
-      studyPlanId?: number | null
-      isShared?: boolean
+    const parsed = updateSubjectSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
     }
+    const { name, teacher, code, archived, studyPlanId, isShared } = parsed.data
 
     const updated = await prisma.subject.update({
       where: { id: subjectId },
       data: {
-        name: typeof name === 'string' ? name.trim() : undefined,
-        teacher: typeof teacher === 'string' ? teacher.trim() : undefined,
-        code: typeof code === 'string' ? code.trim().toUpperCase() : undefined,
+        name,
+        teacher,
+        code,
         studyPlanId: studyPlanId !== undefined ? asBigInt(studyPlanId) : undefined,
-        isShared: typeof isShared === 'boolean' ? isShared : undefined,
-        deletedAt: typeof archived === 'boolean' ? (archived ? new Date() : null) : undefined,
+        isShared,
+        deletedAt: archived !== undefined ? (archived ? new Date() : null) : undefined,
       },
     })
 
@@ -1678,21 +1729,12 @@ app.post('/api/tasks', async (req, res, next) => {
       return
     }
 
-    const { title, done, subjectId, studyPlanId, favorite, tag, priority, deadline } = req.body as {
-      title?: string
-      done?: boolean
-      subjectId?: number | null
-      studyPlanId?: number | null
-      favorite?: boolean
-      tag?: string | null
-      priority?: TaskPriority
-      deadline?: string | null
-    }
-
-    if (!title?.trim()) {
-      res.status(400).json({ error: 'Pole title je povinne.' })
+    const parsed = taskSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const { title, done, subjectId, studyPlanId, favorite, tag, priority, deadline } = parsed.data
 
     const parsedDeadline = parseOptionalDate(deadline)
     if (deadline !== undefined && parsedDeadline === undefined) {
@@ -1701,8 +1743,8 @@ app.post('/api/tasks', async (req, res, next) => {
     }
 
     const parsedTag =
-      typeof tag === 'string'
-        ? tag.trim() || null
+      tag !== undefined
+        ? tag || null
         : priority !== undefined
           ? parseTaskPriority(priority) ?? null
           : null
@@ -1710,11 +1752,11 @@ app.post('/api/tasks', async (req, res, next) => {
     const created = await prisma.task.create({
       data: {
         userId: BigInt(actor.id),
-        title: title.trim(),
-        done: typeof done === 'boolean' ? done : false,
+        title,
+        done,
         subjectId: asBigInt(subjectId),
         studyPlanId: asBigInt(studyPlanId),
-        favorite: typeof favorite === 'boolean' ? favorite : false,
+        favorite,
         tag: parsedTag,
         deadline: parsedDeadline,
       },
@@ -1745,16 +1787,12 @@ app.patch('/api/tasks/:id', async (req, res, next) => {
       return
     }
 
-    const { title, done, subjectId, studyPlanId, favorite, tag, priority, deadline } = req.body as {
-      title?: string
-      done?: boolean
-      subjectId?: number | null
-      studyPlanId?: number | null
-      favorite?: boolean
-      tag?: string | null
-      priority?: TaskPriority
-      deadline?: string | null
+    const parsed = updateTaskSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
     }
+    const { title, done, subjectId, studyPlanId, favorite, tag, priority, deadline } = parsed.data
 
     const parsedDeadline = parseOptionalDate(deadline)
     if (deadline !== undefined && parsedDeadline === undefined) {
@@ -1763,8 +1801,8 @@ app.patch('/api/tasks/:id', async (req, res, next) => {
     }
 
     const parsedTag =
-      typeof tag === 'string'
-        ? tag.trim() || null
+      tag !== undefined
+        ? tag || null
         : priority !== undefined
           ? (parseTaskPriority(priority) ?? null)
           : undefined
@@ -1772,11 +1810,11 @@ app.patch('/api/tasks/:id', async (req, res, next) => {
     const updated = await prisma.task.update({
       where: { id: taskId },
       data: {
-        title: typeof title === 'string' ? title.trim() : undefined,
-        done: typeof done === 'boolean' ? done : undefined,
+        title,
+        done,
         subjectId: subjectId !== undefined ? asBigInt(subjectId) : undefined,
         studyPlanId: studyPlanId !== undefined ? asBigInt(studyPlanId) : undefined,
-        favorite: typeof favorite === 'boolean' ? favorite : undefined,
+        favorite,
         tag: parsedTag,
         deadline: parsedDeadline,
       },
@@ -1841,20 +1879,13 @@ app.put('/api/tasks', async (req, res, next) => {
       return
     }
 
-    const { tasks } = req.body as { tasks?: unknown[] }
-
-    if (!Array.isArray(tasks)) {
-      res.status(400).json({ error: 'Neplatny payload: ocekava se pole tasks.' })
+    const parsed = bulkTasksSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const typedTasks = parsed.data.tasks
 
-    const parsedTasks = tasks.map(parseIncomingTask)
-    if (parsedTasks.some((task) => task === null)) {
-      res.status(400).json({ error: 'Neplatna struktura tasku.' })
-      return
-    }
-
-    const typedTasks = parsedTasks as ApiTask[]
     const existingTasks = await prisma.task.findMany({ where: { userId: BigInt(actor.id), deletedAt: null } })
     const existingById = new Map(existingTasks.map((task) => [task.id.toString(), task]))
 
@@ -1986,21 +2017,12 @@ app.post('/api/events', async (req, res, next) => {
       return
     }
 
-    const { title, date, time, location, subjectId, recurrence, repeatCount, isShared } = req.body as {
-      title?: string
-      date?: string
-      time?: string | null
-      location?: string | null
-      subjectId?: number | null
-      recurrence?: EventRecurrence
-      repeatCount?: number
-      isShared?: boolean
-    }
-
-    if (!title?.trim() || !date?.trim()) {
-      res.status(400).json({ error: 'Pole title a date jsou povinna.' })
+    const parsed = eventSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const { title, date, time, location, subjectId, recurrence, repeatCount, isShared } = parsed.data
 
     const parsedDate = new Date(date)
     if (Number.isNaN(parsedDate.getTime())) {
@@ -2066,15 +2088,12 @@ app.patch('/api/events/:id', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as {
-      title?: string
-      date?: string
-      time?: string | null
-      location?: string | null
-      subjectId?: number | null
-      recurrence?: EventRecurrence
-      isShared?: boolean
+    const parsed = updateEventSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
     }
+    const payload = parsed.data
 
     const parsedDate =
       typeof payload.date === 'string' ? new Date(payload.date) : undefined
@@ -2143,20 +2162,13 @@ app.put('/api/events', async (req, res, next) => {
       return
     }
 
-    const { events } = req.body as { events?: unknown[] }
-
-    if (!Array.isArray(events)) {
-      res.status(400).json({ error: 'Neplatny payload: ocekava se pole events.' })
+    const parsed = bulkEventsSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const typedEvents = parsed.data.events
 
-    const parsedEvents = events.map(parseIncomingEvent)
-    if (parsedEvents.some((event) => event === null)) {
-      res.status(400).json({ error: 'Neplatna struktura eventu.' })
-      return
-    }
-
-    const typedEvents = parsedEvents as ApiEvent[]
     const existingEvents = await prisma.event.findMany({ where: { userId: BigInt(actor.id), deletedAt: null } })
     const existingById = new Map(existingEvents.map((event) => [event.id.toString(), event]))
 
@@ -2347,7 +2359,13 @@ app.patch('/api/admin/files/:id/moderation', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as { isShared?: boolean; deleted?: boolean }
+    const parsed = fileModerationSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
+    }
+    const payload = parsed.data
+
     const existing = await prisma.fileRecord.findUnique({ where: { id: fileId } })
     if (!existing) {
       res.status(404).json({ error: 'Soubor nebyl nalezen.' })
@@ -2357,7 +2375,7 @@ app.patch('/api/admin/files/:id/moderation', async (req, res, next) => {
     const updated = await prisma.fileRecord.update({
       where: { id: fileId },
       data: {
-        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : undefined,
+        isShared: payload.isShared,
         deletedAt:
           payload.deleted === true
             ? new Date()
@@ -2378,11 +2396,12 @@ app.post('/api/files/upload-url', async (req, res, next) => {
     const actor = await requireRegisteredActor(req, res)
     if (!actor) return
 
-    const { filename, contentType } = req.body as { filename?: string; contentType?: string }
-    if (!filename || !contentType) {
-      res.status(400).json({ error: 'Chybi filename nebo contentType.' })
+    const parsed = uploadUrlSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const { filename, contentType } = parsed.data
 
     const fileKey = `${uuidv4()}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`
     const command = new PutObjectCommand({
@@ -2392,9 +2411,9 @@ app.post('/api/files/upload-url', async (req, res, next) => {
     })
 
     const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 })
-    const fileUrl = s3Endpoint 
-      ? `${s3Endpoint}/${BUCKET_NAME}/${fileKey}`
-      : `https://${BUCKET_NAME}.s3.${process.env.S3_REGION || 'eu-west-1'}.amazonaws.com/${fileKey}`
+    const fileUrl = env.S3_ENDPOINT 
+      ? `${env.S3_ENDPOINT}/${BUCKET_NAME}/${fileKey}`
+      : `https://${BUCKET_NAME}.s3.${env.S3_REGION}.amazonaws.com/${fileKey}`
 
     res.json({ uploadUrl, fileKey, fileUrl })
   } catch (error) {
@@ -2409,22 +2428,12 @@ app.post('/api/files', async (req, res, next) => {
       return
     }
 
-    const { name, size, addedLabel, shared, isShared, subjectId, lessonId, fileKey, fileUrl } = req.body as {
-      name?: string
-      size?: string | number
-      addedLabel?: string
-      shared?: boolean
-      isShared?: boolean
-      subjectId?: number | null
-      lessonId?: number | null
-      fileKey?: string | null
-      fileUrl?: string | null
-    }
-
-    if (!name?.trim()) {
-      res.status(400).json({ error: 'Pole name je povinne.' })
+    const parsed = fileSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const { name, size, addedLabel, shared, isShared, subjectId, lessonId, fileKey, fileUrl } = parsed.data
 
     const parsedSize = parseFileSizeToBytes(size)
     if (parsedSize === undefined || parsedSize === null) {
@@ -2437,12 +2446,12 @@ app.post('/api/files', async (req, res, next) => {
         userId: BigInt(actor.id),
         subjectId: asBigInt(subjectId),
         lessonId: asBigInt(lessonId),
-        name: name.trim(),
+        name,
         size: parsedSize,
-        addedLabel: typeof addedLabel === 'string' ? addedLabel : 'Added now',
-        isShared: typeof isShared === 'boolean' ? isShared : typeof shared === 'boolean' ? shared : false,
-        fileKey: typeof fileKey === 'string' ? fileKey : null,
-        fileUrl: typeof fileUrl === 'string' ? fileUrl : null,
+        addedLabel,
+        isShared: isShared !== undefined ? isShared : (shared !== undefined ? shared : false),
+        fileKey: fileKey ?? null,
+        fileUrl: fileUrl ?? null,
       },
     })
 
@@ -2476,15 +2485,12 @@ app.put('/api/files/:id', async (req, res, next) => {
       return
     }
 
-    const { name, size, addedLabel, shared, isShared, subjectId, lessonId } = req.body as {
-      name?: string
-      size?: string | number
-      addedLabel?: string
-      shared?: boolean
-      isShared?: boolean
-      subjectId?: number | null
-      lessonId?: number | null
+    const parsed = updateFileSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
     }
+    const { name, size, addedLabel, shared, isShared, subjectId, lessonId } = parsed.data
 
     const parsedSize = parseFileSizeToBytes(size)
     if (size !== undefined && parsedSize === undefined) {
@@ -2495,15 +2501,11 @@ app.put('/api/files/:id', async (req, res, next) => {
     const updated = await prisma.fileRecord.update({
       where: { id: fileId },
       data: {
-        name: typeof name === 'string' ? name.trim() : undefined,
+        name,
         size: parsedSize === null ? undefined : parsedSize,
-        addedLabel: typeof addedLabel === 'string' ? addedLabel : undefined,
+        addedLabel,
         isShared:
-          typeof isShared === 'boolean'
-            ? isShared
-            : typeof shared === 'boolean'
-              ? shared
-              : undefined,
+          isShared !== undefined ? isShared : shared !== undefined ? shared : undefined,
         subjectId: subjectId !== undefined ? asBigInt(subjectId) : undefined,
         lessonId: lessonId !== undefined ? asBigInt(lessonId) : undefined,
       },
@@ -2606,11 +2608,12 @@ app.post('/api/files/:id/comments', async (req, res, next) => {
       return
     }
 
-    const { comment } = req.body as { comment?: string }
-    if (!comment?.trim()) {
-      res.status(400).json({ error: 'Pole comment je povinne.' })
+    const parsed = fileCommentSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const { comment } = parsed.data
 
     const file = await prisma.fileRecord.findUnique({ where: { id: fileId } })
     if (!file || file.deletedAt) {
@@ -2628,7 +2631,7 @@ app.post('/api/files/:id/comments', async (req, res, next) => {
       data: {
         fileId,
         userId: BigInt(actor.id),
-        comment: comment.trim(),
+        comment,
       },
     })
 
@@ -2658,11 +2661,12 @@ app.patch('/api/file-comments/:id', async (req, res, next) => {
       return
     }
 
-    const { comment } = req.body as { comment?: string }
-    if (!comment?.trim()) {
-      res.status(400).json({ error: 'Pole comment je povinne.' })
+    const parsed = fileCommentSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const { comment } = parsed.data
 
     const existing = await prisma.fileComment.findUnique({
       where: { id: commentId },
@@ -2688,7 +2692,7 @@ app.patch('/api/file-comments/:id', async (req, res, next) => {
 
     const updated = await prisma.fileComment.update({
       where: { id: commentId },
-      data: { comment: comment.trim() },
+      data: { comment },
     })
 
     res.json({
@@ -2812,28 +2816,21 @@ app.post('/api/lessons', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as {
-      subjectId?: number | null
-      studyPlanId?: number | null
-      title?: string
-      content?: string | null
-      isShared?: boolean
-      orderIndex?: number
-    }
-
-    if (!payload.title?.trim()) {
-      res.status(400).json({ error: 'Pole title je povinne.' })
+    const parsed = lessonSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const payload = parsed.data
 
     const created = await prisma.lesson.create({
       data: {
         subjectId: asBigInt(payload.subjectId),
         studyPlanId: asBigInt(payload.studyPlanId),
-        title: payload.title.trim(),
-        content: typeof payload.content === 'string' ? payload.content : null,
-        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : false,
-        orderIndex: typeof payload.orderIndex === 'number' ? Math.trunc(payload.orderIndex) : 0,
+        title: payload.title,
+        content: payload.content ?? null,
+        isShared: payload.isShared,
+        orderIndex: Math.trunc(payload.orderIndex),
       },
     })
 
@@ -2891,29 +2888,22 @@ app.patch('/api/lessons/:id', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as {
-      subjectId?: number | null
-      studyPlanId?: number | null
-      title?: string
-      content?: string | null
-      isShared?: boolean
-      orderIndex?: number
+    const parsed = updateLessonSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
     }
+    const payload = parsed.data
 
     const updated = await prisma.lesson.update({
       where: { id: lessonId },
       data: {
         subjectId: payload.subjectId !== undefined ? asBigInt(payload.subjectId) : undefined,
         studyPlanId: payload.studyPlanId !== undefined ? asBigInt(payload.studyPlanId) : undefined,
-        title: typeof payload.title === 'string' ? payload.title.trim() : undefined,
-        content:
-          typeof payload.content === 'string'
-            ? payload.content
-            : payload.content === null
-              ? null
-              : undefined,
-        isShared: typeof payload.isShared === 'boolean' ? payload.isShared : undefined,
-        orderIndex: typeof payload.orderIndex === 'number' ? Math.trunc(payload.orderIndex) : undefined,
+        title: payload.title,
+        content: payload.content,
+        isShared: payload.isShared,
+        orderIndex: payload.orderIndex !== undefined ? Math.trunc(payload.orderIndex) : undefined,
       },
     })
 
@@ -3067,18 +3057,19 @@ app.post('/api/lessons/:id/notes', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as { note?: string; isPinned?: boolean }
-    if (!payload.note?.trim()) {
-      res.status(400).json({ error: 'Pole note je povinne.' })
+    const parsed = lessonNoteSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
+    const payload = parsed.data
 
     const created = await prisma.lessonNote.create({
       data: {
         lessonId,
         userId: BigInt(actor.id),
-        note: payload.note.trim(),
-        isPinned: typeof payload.isPinned === 'boolean' ? payload.isPinned : false,
+        note: payload.note,
+        isPinned: payload.isPinned,
       },
     })
 
@@ -3120,13 +3111,18 @@ app.patch('/api/lesson-notes/:id', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as { note?: string; isPinned?: boolean }
+    const parsed = updateLessonNoteSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
+    }
+    const payload = parsed.data
 
     const updated = await prisma.lessonNote.update({
       where: { id: noteId },
       data: {
-        note: typeof payload.note === 'string' ? payload.note.trim() : undefined,
-        isPinned: typeof payload.isPinned === 'boolean' ? payload.isPinned : undefined,
+        note: payload.note,
+        isPinned: payload.isPinned,
       },
     })
 
@@ -3227,34 +3223,23 @@ app.post('/api/annotations', async (req, res, next) => {
       return
     }
 
-    const payload = req.body as {
-      targetType?: AnnotationTargetType
-      targetId?: number | string
-      startOffset?: number
-      endOffset?: number
-      selectedText?: string
-      comment?: string
+    const parsed = textAnnotationSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.errors[0].message })
+      return
     }
+    const payload = parsed.data
 
     const targetType = parseAnnotationTargetType(payload.targetType)
     const targetId = asBigInt(payload.targetId)
+
     if (!targetType || !targetId) {
       res.status(400).json({ error: 'Pole targetType a targetId jsou povinna.' })
       return
     }
 
-    if (
-      typeof payload.startOffset !== 'number' ||
-      typeof payload.endOffset !== 'number' ||
-      payload.startOffset < 0 ||
-      payload.endOffset < payload.startOffset
-    ) {
+    if (payload.endOffset < payload.startOffset) {
       res.status(400).json({ error: 'Neplatny interval oznaceni textu.' })
-      return
-    }
-
-    if (!payload.selectedText?.trim() || !payload.comment?.trim()) {
-      res.status(400).json({ error: 'Pole selectedText a comment jsou povinna.' })
       return
     }
 
