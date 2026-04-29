@@ -1,5 +1,6 @@
-import React from 'react'
+import React from 'react';
 import './App.css'
+import './App-subject-modal.css'
 import {
   calendarWeekDays,
   subjectVisualByCode,
@@ -8,20 +9,55 @@ import { getDeadlineMeta, getDefaultMetaForTitle, getRelativeDaysLabel } from '.
 import { useDashboardState } from './app/useDashboardState'
 import { Sidebar } from './components/shared/Sidebar'
 import { Topbar } from './components/shared/Topbar'
-import { MobileFilesScreen } from './components/mobile/MobileFilesScreen'
-import { MobileCalendarScreen } from './components/mobile/MobileCalendarScreen'
-import { MobileSubjectsScreen } from './components/mobile/MobileSubjectsScreen'
+import { AuthScreen } from './components/authentication/AuthScreen'
+import { useUser, useAuth } from '@clerk/clerk-react'
+
+import { MobileFilesScreen } from './screen/mobile/MobileFiles'
+import { MobileCalendarScreen } from './screen/mobile/MobileCalendar'
+import { MobileTasks } from './screen/mobile/MobileTasks'
+import { MobileStudyPlanScreen } from './screen/mobile/MobileStudyPlan'
+import { MobileBottomNav } from './screen/mobile/MobileBottomNav'
+import { MobileProfileScreen } from './screen/mobile/MobileProfile'
 import { DashboardHomeContent } from './components/shared/DashboardHomeContent'
-import { DesktopCalendarScreen } from './components/desktop/DesktopCalendarScreen'
-import { DesktopSubjectsScreen } from './components/desktop/DesktopSubjectsScreen'
-import { MobileBottomNav } from './components/mobile/MobileBottomNav'
-import { DesktopFilesScreen } from './components/desktop/DesktopFilesScreen'
-import { DesktopProfileScreen } from './components/desktop/DesktopProfileScreen'
-import { MobileProfileScreen } from './components/mobile/MobileProfileScreen'
+import { DesktopCalendarScreen } from './screen/desktop/DesktopCalendar'
+import { DesktopFilesScreen } from './screen/desktop/DesktopFiles'
+import { DesktopTasksScreen } from './screen/desktop/DesktopTasks'
+import { DesktopStudyPlan } from './screen/desktop/DesktopStudyPlan'
+import { DesktopProfileScreen } from './screen/desktop/DesktopProfile'
 
 function App() {
   const state = useDashboardState()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const { isLoaded, isSignedIn, user } = useUser()
+  const { signOut } = useAuth()
+
+  // Synchronizace Clerk stavu do lokálního Dashboard stavu aplikace
+  React.useEffect(() => {
+    if (isSignedIn && user && !state.authSession) {
+      state.setAuthSession({
+        userId: user.id as any, // Clerk vrací textové ID
+        role: 'REGISTERED',
+        fullName: user.fullName || 'Uživatel',
+        email: user.primaryEmailAddress?.emailAddress || '',
+      })
+    }
+  }, [isSignedIn, user, state.authSession])
+
+  const handleLogout = async () => {
+    await signOut()
+    state.logout()
+  }
+
+  if (!isLoaded) {
+    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>Načítám...</div>
+  }
+
+  // Zobrazí AuthScreen, pokud není přihlášen Clerk
+  if (!isSignedIn) {
+    return (
+      <AuthScreen />
+    )
+  }
 
   return (
     <div
@@ -30,13 +66,19 @@ function App() {
       <Sidebar
         activeMobileNav={state.activeMobileNav}
         setActiveMobileNav={state.setActiveMobileNav}
+        themeMode={state.themeMode}
+        onThemeChange={state.setThemeMode}
+        accentPalette={state.accentPalette}
+        onPaletteChange={state.setAccentPalette}
+        onLogout={handleLogout}
       />
 
       <main className="main-content">
         <Topbar
           isCalendarScreen={state.isCalendarScreen}
           isFilesScreen={state.isFilesScreen}
-          isSubjectsScreen={state.isSubjectsScreen}
+          isTasksScreen={state.isTasksScreen}
+          isStudyPlanScreen={state.isStudyPlanScreen}
           isProfileScreen={state.isProfileScreen}
           fileInputRef={fileInputRef}
           setActiveMobileNav={state.setActiveMobileNav}
@@ -74,7 +116,13 @@ function App() {
             removeEvent={state.removeEvent}
           />
 
-          <MobileSubjectsScreen
+          <MobileTasks
+            tasks={state.tasks}
+            tasksDone={state.tasksDone}
+            toggleTask={state.toggleTask}
+          />
+
+          <MobileStudyPlanScreen
             subjectSearch={state.subjectSearch}
             setSubjectSearch={state.setSubjectSearch}
             filteredSubjects={state.filteredSubjects}
@@ -83,6 +131,7 @@ function App() {
             onEditSubject={state.updateSubject}
             onToggleArchiveSubject={state.toggleSubjectArchived}
             onDeleteSubject={state.deleteSubject}
+            managedFiles={state.managedFiles}
           />
 
           <MobileProfileScreen
@@ -91,9 +140,15 @@ function App() {
             onChangeProfile={state.onChangeProfile}
             onUploadAvatar={state.onUploadProfileAvatar}
             onRemoveAvatar={state.onRemoveProfileAvatar}
-            onLogin={state.login}
-            onRegister={state.register}
-            onLogout={state.logout}
+            onResetProfile={state.resetProfile}
+            onLogout={handleLogout}
+            themeMode={state.themeMode}
+            onThemeChange={state.setThemeMode}
+            accentPalette={state.accentPalette}
+            onPaletteChange={state.setAccentPalette}
+            hasUnsavedChanges={state.hasUnsavedProfileChanges}
+            onSaveProfile={state.onSaveProfile}
+            isSavingProfile={state.isSavingProfile}
           />
 
           <DashboardHomeContent
@@ -103,9 +158,16 @@ function App() {
             upcomingEvents={state.upcomingEvents}
             getDeadlineMeta={getDeadlineMeta}
             getRelativeDaysLabel={getRelativeDaysLabel}
-            managedFiles={state.managedFiles}
-            subjects={state.subjects}
             toggleTask={state.toggleTask}
+          />
+
+          <DesktopFilesScreen
+            managedFiles={state.managedFiles}
+            fileInputRef={fileInputRef}
+            onUploadFiles={state.onUploadFiles}
+            onManageFile={state.manageFile}
+            onDeleteFile={state.removeFile}
+            onToggleFileShared={state.toggleFileShared}
           />
 
           <DesktopCalendarScreen
@@ -124,7 +186,15 @@ function App() {
             addDesktopEvent={state.addDesktopEvent}
           />
 
-          <DesktopSubjectsScreen
+          <DesktopTasksScreen
+            tasks={state.tasks}
+            tasksDone={state.tasksDone}
+            toggleTask={state.toggleTask}
+            addTask={state.addTask}
+            deleteTask={state.deleteTask}
+          />
+
+          <DesktopStudyPlan
             desktopSubjects={state.desktopSubjects}
             subjectFilter={state.subjectFilter}
             setSubjectFilter={state.setSubjectFilter}
@@ -132,15 +202,10 @@ function App() {
             onEditSubject={state.updateSubject}
             onToggleArchiveSubject={state.toggleSubjectArchived}
             onDeleteSubject={state.deleteSubject}
-          />
-
-          <DesktopFilesScreen
             managedFiles={state.managedFiles}
-            fileInputRef={fileInputRef}
             onUploadFiles={state.onUploadFiles}
-            onManageFile={state.manageFile}
-            onDeleteFile={state.removeFile}
-            onToggleFileShared={state.toggleFileShared}
+            lessons={state.lessons}
+            onAddNote={state.addSubjectNote}
           />
 
           <DesktopProfileScreen
@@ -150,9 +215,14 @@ function App() {
             onUploadAvatar={state.onUploadProfileAvatar}
             onRemoveAvatar={state.onRemoveProfileAvatar}
             onResetProfile={state.resetProfile}
-            onLogin={state.login}
-            onRegister={state.register}
-            onLogout={state.logout}
+            onLogout={handleLogout}
+            themeMode={state.themeMode}
+            onThemeChange={state.setThemeMode}
+            accentPalette={state.accentPalette}
+            onPaletteChange={state.setAccentPalette}
+            hasUnsavedChanges={state.hasUnsavedProfileChanges}
+            onSaveProfile={state.onSaveProfile}
+            isSavingProfile={state.isSavingProfile}
           />
         </div>
 

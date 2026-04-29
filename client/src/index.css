@@ -9,5 +9,6 @@ body,
   width: 100%;
   min-height: 100%;
   font-family: 'IBM Plex Sans', 'Noto Sans', 'Segoe UI', sans-serif;
-  color: #0f172a;
+  color: #242f49;
+  background: #fffdf6;
 }

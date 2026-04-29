@@ -4,11 +4,14 @@ export const getNavFromHash = (hash: string): MobileNavItem => {
   if (hash === '#calendar') {
     return 'calendar'
   }
-  if (hash === '#subjects') {
-    return 'subjects'
+  if (hash === '#tasks') {
+    return 'tasks'
   }
   if (hash === '#files') {
     return 'files'
+  }
+  if (hash === '#study-plan') {
+    return 'study-plan'
   }
 
   if (hash === '#profile') {
@@ -82,13 +85,13 @@ export const formatFileSize = (sizeInBytes: number) => {
 
 export const getDeadlineMeta = (index: number) => {
   if (index === 0) {
-    return { label: 'High Priority', className: 'high', progress: 80 }
+    return { label: 'Vysoká priorita', className: 'Vysoká', progress: 80 }
   }
   if (index === 1) {
-    return { label: 'Medium Priority', className: 'medium', progress: 40 }
+    return { label: 'Střední priorita', className: 'Střední', progress: 40 }
   }
 
-  return { label: 'Low Priority', className: 'low', progress: 20 }
+  return { label: 'Nízká priorita', className: 'Nízká', progress: 20 }
 }
 
 export const getRelativeDaysLabel = (date: string) => {
@@ -102,11 +105,11 @@ export const getRelativeDaysLabel = (date: string) => {
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 
   if (diffDays <= 0) {
-    return 'Today'
+    return 'Dnes'
   }
 
   if (diffDays === 1) {
-    return 'In 1 day'
+    return 'Zítra'
   }
 
   return `In ${diffDays} days`
@@ -129,4 +132,30 @@ export const buildCalendarCells = (displayMonth: Date): CalendarCell[] => {
       inCurrentMonth: cellDate.getMonth() === month,
     }
   })
+}
+
+export const getDailyMotto = (): string => {
+  const mottos = [
+    '"Vzdělání je nejlepší investice!"',
+    '"Každý den je nová příležitost!"',
+    '"Malé krůčky vedou k velkým cílům!"',
+    '"Věř ve své schopnosti!"',
+    '"Učení nikdy nekončí!"',
+    '"Soustředění je klíč k úspěchu!"',
+    '"Tvoje práce se vždy vyplatí!"',
+    '"Chyby jsou součástí učení!"',
+    '"Nejlepší čas je teď!"',
+    '"Nerezignuj na své sny!"',
+    '"Jsi silnější, než si myslíš!"',
+    '"Sebevědomost roste s praxí!"',
+    '"Společný úkol - větší síla!"',
+    '"Každý máster byl kdysi začátečník!"',
+    '"Ztráta je jen lekce!"',
+    '"Tvůj potenciál je neomezený!"',
+    '"Vytrvalost je cesta k vítězství!"',
+    '"Základy jsou důležité!"'
+  ]
+
+  const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000)
+  return mottos[dayOfYear % mottos.length]
 }

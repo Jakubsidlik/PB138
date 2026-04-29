@@ -1,24 +1,22 @@
 import React from 'react'
 import {
   desktopSubjectMetaByCode,
-  eventMetaSeed,
-  eventsSeed,
   EVENTS_STORAGE_KEY,
-  managedFilesSeed,
   PALETTE_STORAGE_KEY,
   PROFILE_STORAGE_KEY,
   subjectsSeed,
-  tasksSeed,
   TASKS_STORAGE_KEY,
   THEME_STORAGE_KEY,
   userProfileSeed,
 } from './data'
+import { useAuth } from '@clerk/clerk-react'
 import {
   AccentPalette,
   AuthSession,
   CalendarEvent,
   EventMeta,
   FileTab,
+  Lesson,
   ManagedFile,
   MobileNavItem,
   Task,
@@ -58,7 +56,7 @@ const readAuthSessionFromStorage = (): AuthSession | null => {
 
     const session = parsed as Partial<AuthSession>
     if (
-      typeof session.userId !== 'number' ||
+      (typeof session.userId !== 'number' && typeof session.userId !== 'string') ||
       (session.role !== 'REGISTERED' && session.role !== 'ADMIN') ||
       typeof session.fullName !== 'string' ||
       typeof session.email !== 'string'
@@ -83,26 +81,27 @@ const toEventMeta = (event: CalendarEvent, fallbackTitle: string): EventMeta => 
   return {
     time: event.time ?? fallback.time,
     location: event.location ?? fallback.location,
-    icon: event.icon ?? fallback.icon,
-    accent: event.accent ?? fallback.accent,
+    icon: fallback.icon,
+    accent: fallback.accent,
   }
 }
 
 export function useDashboardState() {
-  const [tasks, setTasks] = React.useState<Task[]>(tasksSeed)
-  const [events, setEvents] = React.useState<CalendarEvent[]>(eventsSeed)
-  const [subjects, setSubjects] = React.useState(subjectsSeed)
+  const [tasks, setTasks] = React.useState<Task[]>(() => readTasksFromStorage() ?? [])
+  const [events, setEvents] = React.useState<CalendarEvent[]>(() => readEventsFromStorage() ?? [])
+  const [subjects, setSubjects] = React.useState<typeof subjectsSeed>([])
   const [themeMode, setThemeMode] = React.useState<ThemeMode>(() => readThemeFromStorage())
+  const [lessons, setLessons] = React.useState<Lesson[]>([])
   const [accentPalette, setAccentPalette] = React.useState<AccentPalette>(() => readPaletteFromStorage())
   const [activeMobileNav, setActiveMobileNav] = React.useState<MobileNavItem>(() =>
     getNavFromHash(window.location.hash),
   )
   const [displayMonth, setDisplayMonth] = React.useState(() => new Date())
   const [selectedDateIso, setSelectedDateIso] = React.useState(() => formatDateIso(new Date()))
-  const [eventMetaById, setEventMetaById] = React.useState<Record<number, EventMeta>>(eventMetaSeed)
+  const [eventMetaById, setEventMetaById] = React.useState<Record<number, EventMeta>>({})
   const [fileTab, setFileTab] = React.useState<FileTab>('all')
   const [fileTypeFilter, setFileTypeFilter] = React.useState<'all' | 'folder' | 'pdf' | 'image'>('all')
-  const [managedFiles, setManagedFiles] = React.useState<ManagedFile[]>(managedFilesSeed)
+  const [managedFiles, setManagedFiles] = React.useState<ManagedFile[]>([])
   const [subjectSearch, setSubjectSearch] = React.useState('')
   const [subjectFilter, setSubjectFilter] = React.useState<SubjectFilter>('all')
   const [isDragActive, setIsDragActive] = React.useState(false)
@@ -110,15 +109,35 @@ export function useDashboardState() {
   const [profile, setProfile] = React.useState<UserProfile>(() =>
     readProfileFromStorage() ?? userProfileSeed,
   )
+  const [savedProfile, setSavedProfile] = React.useState<UserProfile>(() =>
+    readProfileFromStorage() ?? userProfileSeed,
+  )
   const [authSession, setAuthSession] = React.useState<AuthSession | null>(() =>
     readAuthSessionFromStorage(),
   )
+  const [isSavingProfile, setIsSavingProfile] = React.useState(false)
+  const { getToken, isLoaded, isSignedIn } = useAuth()
 
   const apiFetch = React.useCallback(
-    (input: string, init?: RequestInit) => {
+    async (input: string, init?: RequestInit) => {
       const headers = new Headers(init?.headers)
-      if (authSession?.userId) {
-        headers.set('x-user-id', String(authSession.userId))
+      
+      let token = null
+      try {
+        token = await getToken()
+      } catch {
+        // Ignorujeme případné chyby získání tokenu
+      }
+
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`)
+      } else {
+        // Zabráníme zbytečnému síťovému spamu a chybám 401 v konzoli
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' }
+        })
       }
 
       return fetch(input, {
@@ -126,7 +145,7 @@ export function useDashboardState() {
         headers,
       })
     },
-    [authSession?.userId],
+    [getToken],
   )
 
   React.useEffect(() => {
@@ -158,15 +177,23 @@ export function useDashboardState() {
   }, [authSession])
 
   React.useEffect(() => {
+    if (!isLoaded) return
+
     const hydrateData = async () => {
-      const localTasks = authSession ? (readTasksFromStorage() ?? tasksSeed) : []
-      const localEvents = authSession ? (readEventsFromStorage() ?? eventsSeed) : []
+      if (!authSession && !isSignedIn) {
+        setIsHydrated(true)
+        return
+      }
+
+    const localTasks = authSession ? (readTasksFromStorage() ?? []) : []
+    const localEvents = authSession ? (readEventsFromStorage() ?? []) : []
       const localProfile = readProfileFromStorage() ?? userProfileSeed
 
       let loadedTasks = localTasks
       let loadedEvents = localEvents
-      let loadedSubjects = authSession ? subjectsSeed : []
-      let loadedFiles = authSession ? managedFilesSeed : []
+    let loadedSubjects: typeof subjectsSeed = []
+    let loadedFiles: ManagedFile[] = []
+      let loadedLessons: Lesson[] = []
       let loadedProfile = localProfile
 
       try {
@@ -214,6 +241,17 @@ export function useDashboardState() {
       }
 
       try {
+        const lessonsResponse = await apiFetch('/api/lessons')
+        if (lessonsResponse.ok) {
+          const serverLessons: unknown = await lessonsResponse.json()
+          if (Array.isArray(serverLessons)) {
+            loadedLessons = serverLessons as Lesson[]
+          }
+        }
+      } catch {
+      }
+
+      try {
         const profileResponse = await apiFetch('/api/profile')
         if (profileResponse.ok) {
           const serverProfile: unknown = await profileResponse.json()
@@ -236,13 +274,15 @@ export function useDashboardState() {
       setEvents(loadedEvents)
       setSubjects(loadedSubjects)
       setManagedFiles(loadedFiles)
+      setLessons(loadedLessons)
       setProfile(loadedProfile)
-      setEventMetaById(Object.keys(nextMetaById).length > 0 ? nextMetaById : eventMetaSeed)
+      setSavedProfile(loadedProfile)
+      setEventMetaById(nextMetaById)
       setIsHydrated(true)
     }
 
     void hydrateData()
-  }, [apiFetch, authSession])
+  }, [apiFetch, authSession, isLoaded, isSignedIn])
 
   React.useEffect(() => {
     if (!isHydrated || !authSession) {
@@ -281,16 +321,42 @@ export function useDashboardState() {
       return
     }
 
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+    // Inicializuj fullName z authSession pokud je prázdný
+    if (!profile.fullName && authSession.fullName) {
+      setProfile((prevProfile) => ({
+        ...prevProfile,
+        fullName: authSession.fullName,
+      }))
+      return
+    }
 
-    void apiFetch('/api/profile', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(profile),
-    })
-  }, [profile, isHydrated, apiFetch, authSession])
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+  }, [profile, isHydrated, authSession])
+
+  const onSaveProfile = async () => {
+    if (!ensureAuthenticated() || isSavingProfile) {
+      return
+    }
+
+    setIsSavingProfile(true)
+    try {
+      const response = await apiFetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profile),
+      })
+
+      if (response.ok) {
+        setSavedProfile(profile)
+      }
+    } catch (error) {
+      console.error('Chyba při ukládání profilu:', error)
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
 
   const ensureAuthenticated = () => {
     if (authSession) {
@@ -325,6 +391,17 @@ export function useDashboardState() {
     }
   }
 
+  const refreshLessons = async () => {
+    const response = await apiFetch('/api/lessons')
+    if (!response.ok) {
+      return
+    }
+    const payload: unknown = await response.json()
+    if (Array.isArray(payload)) {
+      setLessons(payload as Lesson[])
+    }
+  }
+
   const toggleTask = (taskId: number) => {
     if (!ensureAuthenticated()) {
       return
@@ -333,6 +410,33 @@ export function useDashboardState() {
     setTasks((prevTasks) =>
       prevTasks.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)),
     )
+  }
+
+  const addTask = () => {
+    if (!ensureAuthenticated()) {
+      return
+    }
+
+    const title = window.prompt('Název nového úkolu')?.trim()
+    if (!title) {
+      return
+    }
+
+    const newTask: Task = {
+      id: Math.max(...tasks.map(t => t.id), 0) + 1,
+      title,
+      done: false,
+    }
+
+    setTasks((prevTasks) => [...prevTasks, newTask])
+  }
+
+  const deleteTask = (taskId: number) => {
+    if (!ensureAuthenticated()) {
+      return
+    }
+
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
   }
 
   const removeEvent = (eventId: number) => {
@@ -346,8 +450,6 @@ export function useDashboardState() {
       delete updatedMeta[eventId]
       return updatedMeta
     })
-
-    void apiFetch(`/api/events/${eventId}`, { method: 'DELETE' })
   }
 
   const addDesktopEvent = () => {
@@ -355,13 +457,23 @@ export function useDashboardState() {
       return
     }
 
-    const title = window.prompt('Event title')?.trim()
+    const title = window.prompt('Název události')?.trim()
     if (!title) {
       return
     }
 
-    const time = window.prompt('Time range (e.g. 09:00 AM - 10:30 AM)', '09:00 AM - 10:30 AM')
-    const location = window.prompt('Location', 'Science Building, Room 402')
+    const time = window.prompt('Čas (např. 09:00 - 10:30)')
+    const location = window.prompt('Místo')
+    
+    let priority: 'low' | 'medium' | 'high' = 'medium'
+    const priorityInput = window.prompt('Priorita (nízká/střední/vysoká)')?.toLowerCase().trim()
+    if (priorityInput === 'nízká' || priorityInput === 'low') {
+      priority = 'low'
+    } else if (priorityInput === 'střední' || priorityInput === 'medium') {
+      priority = 'medium'
+    } else if (priorityInput === 'vysoká' || priorityInput === 'high') {
+      priority = 'high'
+    }
 
     const newEventId = Date.now()
     const defaultMeta = getDefaultMetaForTitle(title)
@@ -371,9 +483,8 @@ export function useDashboardState() {
       date: selectedDateIso,
       time: time?.trim() || defaultMeta.time,
       location: location?.trim() || defaultMeta.location,
-      icon: defaultMeta.icon,
-      accent: defaultMeta.accent,
       subjectId: null,
+      priority,
     }
 
     setEvents((prevEvents) => [...prevEvents, nextEvent])
@@ -386,17 +497,9 @@ export function useDashboardState() {
         location: location?.trim() || defaultMeta.location,
       },
     }))
-
-    void apiFetch('/api/events', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(nextEvent),
-    })
   }
 
-  const onUploadFiles = (incomingFiles: FileList | null) => {
+  const onUploadFiles = async (incomingFiles: FileList | File[] | null, options?: { subjectId?: number; lessonId?: number }) => {
     if (!ensureAuthenticated()) {
       return
     }
@@ -405,26 +508,81 @@ export function useDashboardState() {
       return
     }
 
-    const uploadedFiles = Array.from(incomingFiles).map((file) => ({
+    const filesArray = incomingFiles instanceof FileList ? Array.from(incomingFiles) : incomingFiles
+
+    const tempFiles = filesArray.map((file) => ({
       id: Date.now() + Math.floor(Math.random() * 100000),
       name: file.name,
       size: formatFileSize(file.size),
-      addedLabel: 'Added now',
+      sizeBytes: file.size,
+      addedLabel: 'Nahrávám na S3...',
       category: getManagedFileCategory(file.name),
       shared: false,
+      subjectId: options?.subjectId ?? null,
+      lessonId: options?.lessonId ?? null,
     }))
 
-    setManagedFiles((prevFiles) => [...uploadedFiles, ...prevFiles])
+    setManagedFiles((prevFiles) => [...tempFiles, ...prevFiles])
 
-    uploadedFiles.forEach((file) => {
-      void apiFetch('/api/files', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(file),
-      })
+    for (const file of filesArray) {
+      try {
+        const urlRes = await apiFetch('/api/files/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name, contentType: file.type || 'application/octet-stream' }),
+        })
+
+        if (!urlRes.ok) {
+          const errData = await urlRes.json().catch(() => null)
+          throw new Error(errData?.error || `Chyba ze serveru: ${urlRes.status} ${urlRes.statusText}`)
+        }
+        const { uploadUrl, fileKey, fileUrl } = await urlRes.json()
+
+        const s3Res = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type || 'application/octet-stream' },
+          body: file,
+        })
+
+        if (!s3Res.ok) throw new Error('Chyba při nahrávání na S3')
+
+        await apiFetch('/api/files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: file.name,
+            size: file.size,
+            addedLabel: 'Přidáno právě teď',
+            shared: false,
+            fileKey,
+            fileUrl,
+            subjectId: options?.subjectId,
+            lessonId: options?.lessonId,
+          }),
+        })
+      } catch (err) {
+        console.error(`Chyba při nahrávání souboru ${file.name}:`, err)
+      }
+    }
+
+    void refreshFiles()
+  }
+
+  const addSubjectNote = async (subjectId: number, note: string) => {
+    if (!ensureAuthenticated()) {
+      return
+    }
+
+    const title = note.length > 50 ? note.slice(0, 50) + '...' : note
+    
+    await apiFetch('/api/lessons', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subjectId, title, content: note }),
     })
+
+    await refreshLessons()
+    await refreshSubjects()
   }
 
   const onDropToUpload = (event: React.DragEvent<HTMLDivElement>) => {
@@ -498,129 +656,19 @@ export function useDashboardState() {
     setProfile(userProfileSeed)
   }
 
-  const applyAuthPayload = (payload: unknown): string | null => {
-    if (typeof payload !== 'object' || payload === null || !('user' in payload)) {
-      return 'Neplatna odpoved serveru.'
-    }
-
-    const user = (payload as { user?: unknown }).user
-    if (typeof user !== 'object' || user === null) {
-      return 'Neplatna odpoved serveru.'
-    }
-
-    const candidate = user as Partial<AuthSession> & Partial<UserProfile>
-    if (
-      typeof candidate.userId !== 'number' ||
-      (candidate.role !== 'REGISTERED' && candidate.role !== 'ADMIN') ||
-      typeof candidate.fullName !== 'string' ||
-      typeof candidate.email !== 'string'
-    ) {
-      return 'Neplatna odpoved serveru.'
-    }
-
-    const authUserId = candidate.userId
-    const authRole = candidate.role
-    const authFullName = candidate.fullName
-    const authEmail = candidate.email
-
-    setAuthSession({
-      userId: authUserId,
-      role: authRole,
-      fullName: authFullName,
-      email: authEmail,
-    })
-
-    setProfile((prevProfile) => ({
-      ...prevProfile,
-      fullName: authFullName,
-      email: authEmail,
-      school: typeof candidate.school === 'string' ? candidate.school : prevProfile.school,
-      studyMajor: typeof candidate.studyMajor === 'string' ? candidate.studyMajor : prevProfile.studyMajor,
-      studyYear: typeof candidate.studyYear === 'string' ? candidate.studyYear : prevProfile.studyYear,
-      studyType: typeof candidate.studyType === 'string' ? candidate.studyType : prevProfile.studyType,
-      avatarDataUrl:
-        typeof candidate.avatarDataUrl === 'string' || candidate.avatarDataUrl === null
-          ? candidate.avatarDataUrl
-          : prevProfile.avatarDataUrl,
-    }))
-
-    return null
-  }
-
-  const login = async (email: string, password: string): Promise<string | null> => {
-    if (!email.trim() || !password.trim()) {
-      return 'Vypln e-mail i heslo.'
-    }
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email.trim(), password }),
-      })
-
-      const payload: unknown = await response.json().catch(() => null)
-      if (!response.ok) {
-        if (typeof payload === 'object' && payload !== null && 'error' in payload) {
-          const message = (payload as { error?: unknown }).error
-          if (typeof message === 'string') {
-            return message
-          }
-        }
-
-        return 'Prihlaseni selhalo.'
-      }
-
-      return applyAuthPayload(payload)
-    } catch {
-      return 'Nepodarilo se spojit se serverem.'
-    }
-  }
-
-  const register = async (
-    fullName: string,
-    email: string,
-    password: string,
-  ): Promise<string | null> => {
-    if (!fullName.trim() || !email.trim() || !password.trim()) {
-      return 'Vypln jmeno, e-mail i heslo.'
-    }
-
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fullName: fullName.trim(),
-          email: email.trim(),
-          password,
-        }),
-      })
-
-      const payload: unknown = await response.json().catch(() => null)
-      if (!response.ok) {
-        if (typeof payload === 'object' && payload !== null && 'error' in payload) {
-          const message = (payload as { error?: unknown }).error
-          if (typeof message === 'string') {
-            return message
-          }
-        }
-
-        return 'Registrace selhala.'
-      }
-
-      return applyAuthPayload(payload)
-    } catch {
-      return 'Nepodarilo se spojit se serverem.'
-    }
-  }
-
-  const logout = () => {
+  const logout = async () => {
     setAuthSession(null)
+    setIsHydrated(false)
+    setTasks([])
+    setEvents([])
+    setSubjects([])
+    setManagedFiles([])
+    setLessons([])
+    setProfile(userProfileSeed)
+    localStorage.removeItem(TASKS_STORAGE_KEY)
+    localStorage.removeItem(EVENTS_STORAGE_KEY)
+    localStorage.removeItem(PROFILE_STORAGE_KEY)
+    await signOut()
   }
 
   const createSubject = () => {
@@ -820,16 +868,24 @@ export function useDashboardState() {
   const tasksDone = tasks.filter((task) => task.done).length
   const isCalendarScreen = activeMobileNav === 'calendar'
   const isFilesScreen = activeMobileNav === 'files'
-  const isSubjectsScreen = activeMobileNav === 'subjects'
+  const isTasksScreen = activeMobileNav === 'tasks'
+  const isStudyPlanScreen = activeMobileNav === 'study-plan'
   const isProfileScreen = activeMobileNav === 'profile'
+  const hasUnsavedProfileChanges = JSON.stringify(profile) !== JSON.stringify(savedProfile)
 
-  const monthLabel = new Intl.DateTimeFormat('en-US', {
+  const monthLabel = new Intl.DateTimeFormat('cs-CZ', {
     month: 'long',
     year: 'numeric',
   }).format(displayMonth)
 
   const upcomingEvents = React.useMemo(
-    () => events.slice().sort((a, b) => a.date.localeCompare(b.date)),
+    () => {
+      const today = formatDateIso(new Date())
+      return events
+        .filter((event) => event.date >= today)
+        .slice()
+        .sort((a, b) => a.date.localeCompare(b.date))
+    },
     [events],
   )
 
@@ -870,7 +926,7 @@ export function useDashboardState() {
   )
 
   const displayedRecentFiles = React.useMemo(
-    () => (fileTab === 'recent' ? filteredManagedFiles : filteredManagedFiles.slice(0, 4)),
+    () => (fileTab === 'recent' ? filteredManagedFiles.slice(0, 4) : filteredManagedFiles),
     [fileTab, filteredManagedFiles],
   )
 
@@ -933,6 +989,7 @@ export function useDashboardState() {
     fileTypeFilter,
     setFileTypeFilter,
     managedFiles,
+    lessons,
     subjects,
     subjectSearch,
     setSubjectSearch,
@@ -945,7 +1002,8 @@ export function useDashboardState() {
     tasksDone,
     isCalendarScreen,
     isFilesScreen,
-    isSubjectsScreen,
+    isTasksScreen,
+    isStudyPlanScreen,
     isProfileScreen,
     monthLabel,
     upcomingEvents,
@@ -956,8 +1014,11 @@ export function useDashboardState() {
     filteredSubjects,
     desktopSubjects,
     toggleTask,
+    addTask,
+    deleteTask,
     removeEvent,
     addDesktopEvent,
+    addSubjectNote,
     onUploadFiles,
     onDropToUpload,
     goToToday,
@@ -966,9 +1027,11 @@ export function useDashboardState() {
     onUploadProfileAvatar,
     onRemoveProfileAvatar,
     resetProfile,
-    login,
-    register,
+    onSaveProfile,
+    hasUnsavedProfileChanges,
+    isSavingProfile,
     logout,
+    setAuthSession,
     createSubject,
     updateSubject,
     toggleSubjectArchived,

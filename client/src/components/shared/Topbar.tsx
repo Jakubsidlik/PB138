@@ -1,15 +1,16 @@
 import React from 'react'
 import { MobileNavItem } from '../../app/types'
+import { getDailyMotto } from '../../app/utils'
 
 type TopbarProps = {
   isCalendarScreen: boolean
   isFilesScreen: boolean
-  isSubjectsScreen: boolean
+  isTasksScreen: boolean
+  isStudyPlanScreen: boolean
   isProfileScreen: boolean
   fileInputRef: React.RefObject<HTMLInputElement>
   setActiveMobileNav: React.Dispatch<React.SetStateAction<MobileNavItem>>
   profileName: string
-  profileSubtitle: string
   profileAvatarDataUrl: string | null
   onOpenProfile: () => void
 }
@@ -17,12 +18,12 @@ type TopbarProps = {
 export function Topbar({
   isCalendarScreen,
   isFilesScreen,
-  isSubjectsScreen,
+  isTasksScreen,
+  isStudyPlanScreen,
   isProfileScreen,
   fileInputRef,
   setActiveMobileNav,
   profileName,
-  profileSubtitle,
   profileAvatarDataUrl,
   onOpenProfile,
 }: TopbarProps) {
@@ -70,23 +71,47 @@ export function Topbar({
             <h2 className="mobile-subjects-title">Kalendář</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
           </>
-        ) : isSubjectsScreen ? (
+        ) : isTasksScreen ? (
           <>
+            <button
+              type="button"
+              className="mobile-header-icon"
+              aria-label="Zpět"
+              onClick={() => {
+                setActiveMobileNav('home')
+                window.location.hash = ''
+              }}
+            >
+              ←
+            </button>
+            <h2 className="mobile-subjects-title">Úkoly</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
-            <h2 className="mobile-subjects-title">Moje předměty</h2>
+          </>
+        ) : isStudyPlanScreen ? (
+          <>
+            <button
+              type="button"
+              className="mobile-header-icon"
+              aria-label="Zpět"
+              onClick={() => {
+                setActiveMobileNav('home')
+                window.location.hash = ''
+              }}
+            >
+              ←
+            </button>
+            <h2 className="mobile-subjects-title">Studijní plán</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
           </>
         ) : (
           <div className="mobile-greeting">
-            <div className="mobile-avatar">{initials}</div>
             <div>
-              <p>{isFilesScreen ? 'Správa souborů' : 'Vítej zpět'}</p>
-              <h1>{isFilesScreen ? 'Soubory' : profileName}</h1>
+              <h1>{isFilesScreen ? 'Soubory' : 'Lonely Student'}</h1>
             </div>
           </div>
         )}
 
-        {isSubjectsScreen || isCalendarScreen || isProfileScreen ? null : isFilesScreen ? (
+        {isTasksScreen || isStudyPlanScreen || isCalendarScreen || isProfileScreen ? null : isFilesScreen ? (
           <div className="mobile-files-actions">
             <button
               type="button"
@@ -97,23 +122,16 @@ export function Topbar({
               ＋
             </button>
           </div>
-        ) : (
-          <div className="mobile-home-actions">
-            <button type="button" className="mobile-notification" aria-label="Profil" onClick={onOpenProfile}>
-              👤
-            </button>
-          </div>
-        )}
+        ) : null}
       </div>
 
       <div className="topbar-desktop">
         <div className="desktop-title-wrap">
-          <p className="subtitle">PB138 Studijní plánovač</p>
+          <p className="subtitle">{getDailyMotto()}</p>
         </div>
         <button type="button" className="profile" onClick={onOpenProfile}>
           <div>
             <p className="name">{profileName}</p>
-            <p className="subtitle">{profileSubtitle}</p>
           </div>
           <div className="avatar">
             {profileAvatarDataUrl ? (
