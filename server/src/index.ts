@@ -522,7 +522,11 @@ const getActorFromRequest = async (req: express.Request): Promise<AuthActor> => 
         if (user) {
           user = await prisma.user.update({
             where: { id: user.id },
-            data: { clerkId: auth.userId, deletedAt: null }
+            data: { 
+              clerkId: auth.userId, 
+              deletedAt: null,
+              fullName: fullName !== 'Uživatel' ? fullName : user.fullName
+            }
           })
         } else {
           user = await prisma.user.create({
