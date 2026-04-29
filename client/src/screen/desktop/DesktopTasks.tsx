@@ -1,4 +1,3 @@
-import React from 'react'
 import { Task } from '../../app/types'
 
 type DesktopTasksScreenProps = {
@@ -6,11 +5,10 @@ type DesktopTasksScreenProps = {
     tasksDone: number
     toggleTask: (taskId: number) => void
     addTask: () => void
+    deleteTask: (taskId: number) => void
 }
 
-export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask }: DesktopTasksScreenProps) {
-  const completionPercentage = tasks.length > 0 ? (tasksDone / tasks.length) * 100 : 0
-
+export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask, deleteTask }: DesktopTasksScreenProps) {
 return (
     <section className="desktop-tasks-screen" id="desktop-tasks">
     <div className="desktop-tasks-head">
@@ -41,11 +39,19 @@ return (
         {tasks.length > 0 ? (
         <ul>
             {tasks.map((task) => (
-            <li key={task.id} className={task.done ? 'done' : ''}>
+                        <li key={task.id} className={`desktop-tasks-item ${task.done ? 'done' : ''}`}>
                 <label>
                 <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
                 <span>{task.title}</span>
                 </label>
+                                <button
+                                    onClick={() => deleteTask(task.id)}
+                                    className="task-delete-btn"
+                                    aria-label={`Odstranit úkol ${task.title}`}
+                                    title="Odstranit úkol"
+                                >
+                                    ×
+                                </button>
             </li>
             ))}
         </ul>

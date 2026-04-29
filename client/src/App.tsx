@@ -191,6 +191,7 @@ function App() {
             tasksDone={state.tasksDone}
             toggleTask={state.toggleTask}
             addTask={state.addTask}
+            deleteTask={state.deleteTask}
           />
 
           <DesktopStudyPlan

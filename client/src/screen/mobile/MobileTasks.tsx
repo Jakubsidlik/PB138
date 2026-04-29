@@ -36,6 +36,7 @@ export function MobileTasks() {
                     />
                     <span>{task.title}</span>
                   </label>
+                  <button onClick={() => state.deleteTask(task.id)} className="btn btn-danger btn-sm" aria-label="Odstranit úkol">Odstranit</button>
                 </li>
               ))}
             </ul>

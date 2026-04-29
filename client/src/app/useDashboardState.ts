@@ -405,6 +405,14 @@ export function useDashboardState() {
     setTasks((prevTasks) => [...prevTasks, newTask])
   }
 
+  const deleteTask = (taskId: number) => {
+    if (!ensureAuthenticated()) {
+      return
+    }
+
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
+  }
+
   const removeEvent = (eventId: number) => {
     if (!ensureAuthenticated()) {
       return
@@ -958,6 +966,7 @@ export function useDashboardState() {
     desktopSubjects,
     toggleTask,
     addTask,
+    deleteTask,
     removeEvent,
     addDesktopEvent,
     onUploadFiles,
