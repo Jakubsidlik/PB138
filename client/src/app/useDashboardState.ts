@@ -16,6 +16,7 @@ import {
   CalendarEvent,
   EventMeta,
   FileTab,
+  Lesson,
   ManagedFile,
   MobileNavItem,
   Task,
@@ -90,6 +91,7 @@ export function useDashboardState() {
   const [events, setEvents] = React.useState<CalendarEvent[]>(() => readEventsFromStorage() ?? [])
   const [subjects, setSubjects] = React.useState<typeof subjectsSeed>([])
   const [themeMode, setThemeMode] = React.useState<ThemeMode>(() => readThemeFromStorage())
+  const [lessons, setLessons] = React.useState<Lesson[]>([])
   const [accentPalette, setAccentPalette] = React.useState<AccentPalette>(() => readPaletteFromStorage())
   const [activeMobileNav, setActiveMobileNav] = React.useState<MobileNavItem>(() =>
     getNavFromHash(window.location.hash),
@@ -191,6 +193,7 @@ export function useDashboardState() {
       let loadedEvents = localEvents
     let loadedSubjects: typeof subjectsSeed = []
     let loadedFiles: ManagedFile[] = []
+      let loadedLessons: Lesson[] = []
       let loadedProfile = localProfile
 
       try {
@@ -238,6 +241,17 @@ export function useDashboardState() {
       }
 
       try {
+        const lessonsResponse = await apiFetch('/api/lessons')
+        if (lessonsResponse.ok) {
+          const serverLessons: unknown = await lessonsResponse.json()
+          if (Array.isArray(serverLessons)) {
+            loadedLessons = serverLessons as Lesson[]
+          }
+        }
+      } catch {
+      }
+
+      try {
         const profileResponse = await apiFetch('/api/profile')
         if (profileResponse.ok) {
           const serverProfile: unknown = await profileResponse.json()
@@ -260,6 +274,7 @@ export function useDashboardState() {
       setEvents(loadedEvents)
       setSubjects(loadedSubjects)
       setManagedFiles(loadedFiles)
+      setLessons(loadedLessons)
       setProfile(loadedProfile)
       setSavedProfile(loadedProfile)
       setEventMetaById(nextMetaById)
@@ -373,6 +388,17 @@ export function useDashboardState() {
     const payload: unknown = await response.json()
     if (Array.isArray(payload)) {
       setManagedFiles(payload as ManagedFile[])
+    }
+  }
+
+  const refreshLessons = async () => {
+    const response = await apiFetch('/api/lessons')
+    if (!response.ok) {
+      return
+    }
+    const payload: unknown = await response.json()
+    if (Array.isArray(payload)) {
+      setLessons(payload as Lesson[])
     }
   }
 
@@ -542,6 +568,23 @@ export function useDashboardState() {
     void refreshFiles()
   }
 
+  const addSubjectNote = async (subjectId: number, note: string) => {
+    if (!ensureAuthenticated()) {
+      return
+    }
+
+    const title = note.length > 50 ? note.slice(0, 50) + '...' : note
+    
+    await apiFetch('/api/lessons', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subjectId, title, content: note }),
+    })
+
+    await refreshLessons()
+    await refreshSubjects()
+  }
+
   const onDropToUpload = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     setIsDragActive(false)
@@ -620,6 +663,7 @@ export function useDashboardState() {
     setEvents([])
     setSubjects([])
     setManagedFiles([])
+    setLessons([])
     setProfile(userProfileSeed)
     localStorage.removeItem(TASKS_STORAGE_KEY)
     localStorage.removeItem(EVENTS_STORAGE_KEY)
@@ -945,6 +989,7 @@ export function useDashboardState() {
     fileTypeFilter,
     setFileTypeFilter,
     managedFiles,
+    lessons,
     subjects,
     subjectSearch,
     setSubjectSearch,
@@ -973,6 +1018,7 @@ export function useDashboardState() {
     deleteTask,
     removeEvent,
     addDesktopEvent,
+    addSubjectNote,
     onUploadFiles,
     onDropToUpload,
     goToToday,

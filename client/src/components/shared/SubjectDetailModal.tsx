@@ -1,28 +1,23 @@
 import React from 'react'
-import { Subject, ManagedFile } from '../../app/types'
+import { Subject, ManagedFile, Lesson } from '../../app/types'
 
 type SubjectDetailModalProps = {
   subject: Subject | null
   files: ManagedFile[]
+  lessons: Lesson[]
   onClose: () => void
   onAddNote?: (subjectId: number, note: string) => void
   onAddFile?: (subjectId: number, file: File) => void
 }
 
-type SubjectNote = {
-  id: string
-  text: string
-  createdAt: Date
-}
-
 export function SubjectDetailModal({ 
   subject, 
   files, 
+  lessons,
   onClose,
   onAddNote,
   onAddFile,
 }: SubjectDetailModalProps) {
-  const [notes, setNotes] = React.useState<SubjectNote[]>([])
   const [noteText, setNoteText] = React.useState('')
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -31,19 +26,13 @@ export function SubjectDetailModal({
   }
 
   const subjectFiles = files.filter((file) => file.subjectId === subject.id)
+  const subjectLessons = lessons.filter((lesson) => lesson.subjectId === subject.id)
 
   const handleAddNote = () => {
     if (!noteText.trim()) {
       return
     }
 
-    const newNote: SubjectNote = {
-      id: Date.now().toString(),
-      text: noteText,
-      createdAt: new Date(),
-    }
-
-    setNotes([newNote, ...notes])
     onAddNote?.(subject.id, noteText)
     setNoteText('')
   }
@@ -111,7 +100,7 @@ export function SubjectDetailModal({
           </div>
 
           <div className="subject-detail-section">
-            <h3>📝 Poznámky ({notes.length})</h3>
+            <h3>📝 Poznámky ({subjectLessons.length})</h3>
             
             <div className="subject-detail-input-group">
               <textarea
@@ -131,13 +120,13 @@ export function SubjectDetailModal({
               </button>
             </div>
 
-            {notes.length > 0 ? (
+            {subjectLessons.length > 0 ? (
               <ul className="subject-notes-list">
-                {notes.map((note) => (
-                  <li key={note.id} className="subject-note-item">
-                    <p className="note-text">{note.text}</p>
+                {subjectLessons.map((lesson) => (
+                  <li key={lesson.id} className="subject-note-item">
+                    <p className="note-text">{lesson.content || lesson.title}</p>
                     <span className="note-date">
-                      {note.createdAt.toLocaleDateString('cs-CZ')} {note.createdAt.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(lesson.createdAt!).toLocaleDateString('cs-CZ')} {new Date(lesson.createdAt!).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </li>
                 ))}

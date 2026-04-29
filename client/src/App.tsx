@@ -204,6 +204,8 @@ function App() {
             onDeleteSubject={state.deleteSubject}
             managedFiles={state.managedFiles}
             onUploadFiles={state.onUploadFiles}
+            lessons={state.lessons}
+            onAddNote={state.addSubjectNote}
           />
 
           <DesktopProfileScreen

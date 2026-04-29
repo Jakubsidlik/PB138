@@ -1,5 +1,5 @@
 import React from 'react'
-import { DesktopSubjectMeta, DesktopSubjectTone, Subject, ManagedFile } from '../../app/types'
+import { DesktopSubjectMeta, DesktopSubjectTone, Subject, ManagedFile, Lesson } from '../../app/types'
 import { SubjectDetailModal } from '../../components/shared/SubjectDetailModal'
 
 type DesktopSubject = Subject & {
@@ -19,6 +19,8 @@ type DesktopStudyPlanProps = {
   onDeleteSubject: (subjectId: number) => void
   managedFiles: ManagedFile[]
   onUploadFiles: (files: FileList | File[] | null, options?: { subjectId?: number; lessonId?: number }) => Promise<void>
+  lessons: Lesson[]
+  onAddNote: (subjectId: number, note: string) => Promise<void>
 }
 
 export function DesktopStudyPlan({
@@ -31,13 +33,14 @@ export function DesktopStudyPlan({
   onDeleteSubject,
   managedFiles,
   onUploadFiles,
+  lessons,
+  onAddNote,
 }: DesktopStudyPlanProps) {
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
 
   const handleAddNote = (subjectId: number, note: string) => {
-    console.log(`Přidána poznámka k předmětu ${subjectId}: ${note}`)
-    // V budoucnu lze zde přidat API call pro uložení poznámky
+    void onAddNote(subjectId, note)
   }
 
   const handleAddFile = (subjectId: number, file: File) => {
@@ -134,6 +137,7 @@ export function DesktopStudyPlan({
       <SubjectDetailModal 
         subject={selectedSubject}
         files={managedFiles}
+        lessons={lessons}
         onClose={() => setSelectedSubjectId(null)}
         onAddNote={handleAddNote}
         onAddFile={handleAddFile}
