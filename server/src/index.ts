@@ -282,4 +282,8 @@ const start = async () => {
   }
 }
 
-void start()
+if (process.env.NODE_ENV !== 'test') {
+  void start()
+}
+
+export { app }
