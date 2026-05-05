@@ -1,0 +1,181 @@
+@startuml LonelyStudent_UseCase_v20
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle hollow
+
+actor "Neregistrovaný uživatel" as Guest
+actor "Registrovaný uživatel" as Registered
+actor "Veřejnost\n(Ostatní registrovaní studenti)" as Public
+actor "Administrátor" as Admin
+
+Registered <|-- Admin
+
+rectangle "LonelyStudent" {
+
+  package "Přístup a Autentizace" {
+    usecase "Registrovat se" as UC_Register
+    usecase "Přihlásit se" as UC_Login
+    usecase "Spravovat profil" as UC_Profile
+    usecase "Upravit údaje" as UC_EditProfileData
+    usecase "Nahrát avatar" as UC_UploadAvatar
+  }
+
+  package "Veřejný obsah (Read-only)" {
+    usecase "Zobrazit veřejné poznámky" as UC_ViewPublicNotes
+    usecase "Zobrazit veřejné soubory" as UC_ViewPublicFiles
+    usecase "Zobrazit veřejné studijní plány" as UC_ViewPublicPlans
+    usecase "Číst komentáře" as UC_ReadComments
+  }
+
+  package "Správa Tagů" {
+    usecase "Spravovat tagy" as UC_ManageTags
+    usecase "Vytvořit tag" as UC_CreateTag
+    usecase "Upravit tag" as UC_EditTag
+    usecase "Smazat tag" as UC_DeleteTag
+  }
+
+  package "Správa Úkolů" {
+    usecase "Spravovat úkoly" as UC_ManageTasks
+    usecase "Vytvořit úkol" as UC_CreateTask
+    usecase "Upravit úkol" as UC_EditTask
+    usecase "Smazat úkol" as UC_DeleteTask
+    usecase "Označit jako hotovo" as UC_CompleteTask
+    usecase "Filtrovat úkoly" as UC_FilterTasks
+  }
+
+  package "Správa Poznámek" {
+    usecase "Spravovat poznámky" as UC_ManageNotes
+    usecase "Vytvořit poznámku" as UC_CreateNote
+    usecase "Upravit poznámku" as UC_EditNote
+    usecase "Smazat poznámku" as UC_DeleteNote
+    usecase "Požádat o zveřejnění" as UC_RequestPublish
+    usecase "Označit text a komentovat" as UC_TextComment
+    usecase "Vytvořit komentář" as UC_CreateComment
+    usecase "Upravit komentář" as UC_EditComment
+  }
+
+  package "Správa Lekcí a Souborů" {
+    usecase "Spravovat lekce" as UC_ManageLessons
+    usecase "Vytvořit lekci" as UC_CreateLesson
+    usecase "Upravit lekci" as UC_EditLesson
+    usecase "Smazat lekci" as UC_DeleteLesson
+    
+    usecase "Spravovat soubory" as UC_ManageFiles
+    usecase "Nahrát soubor" as UC_UploadFile
+    usecase "Smazat soubor" as UC_DeleteFile
+    usecase "Sdílet soubor" as UC_ShareFile
+  }
+
+  package "Správa Studijních Plánů" {
+    usecase "Spravovat plány" as UC_ManagePlans
+    usecase "Vytvořit plán" as UC_CreatePlan
+    usecase "Upravit plán" as UC_EditPlan
+    usecase "Smazat plán" as UC_DeletePlan
+    usecase "Požádat o zveřejnění plánu" as UC_RequestPublishPlan
+  }
+
+  package "Správa Kalendáře" {
+    usecase "Spravovat názvy událostí" as UC_ManageCalendar
+    usecase "Naplánovat událost" as UC_CreateEvent
+    usecase "Upravit/Smazat událost" as UC_EditEvent
+  }
+
+  package "Sdílení" {
+    usecase "Sdílet entitu" as UC_ShareEntity
+    usecase "Nastavit oprávnění" as UC_SetPermission
+    usecase "Zrušit sdílení" as UC_RevokeShare
+  }
+
+  package "Administrativní Funkce" {
+    usecase "Schválit zveřejnění" as UC_ApprovePublish
+    usecase "Zamítnout zveřejnění" as UC_RejectPublish
+    usecase "Moderovat obsah" as UC_ModerateContent
+    usecase "Kontolovat avatary" as UC_ReviewAvatars
+    usecase "Kontrolovat komentáře" as UC_ReviewComments
+    usecase "Smazat nevhodný obsah" as UC_RemoveInappropriate
+  }
+
+}
+
+Guest --> UC_ViewPublicNotes
+Guest --> UC_ViewPublicFiles
+Guest --> UC_ViewPublicPlans
+Guest --> UC_ReadComments
+Guest --> UC_Register
+Guest --> UC_Login
+
+Registered --> UC_Register
+Registered --> UC_Login
+Registered --> UC_Profile
+Registered --> UC_ManageTags
+Registered --> UC_ManageTasks
+Registered --> UC_ManageNotes
+Registered --> UC_ManageLessons
+Registered --> UC_ManageFiles
+Registered --> UC_ManagePlans
+Registered --> UC_ManageCalendar
+Registered --> UC_ShareEntity
+Registered --> UC_RequestPublish
+Registered --> UC_RequestPublishPlan
+
+Admin --> UC_ApprovePublish
+Admin --> UC_RejectPublish
+Admin --> UC_ModerateContent
+Admin --> UC_ReviewAvatars
+Admin --> UC_ReviewComments
+Admin --> UC_RemoveInappropriate
+
+Public --> UC_ViewPublicNotes
+Public --> UC_ViewPublicFiles
+Public --> UC_ViewPublicPlans
+Public --> UC_ReadComments
+
+UC_ManageTags ..> UC_CreateTag : <<include>>
+UC_ManageTags ..> UC_EditTag : <<include>>
+UC_ManageTags ..> UC_DeleteTag : <<include>>
+
+UC_ManageTasks ..> UC_CreateTask : <<include>>
+UC_ManageTasks ..> UC_EditTask : <<include>>
+UC_ManageTasks ..> UC_DeleteTask : <<include>>
+UC_ManageTasks ..> UC_CompleteTask : <<include>>
+UC_ManageTasks ..> UC_FilterTasks : <<include>>
+
+UC_ManageNotes ..> UC_CreateNote : <<include>>
+UC_ManageNotes ..> UC_EditNote : <<include>>
+UC_ManageNotes ..> UC_DeleteNote : <<include>>
+UC_ManageNotes ..> UC_TextComment : <<include>>
+
+UC_TextComment ..> UC_CreateComment : <<include>>
+UC_CreateComment ..> UC_EditComment : <<extend>>
+
+UC_ManageLessons ..> UC_CreateLesson : <<include>>
+UC_ManageLessons ..> UC_EditLesson : <<include>>
+UC_ManageLessons ..> UC_DeleteLesson : <<include>>
+
+UC_ManageFiles ..> UC_UploadFile : <<include>>
+UC_ManageFiles ..> UC_DeleteFile : <<include>>
+UC_ManageFiles ..> UC_ShareFile : <<include>>
+
+UC_ManagePlans ..> UC_CreatePlan : <<include>>
+UC_ManagePlans ..> UC_EditPlan : <<include>>
+UC_ManagePlans ..> UC_DeletePlan : <<include>>
+
+UC_ManageCalendar ..> UC_CreateEvent : <<include>>
+UC_ManageCalendar ..> UC_EditEvent : <<include>>
+
+UC_Profile ..> UC_EditProfileData : <<include>>
+UC_Profile ..> UC_UploadAvatar : <<include>>
+
+UC_ShareEntity ..> UC_SetPermission : <<include>>
+UC_ShareEntity ..> UC_RevokeShare : <<include>>
+
+UC_RequestPublish ..> UC_ApprovePublish : <<extend>>
+UC_RequestPublishPlan ..> UC_ApprovePublish : <<extend>>
+
+UC_ModerateContent ..> UC_ReviewAvatars : <<include>>
+UC_ModerateContent ..> UC_ReviewComments : <<include>>
+UC_ReviewComments ..> UC_RemoveInappropriate : <<extend>>
+UC_ReviewAvatars ..> UC_RemoveInappropriate : <<extend>>
+
+@enduml

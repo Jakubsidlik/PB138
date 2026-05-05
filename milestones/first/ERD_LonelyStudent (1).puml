@@ -1,0 +1,209 @@
+@startuml PB138_ERD_Final_Vision
+
+hide methods
+hide stereotypes
+hide circle
+left to right direction
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam packageStyle rectangle
+
+skinparam class {
+  BackgroundColor White
+  BorderColor #334155
+  ArrowColor #475569
+  FontColor #0f172a
+}
+
+title PB138 - ERD Project LonelyStudent version 1.4
+
+package "User base" #dfdc2b {
+entity "USER" as USER {
+  * id : int <<PK>>
+  --
+  fullName : string
+  email : string
+  school : string
+  faculty : string <<NULLABLE>>
+  studyMajor : string
+  studyYear : string
+  studyType : string
+  birthDate : date <<NULLABLE>>
+  avatarStorageKey : string <<NULLABLE>>
+  deletedAt : datetime <<NULLABLE>>
+  createdAt : datetime
+  updatedAt : datetime
+}
+}
+
+package "Core Domain" #d85e5e {
+entity "TAG" as TAG {
+  * id : int <<PK>>
+  --
+  userId : int <<FK, NULLABLE>>
+  name : string
+  description : text <<NULLABLE>>
+  code : string <<UNIQUE, NULLABLE>>
+  isPublic : boolean
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "TASK" as TASK {
+  * id : int <<PK>>
+  --
+  userId : int <<FK, NULLABLE>>
+  tagId : int <<FK, NULLABLE>>
+  studyPlanId : int <<FK, NULLABLE>>
+  title : string
+  done : boolean
+  favorite : boolean
+  priority : TASK_PRIORITY
+  deadline : datetime <<NULLABLE>>
+  deletedAt : datetime <<NULLABLE>>
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+enum "TASK_PRIORITY" as TASK_PRIORITY {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+entity "FILE_RECORD" as FILE_RECORD {
+  * id : int <<PK>>
+  --
+  userId : int <<FK>>
+  tagId : int <<FK, NULLABLE>>
+  lessonId : int <<FK, NULLABLE>>
+  storageKey : string
+  name : string
+  size : int
+  mimeType : string <<NULLABLE>>
+  isPublic : boolean
+  deletedAt : datetime <<NULLABLE>>
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "LESSON" as LESSON {
+  * id : int <<PK>>
+  --
+  tagId : int <<FK, NULLABLE>>
+  studyPlanId : int <<FK, NULLABLE>>
+  title : string
+  content : text <<NULLABLE>>
+  orderIndex : int
+  deletedAt : datetime <<NULLABLE>>
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "LESSON_NOTE" as LESSON_NOTE {
+  * id : int <<PK>>
+  --
+  lessonId : int <<FK>>
+  userId : int <<FK>>
+  note : text
+  isPinned : boolean
+  isPublic : boolean
+  approvedAt : datetime <<NULLABLE>>
+  deletedAt : datetime <<NULLABLE>>
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "LESSON_COMMENT" as LESSON_COMMENT {
+  * id : int <<PK>>
+  --
+  lessonNoteId : int <<FK>>
+  userId : int <<FK>>
+  comment : text
+  startIndex : int <<NULLABLE>>
+  endIndex : int <<NULLABLE>>
+  isPublic : boolean
+  approvedAt : datetime <<NULLABLE>>
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "STUDY_PLAN" as STUDY_PLAN {
+  * id : int <<PK>>
+  --
+  userId : int <<FK>>
+  name : string
+  description : text <<NULLABLE>>
+  faculty : string <<NULLABLE>>
+  startDate : date
+  endDate : date <<NULLABLE>>
+  isActive : boolean
+  isPublic : boolean
+  approvedAt : datetime <<NULLABLE>>
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "SHARE" as SHARE {
+  * id : int <<PK>>
+  --
+  ownerId : int <<FK>>
+  sharedWithUserId : int <<FK>>
+  entityType : string
+  entityId : int
+  permission : SHARE_PERMISSION
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+enum "SHARE_PERMISSION" as SHARE_PERMISSION {
+  VIEW
+  EDIT
+  ADMIN
+}
+
+}
+
+package "Calendar and Time" #d08a34 {
+entity "EVENT" as EVENT {
+  * id : int <<PK>>
+  --
+  userId : int <<FK>>
+  tagId : int <<FK, NULLABLE>>
+  title : string
+  date : datetime
+  time : string <<NULLABLE>>
+  location : string <<NULLABLE>>
+  deletedAt : datetime <<NULLABLE>>
+  createdAt : datetime
+  updatedAt : datetime
+}
+}
+
+'RELATIONSHIPS
+
+'User base relationships
+USER ||--o{ STUDY_PLAN : owns
+USER ||--o{ TAG : creates
+USER ||--o{ TASK : manages
+USER ||--o{ FILE_RECORD : uploads
+USER ||--o{ LESSON_NOTE : writes
+USER ||--o{ LESSON_COMMENT : comments
+USER ||--o{ EVENT : schedules
+USER ||--o{ SHARE : shares
+
+'Core domain relationships
+TAG ||--o{ TASK : categorizes
+TAG ||--o{ FILE_RECORD : contains
+TAG ||--o{ LESSON : teaches
+TAG ||--o{ EVENT : schedules
+LESSON ||--o{ LESSON_NOTE : has_notes
+LESSON ||--o{ FILE_RECORD : contains_files
+LESSON_NOTE ||--o{ LESSON_COMMENT : has_comments
+STUDY_PLAN ||--o{ TAG : includes
+STUDY_PLAN ||--o{ TASK : monitors
+STUDY_PLAN ||--o{ LESSON : plans
+
+@enduml

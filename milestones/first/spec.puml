@@ -1,0 +1,361 @@
+@startuml Specification_LonelyStudent_v20
+
+Use Case ID: UC1
+Brief description: UC1 allows an unregistered user to create an account
+Primary actor: Unregistered user
+Secondary actors: System
+Preconditions: The user is not logged in and has access to the registration page
+Main Flow of Events:
+1. The unregistered user navigates to the registration page.
+2. The user fills out the registration form with required information (e.g., email, password, full name).
+3. The user submits the registration form.
+4. The system creates a new account.
+Alternative Flows: Email is already in use
+Post-conditions: User account is created
+
+Use Case ID: UC2
+Brief description: UC2 allows an unregistered user to view public content (read-only)
+Primary actor: Unregistered user
+Secondary actors: System
+Preconditions: User is not logged in
+Main Flow of Events:
+1. The unregistered user navigates to the application.
+2. User can view public notes, public files, public study plans.
+3. User can read comments on public content.
+4. All content is read-only (no editing).
+Alternative Flows: No public content available
+Post-conditions: Public content is displayed to the user
+
+Use Case ID: UC3
+Brief description: UC3 allows a registered user to log in to their account
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: The user has a valid account and is not logged in
+Main Flow of Events:
+1. User selects "Log in" option.
+2. User enters their email and password.
+3. System verifies the credentials.
+4. If credentials are valid, the user is logged in and redirected to the dashboard.
+Alternative Flows: Invalid credentials, Account locked
+Post-conditions: User is logged in
+
+Use Case ID: UC4
+Brief description: UC4 allows a registered user to manage their profile
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in
+Main Flow of Events:
+1. User selects "Manage Profile" option.
+2. User can edit personal information (name, email, faculty, birth date, study year, study type).
+3. User can upload or change profile avatar.
+4. User submits the updated profile information.
+5. System updates the user's profile in the database.
+Alternative Flows: Invalid input data, Avatar upload failed
+Post-conditions: User's profile is updated in the system
+
+Use Case ID: UC5
+Brief description: UC5 allows a registered user to create a tag (formerly subject)
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in
+Main Flow of Events:
+1. User selects "Create Tag" option.
+2. User fills out the tag creation form (tag name, description, visibility).
+3. User submits the tag creation form.
+4. System creates a new tag and associates it with the user.
+Alternative Flows: Missing required information, Tag name already exists
+Post-conditions: Tag is created and added to the user's tag list
+
+Use Case ID: UC6
+Brief description: UC6 allows a registered user to edit or delete a tag
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has an existing tag
+Main Flow of Events:
+1. User selects an existing tag to edit or delete.
+2. If editing, user modifies the tag details and submits the updated information.
+3. If deleting, user confirms the deletion of the tag.
+4. System updates or deletes the tag in the database based on the user's action.
+Alternative Flows: Invalid input data, Deletion confirmation denied
+Post-conditions: Tag is updated or deleted in the system
+
+Use Case ID: UC7
+Brief description: UC7 allows a registered user to create a task
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in
+Main Flow of Events:
+1. User selects "Create Task" option.
+2. User fills out the task creation form (task name, description, tag, study plan, due date, priority).
+3. User submits the task creation form.
+4. System creates a new task and adds it to the user's task list.
+Alternative Flows: Missing required information
+Post-conditions: Task is created and added to the user's task list
+
+Use Case ID: UC8
+Brief description: UC8 allows a registered user to edit or delete a task
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has an existing task
+Main Flow of Events:
+1. User selects the task they want to edit or delete.
+2. If editing, user modifies the task details and submits the updated information.
+3. If deleting, user confirms the deletion of the task.
+4. System updates or deletes the task in the database based on the user's action.
+Alternative Flows: Invalid input data, Deletion confirmation denied
+Post-conditions: Task is updated or deleted in the system
+
+Use Case ID: UC9
+Brief description: UC9 allows a registered user to mark a task as complete or favorite
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has an existing task
+Main Flow of Events:
+1. User selects the task they want to update.
+2. User chooses to mark the task as complete or toggle favorite status.
+3. System updates the task state in the database.
+Alternative Flows: Invalid state selection
+Post-conditions: Task state is updated in the system
+
+Use Case ID: UC10
+Brief description: UC10 allows a registered user to filter tasks
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has existing tasks
+Main Flow of Events:
+1. User selects the filter option.
+2. User chooses the filter criteria (by tag, by due date, by status, by priority).
+3. System displays the filtered list of tasks based on the selected criteria.
+Alternative Flows: Invalid filter criteria, No tasks match the filter
+Post-conditions: Filtered list of tasks is displayed to the user
+
+Use Case ID: UC11
+Brief description: UC11 allows a registered user to create a note
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in
+Main Flow of Events:
+1. User selects "Create Note" option.
+2. User fills out the note creation form (note title, note content, visibility).
+3. User submits the note creation form.
+4. System creates a private note for the user.
+Alternative Flows: Missing required information
+Post-conditions: Note is created and added to the user's note list
+
+Use Case ID: UC12
+Brief description: UC12 allows a registered user to edit or delete a note
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has an existing note
+Main Flow of Events:
+1. User selects the note they want to edit or delete.
+2. If editing, user modifies the note details and submits the updated information.
+3. If deleting, user confirms the deletion of the note.
+4. System updates or deletes the note in the database based on the user's action.
+Alternative Flows: Invalid input data, Deletion confirmation denied
+Post-conditions: Note is updated or deleted in the system
+
+Use Case ID: UC13
+Brief description: UC13 allows a registered user to select text in a note and add a comment
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has an existing note
+Main Flow of Events:
+1. User selects text in the note they want to comment on.
+2. User clicks "Add Comment" option.
+3. User fills out the comment creation form (comment text, visibility).
+4. User submits the comment creation form.
+5. System creates a new comment linked to the selected text range.
+Alternative Flows: Missing required information, Invalid text selection
+Post-conditions: Comment is created and linked to the note text
+
+Use Case ID: UC14
+Brief description: UC14 allows a registered user to edit or delete a comment on a note
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has an existing comment on a note
+Main Flow of Events:
+1. User selects the comment they want to edit or delete.
+2. If editing, user modifies the comment text and submits the updated information.
+3. If deleting, user confirms the deletion of the comment.
+4. System updates or deletes the comment in the database based on the user's action.
+Alternative Flows: Invalid input data, Deletion confirmation denied
+Post-conditions: Comment is updated or deleted in the system
+
+Use Case ID: UC15
+Brief description: UC15 allows a registered user to request publication of a note
+Primary actor: Registered user
+Secondary actors: Administrator
+Preconditions: User is logged in and has an existing private note
+Main Flow of Events:
+1. User selects a private note they want to publish.
+2. User clicks "Request Publication" option.
+3. System marks the note as "pending approval".
+4. System notifies administrators of the publication request.
+Alternative Flows: Note is already public, Note is already pending approval
+Post-conditions: Publication request is created and awaits admin approval
+
+Use Case ID: UC16
+Brief description: UC16 allows an administrator to approve or reject publication requests
+Primary actor: Administrator
+Secondary actors: System, Registered user
+Preconditions: Administrator is logged in and has pending publication requests
+Main Flow of Events:
+1. Administrator views the list of pending publication requests.
+2. Administrator selects a request and reviews the content.
+3. Administrator clicks "Approve" or "Reject".
+4. If approved, system marks the content as public and notifies the user.
+5. If rejected, system keeps the content private and notifies the user with reason.
+Alternative Flows: Content violates policies, No pending requests
+Post-conditions: Publication request is processed and user is notified
+
+Use Case ID: UC17
+Brief description: UC17 allows a registered user to create a study plan
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in
+Main Flow of Events:
+1. User selects "Create Study Plan" option.
+2. User fills out the study plan creation form (name, description, faculty, start date, end date, visibility).
+3. User submits the study plan creation form.
+4. System creates a new study plan and adds it to the user's plan list.
+Alternative Flows: Missing required information
+Post-conditions: Study plan is created and added to the user's study plan list
+
+Use Case ID: UC18
+Brief description: UC18 allows a registered user to edit, delete, or publish a study plan
+Primary actor: Registered user
+Secondary actors: Administrator
+Preconditions: User is logged in and has an existing study plan
+Main Flow of Events:
+1. User selects the study plan they want to edit, delete, or publish.
+2. If editing, user modifies the study plan details and submits the updated information.
+3. If deleting, user confirms the deletion of the study plan.
+4. If publishing, user submits a publication request that goes to administrators.
+5. System updates, deletes, or marks the study plan for approval based on the user's action.
+Alternative Flows: Invalid input data, Deletion confirmation denied
+Post-conditions: Study plan is updated, deleted, or marked for admin approval
+
+Use Case ID: UC19
+Brief description: UC19 allows a registered user to create a lesson
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in
+Main Flow of Events:
+1. User selects "Create Lesson" option.
+2. User fills out the lesson creation form (title, content, tag, study plan, order).
+3. User submits the lesson creation form.
+4. System creates a new lesson and associates it with the user's tag or study plan.
+Alternative Flows: Missing required information
+Post-conditions: Lesson is created and added to the system
+
+Use Case ID: UC20
+Brief description: UC20 allows a registered user to edit or delete a lesson
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has an existing lesson
+Main Flow of Events:
+1. User selects the lesson they want to edit or delete.
+2. If editing, user modifies the lesson details and submits the updated information.
+3. If deleting, user confirms the deletion of the lesson.
+4. System updates or deletes the lesson in the database based on the user's action.
+Alternative Flows: Invalid input data, Deletion confirmation denied
+Post-conditions: Lesson is updated or deleted in the system
+
+Use Case ID: UC21
+Brief description: UC21 allows a registered user to upload files associated with a lesson
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has an existing lesson
+Main Flow of Events:
+1. User selects a lesson and clicks "Upload File".
+2. User selects a file from their device.
+3. System uploads the file to cloud storage (S3, blob storage) and generates a unique storage key (GUID).
+4. System creates a FILE_RECORD in the database with reference to the lesson.
+5. System displays the uploaded file in the lesson.
+Alternative Flows: File upload failed, File size exceeds limit, Invalid file type
+Post-conditions: File is uploaded and associated with the lesson
+
+Use Case ID: UC22
+Brief description: UC22 allows a registered user to delete files from a lesson
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has files in a lesson
+Main Flow of Events:
+1. User selects a lesson with files.
+2. User clicks "Delete File" next to the file they want to remove.
+3. User confirms the deletion.
+4. System deletes the file from storage and removes the FILE_RECORD from the database.
+Alternative Flows: Deletion confirmation denied, File not found
+Post-conditions: File is deleted from the lesson and storage
+
+Use Case ID: UC23
+Brief description: UC23 allows a registered user to manage calendar events
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in
+Main Flow of Events:
+1. User selects "Create Calendar Event" option.
+2. User fills out the event creation form (event name, date, time, location, tag).
+3. User submits the event creation form.
+4. System creates a new event and adds it to the user's calendar.
+5. User can also edit or delete existing calendar events.
+Alternative Flows: Missing required information, Invalid input data
+Post-conditions: Calendar event is created, updated, or deleted in the system
+
+Use Case ID: UC24
+Brief description: UC24 allows a registered user to share entities (study plans, lessons, notes) with other users
+Primary actor: Registered user
+Secondary actors: System, Other registered users
+Preconditions: User is logged in and has entities to share
+Main Flow of Events:
+1. User selects an entity (study plan, lesson, note) they want to share.
+2. User clicks "Share" option and selects users or groups to share with.
+3. User sets permissions (VIEW, EDIT, ADMIN).
+4. System creates SHARE records in the database.
+5. System notifies the shared users of the new shared content.
+Alternative Flows: User not found, Sharing permission denied
+Post-conditions: Entity is shared with specified users and permissions are set
+
+Use Case ID: UC25
+Brief description: UC25 allows a registered user to revoke sharing of entities
+Primary actor: Registered user
+Secondary actors: System
+Preconditions: User is logged in and has shared entities
+Main Flow of Events:
+1. User selects a shared entity and clicks "Manage Sharing".
+2. User selects the user they want to revoke access from.
+3. User confirms the revocation.
+4. System removes the SHARE record from the database.
+5. System notifies the affected user that access has been revoked.
+Alternative Flows: Revocation confirmation denied
+Post-conditions: Entity is no longer shared with the specified user
+
+Use Case ID: UC26
+Brief description: UC26 allows an administrator to moderate and remove inappropriate content
+Primary actor: Administrator
+Secondary actors: System
+Preconditions: Administrator is logged in
+Main Flow of Events:
+1. Administrator selects "Content Moderation" option.
+2. Administrator can review user avatars, shared files, public notes, and comments.
+3. If inappropriate content is found, administrator can flag or remove it.
+4. System removes the inappropriate content and notifies the user.
+5. System may log the action for audit purposes.
+Alternative Flows: No inappropriate content found, Content already removed
+Post-conditions: Inappropriate content is removed from the system
+
+Use Case ID: UC27
+Brief description: UC27 allows a registered user to view their own public content and find other public content
+Primary actor: Registered user
+Secondary actors: Other registered users, System
+Preconditions: User is logged in
+Main Flow of Events:
+1. User can view public notes, lessons, and study plans shared by other users.
+2. User can search or filter by tag, author, or keywords.
+3. User can read comments and discussions on public content.
+4. All interactions with public content are read-only (except own content).
+Alternative Flows: No public content available, Search returns no results
+Post-conditions: Public content is displayed to the user
+
+@enduml
