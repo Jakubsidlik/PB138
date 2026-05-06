@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTasks, useToggleTask, useCreateTask, useDeleteTask } from '../../../app/api-hooks'
-import { UnifiedTasksScreen } from '../../../screen/sharedScreen/Tasks' 
+import { UnifiedTasksScreen } from '../../../components/shared/Tasks' 
 import { PendingComponent } from '../../../components/shared/PendingComponent'
 import { ErrorComponent } from '../../../components/shared/ErrorComponent'
 import { queryClient, queryKeys } from '../../../app/queries'
