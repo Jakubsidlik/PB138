@@ -1,38 +1,43 @@
-import React from 'react'
-import { MobileNavItem } from '../../app/types'
+import { Link, useRouterState } from '@tanstack/react-router'
 import ghostLogo from '../../assets/ghostLogo.jpg'
 
 type SidebarProps = {
-  activeMobileNav: MobileNavItem
-  setActiveMobileNav: React.Dispatch<React.SetStateAction<MobileNavItem>>
   onLogout: () => void
 }
 
 export function Sidebar({
-  activeMobileNav,
-  setActiveMobileNav,
   onLogout,
 }: SidebarProps) {
 
+  // aktuální URL pro active state
+  const pathname = useRouterState({
+    select: (s) => s.location.pathname,
+  })
+
   const handleLogoClick = () => {
-    setActiveMobileNav('home')
-    window.location.hash = ''
+    // návrat na home route
+    window.location.href = '/'
   }
 
   return (
     <aside className="sidebar">
-      <button 
+      <button
         type="button"
         className="brand-button"
         onClick={handleLogoClick}
         aria-label="Přejít na hlavní stránku"
       >
         <div className="brand">
-          <img 
+          <img
             src={ghostLogo}
             alt="Lonely Student Logo"
             className="brand-logo"
-            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+            }}
           />
           <h1>Lonely Student</h1>
         </div>
@@ -40,54 +45,61 @@ export function Sidebar({
 
       <nav className="menu">
         <div className="menu-main">
-          <a
-            className={`menu-item ${activeMobileNav === 'home' ? 'active' : ''}`}
-            href="#"
-            onClick={() => setActiveMobileNav('home')}
+
+          <Link
+            to="/"
+            className={`menu-item ${pathname === '/' ? 'active' : ''}`}
           >
             Hlavní stránka
-          </a>
-          <a
-            className={`menu-item ${activeMobileNav === 'calendar' ? 'active' : ''}`}
-            href="#calendar"
-            onClick={() => setActiveMobileNav('calendar')}
+          </Link>
+
+          <Link
+            to="/calendar"
+            className={`menu-item ${pathname === '/calendar' ? 'active' : ''}`}
           >
             Kalendář
-          </a>
-          <a
-            className={`menu-item ${activeMobileNav === 'tasks' ? 'active' : ''}`}
-            href="#tasks"
-            onClick={() => setActiveMobileNav('tasks')}
+          </Link>
+
+          <Link
+            to="/tasks"
+            className={`menu-item ${pathname === '/tasks' ? 'active' : ''}`}
           >
             Úkoly
-          </a>
-          <a
-            className={`menu-item ${activeMobileNav === 'files' ? 'active' : ''}`}
-            href="#files"
-            onClick={() => setActiveMobileNav('files')}
+          </Link>
+
+          <Link
+            to="/files"
+            className={`menu-item ${pathname === '/files' ? 'active' : ''}`}
           >
             Soubory
-          </a>
-          <a
-            className={`menu-item ${activeMobileNav === 'study-plan' ? 'active' : ''}`}
-            href="#study-plan"
-            onClick={() => setActiveMobileNav('study-plan')}
+          </Link>
+
+          <Link
+            to="/study"
+            className={`menu-item ${pathname === '/study' ? 'active' : ''}`}
           >
             Studijní plán
-          </a>
+          </Link>
+
         </div>
 
         <div className="menu-bottom">
-          <a
-            className={`menu-item ${activeMobileNav === 'profile' ? 'active' : ''}`}
-            href="#profile"
-            onClick={() => setActiveMobileNav('profile')}
+
+          <Link
+            to="/profile"
+            className={`menu-item ${pathname === '/profile' ? 'active' : ''}`}
           >
             Nastavení
-          </a>
-          <button type="button" className="menu-item menu-logout" onClick={onLogout}>
+          </Link>
+
+          <button
+            type="button"
+            className="menu-item menu-logout"
+            onClick={onLogout}
+          >
             Odhlásit se
           </button>
+
         </div>
       </nav>
     </aside>

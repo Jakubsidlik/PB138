@@ -1,5 +1,5 @@
 import React from 'react'
-import { MobileNavItem } from '../../app/types'
+import { useRouter } from '@tanstack/react-router'
 import { getDailyMotto } from '../../app/utils'
 
 type TopbarProps = {
@@ -9,7 +9,6 @@ type TopbarProps = {
   isStudyPlanScreen: boolean
   isProfileScreen: boolean
   fileInputRef: React.RefObject<HTMLInputElement>
-  setActiveMobileNav: React.Dispatch<React.SetStateAction<MobileNavItem>>
   profileName: string
   profileAvatarDataUrl: string | null
   onOpenProfile: () => void
@@ -22,11 +21,12 @@ export function Topbar({
   isStudyPlanScreen,
   isProfileScreen,
   fileInputRef,
-  setActiveMobileNav,
   profileName,
   profileAvatarDataUrl,
   onOpenProfile,
 }: TopbarProps) {
+  const router = useRouter()
+
   const initials =
     profileName
       .split(' ')
@@ -35,6 +35,10 @@ export function Topbar({
       .map((part) => part[0])
       .join('')
       .toUpperCase() || 'U'
+
+  const handleBackClick = () => {
+    router.navigate({ to: '/' })
+  }
 
   return (
     <header className="topbar">
@@ -45,10 +49,7 @@ export function Topbar({
               type="button"
               className="mobile-header-icon"
               aria-label="Zpět"
-              onClick={() => {
-                setActiveMobileNav('home')
-                window.location.hash = ''
-              }}
+              onClick={handleBackClick}
             >
               ←
             </button>
@@ -61,10 +62,7 @@ export function Topbar({
               type="button"
               className="mobile-header-icon"
               aria-label="Zpět"
-              onClick={() => {
-                setActiveMobileNav('home')
-                window.location.hash = ''
-              }}
+              onClick={handleBackClick}
             >
               ←
             </button>
@@ -77,10 +75,7 @@ export function Topbar({
               type="button"
               className="mobile-header-icon"
               aria-label="Zpět"
-              onClick={() => {
-                setActiveMobileNav('home')
-                window.location.hash = ''
-              }}
+              onClick={handleBackClick}
             >
               ←
             </button>
@@ -93,10 +88,7 @@ export function Topbar({
               type="button"
               className="mobile-header-icon"
               aria-label="Zpět"
-              onClick={() => {
-                setActiveMobileNav('home')
-                window.location.hash = ''
-              }}
+              onClick={handleBackClick}
             >
               ←
             </button>

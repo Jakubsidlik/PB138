@@ -93,9 +93,7 @@ export function useDashboardState() {
   const [themeMode, setThemeMode] = React.useState<ThemeMode>(() => readThemeFromStorage())
   const [lessons, setLessons] = React.useState<Lesson[]>([])
   const [accentPalette, setAccentPalette] = React.useState<AccentPalette>(() => readPaletteFromStorage())
-  const [activeMobileNav, setActiveMobileNav] = React.useState<MobileNavItem>(() =>
-    getNavFromHash(window.location.hash),
-  )
+  const [activeMobileNav, setActiveMobileNav] = React.useState<MobileNavItem>('home')
   const [displayMonth, setDisplayMonth] = React.useState(() => new Date())
   const [selectedDateIso, setSelectedDateIso] = React.useState(() => formatDateIso(new Date()))
   const [eventMetaById, setEventMetaById] = React.useState<Record<number, EventMeta>>({})
@@ -147,17 +145,6 @@ export function useDashboardState() {
     },
     [getToken],
   )
-
-  React.useEffect(() => {
-    const onHashChange = () => {
-      setActiveMobileNav(getNavFromHash(window.location.hash))
-    }
-
-    window.addEventListener('hashchange', onHashChange)
-    return () => {
-      window.removeEventListener('hashchange', onHashChange)
-    }
-  }, [])
 
   React.useEffect(() => {
     localStorage.setItem(THEME_STORAGE_KEY, themeMode)
@@ -599,7 +586,6 @@ export function useDashboardState() {
 
   const onOpenProfile = () => {
     setActiveMobileNav('profile')
-    window.location.hash = 'profile'
   }
 
   const onChangeProfile = (field: keyof Omit<UserProfile, 'avatarDataUrl'>, value: string) => {

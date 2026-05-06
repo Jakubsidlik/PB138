@@ -1,23 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Calendar, Home, Files, User, Plus, CheckSquare, BookMarked } from 'lucide-react'
-import { MobileNavItem } from '../../app/types'
+import { useRouter } from '@tanstack/react-router'
 
-type MobileBottomNavProps = {
-  activeMobileNav: MobileNavItem
-  setActiveMobileNav: React.Dispatch<React.SetStateAction<MobileNavItem>>
-}
-
-export function MobileBottomNav({ activeMobileNav, setActiveMobileNav }: MobileBottomNavProps) {
+export function MobileBottomNav() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
-  const handleDropdownItemClick = (item: MobileNavItem) => {
-    setActiveMobileNav(item)
-    setIsDropdownOpen(false)
-  }
-
-  const handleNavigationClick = (item: MobileNavItem) => {
-    setActiveMobileNav(item)
+  const handleNavigateTo = (path: string) => {
+    router.navigate({ to: path as any })
     setIsDropdownOpen(false)
   }
 
@@ -52,22 +43,19 @@ export function MobileBottomNav({ activeMobileNav, setActiveMobileNav }: MobileB
         {isDropdownOpen && (
           <div className="nav-dropdown-menu">
             <button
-              className={activeMobileNav === 'tasks' ? 'active' : ''}
-              onClick={() => handleDropdownItemClick('tasks')}
+              onClick={() => handleNavigateTo('/tasks')}
             >
               <CheckSquare size={20} />
               <span>Úkoly</span>
             </button>
             <button
-              className={activeMobileNav === 'files' ? 'active' : ''}
-              onClick={() => handleDropdownItemClick('files')}
+              onClick={() => handleNavigateTo('/files')}
             >
               <Files size={20} />
               <span>Soubory</span>
             </button>
             <button
-              className={activeMobileNav === 'study-plan' ? 'active' : ''}
-              onClick={() => handleDropdownItemClick('study-plan')}
+              onClick={() => handleNavigateTo('/study')}
             >
               <BookMarked size={20} />
               <span>Studijní plán</span>
@@ -75,30 +63,24 @@ export function MobileBottomNav({ activeMobileNav, setActiveMobileNav }: MobileB
           </div>
         )}
       </div>
-      <a
-        className={activeMobileNav === 'calendar' ? 'active' : ''}
-        href="#calendar"
-        onClick={() => handleNavigationClick('calendar')}
+      <button
+        onClick={() => handleNavigateTo('/calendar')}
       >
         <Calendar size={24} />
         <span className="nav-label">Kalendář</span>
-      </a>
-      <a
-        className={activeMobileNav === 'home' ? 'active' : ''}
-        href="#"
-        onClick={() => handleNavigationClick('home')}
+      </button>
+      <button
+        onClick={() => handleNavigateTo('/')}
       >
         <Home size={24} />
         <span className="nav-label">Domů</span>
-      </a>
-      <a
-        className={activeMobileNav === 'profile' ? 'active' : ''}
-        href="#profile"
-        onClick={() => handleNavigationClick('profile')}
+      </button>
+      <button
+        onClick={() => handleNavigateTo('/profile')}
       >
         <User size={24} />
         <span className="nav-label">Profil</span>
-      </a>
+      </button>
     </nav>
   )
 }
