@@ -88,4 +88,20 @@ function RootComponent() {
 export const Route = createRootRoute({
   component: RootComponent,
   errorComponent: ErrorComponent,
+  
+  // PŘIDÁNO: Ošetření 404 - Stránka nenalezena
+  notFoundComponent: () => (
+    <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 text-center">
+      <h1 className="text-6xl font-bold text-gray-800 mb-4">404</h1>
+      <p className="text-xl text-gray-600 mb-8">
+        Jejda! Stránka, kterou hledáte, neexistuje.
+      </p>
+      <button 
+        onClick={() => window.history.back()} 
+        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+      >
+        Vrátit se zpět
+      </button>
+    </div>
+  ),
 })
