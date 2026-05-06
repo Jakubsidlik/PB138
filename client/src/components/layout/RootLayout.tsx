@@ -25,12 +25,12 @@ export function RootLayout() {
   const isProfileScreen = pathname === '/profile'
 
   // Determine nav class for CSS styling
-  let navClass = 'nav-home'
-  if (isCalendarScreen) navClass = 'nav-calendar'
-  else if (isTasksScreen) navClass = 'nav-tasks'
-  else if (isFilesScreen) navClass = 'nav-files'
-  else if (isStudyPlanScreen) navClass = 'nav-study-plan'
-  else if (isProfileScreen) navClass = 'nav-profile'
+  let navClass = 'nav-home mobile-nav-home'
+  if (isCalendarScreen) navClass = 'nav-calendar mobile-nav-calendar'
+  else if (isTasksScreen) navClass = 'nav-tasks mobile-nav-tasks'
+  else if (isFilesScreen) navClass = 'nav-files mobile-nav-files'
+  else if (isStudyPlanScreen) navClass = 'nav-study-plan mobile-nav-study-plan'
+  else if (isProfileScreen) navClass = 'nav-profile mobile-nav-profile'
 
   return (
     <div
