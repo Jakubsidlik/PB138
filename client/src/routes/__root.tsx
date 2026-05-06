@@ -4,7 +4,7 @@ import { useAuth } from '@clerk/clerk-react'
 import { useDashboardState } from '../app/useDashboardState'
 import { Sidebar } from '../components/shared/Sidebar'
 import { Topbar } from '../components/shared/Topbar'
-import { MobileBottomNav } from '../screen/mobile/MobileBottomNav'
+import { MobileBottomNav } from '../components/layout/MobileBottomNav'
 import { QuerySuspense } from '../components/shared/QuerySuspense'
 import { ErrorComponent } from '../components/shared/ErrorComponent'
 

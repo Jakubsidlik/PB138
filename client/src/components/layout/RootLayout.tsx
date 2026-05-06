@@ -4,7 +4,7 @@ import { useAuth } from '@clerk/clerk-react'
 import { useDashboardState } from '../../app/useDashboardState'
 import { Sidebar } from '../shared/Sidebar'
 import { Topbar } from '../shared/Topbar'
-import { MobileBottomNav } from '../../screen/mobile/MobileBottomNav'
+import { MobileBottomNav } from './MobileBottomNav'
 
 export function RootLayout() {
   const state = useDashboardState()
@@ -34,12 +34,10 @@ export function RootLayout() {
   else if (isProfileScreen) navClass = 'nav-profile'
 
   return (
-    <div
-      className={`dashboard-root theme-${state.themeMode} palette-${state.accentPalette} ${navClass}`}
-    >
-      <Sidebar onLogout={handleLogout} />
+    <div className={`flex h-screen w-full theme-${state.themeMode} palette-${state.accentPalette} ${navClass}`}>
+    <Sidebar onLogout={handleLogout} />
 
-      <main className="main-content">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Topbar
           isCalendarScreen={isCalendarScreen}
           isFilesScreen={isFilesScreen}
@@ -52,18 +50,14 @@ export function RootLayout() {
           onOpenProfile={() => window.location.href = '/profile'}
         />
 
+        <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
         <Outlet />
+      </div>
+    </main>
 
-        <input
-          type="file"
-          multiple
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          onChange={(e) => state.onUploadFiles(e.target.files)}
-        />
-      </main>
-
+      <div className="md:hidden">
       <MobileBottomNav />
     </div>
-  )
+  </div>
+);
 }

@@ -9,18 +9,16 @@ export function Sidebar({
   onLogout,
 }: SidebarProps) {
 
-  // aktuální URL pro active state
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   })
 
   const handleLogoClick = () => {
-    // návrat na home route
     window.location.href = '/'
   }
 
   return (
-    <aside className="sidebar">
+      <aside className="sidebar hidden md:flex flex-col">
       <button
         type="button"
         className="brand-button"
@@ -43,9 +41,8 @@ export function Sidebar({
         </div>
       </button>
 
-      <nav className="menu">
+          <nav className="menu">
         <div className="menu-main">
-
           <Link
             to="/"
             className={`menu-item ${pathname === '/' ? 'active' : ''}`}
@@ -80,11 +77,9 @@ export function Sidebar({
           >
             Studijní plán
           </Link>
-
         </div>
 
         <div className="menu-bottom">
-
           <Link
             to="/profile"
             className={`menu-item ${pathname === '/profile' ? 'active' : ''}`}
@@ -99,7 +94,6 @@ export function Sidebar({
           >
             Odhlásit se
           </button>
-
         </div>
       </nav>
     </aside>
