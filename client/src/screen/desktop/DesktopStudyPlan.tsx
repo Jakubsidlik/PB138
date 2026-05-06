@@ -2,6 +2,8 @@ import React from 'react'
 import { Button } from '../../components/ui/button'
 import { DesktopSubjectMeta, DesktopSubjectTone, Subject, ManagedFile, Lesson } from '../../app/types'
 import { SubjectDetailModal } from '../../components/shared/SubjectDetailModal'
+import { SubjectActionButtons } from '../../components/shared/SubjectActionButtons'
+import { SubjectGrid } from '../../components/shared/SubjectGrid'
 
 type DesktopSubject = Subject & {
   meta: DesktopSubjectMeta
@@ -79,10 +81,12 @@ export function DesktopStudyPlan({
         </Button>
       </div>
 
-      <div className="desktop-subjects-grid">
-        {desktopSubjects.map((subject) => (
-          <article 
-            key={subject.id} 
+      <SubjectGrid
+        subjects={desktopSubjects}
+        gridClassName="desktop-subjects-grid"
+        renderSubjectCard={(subject) => (
+          <article
+            key={subject.id}
             className="desktop-subject-card"
             onClick={() => setSelectedSubjectId(subject.id)}
           >
@@ -108,32 +112,23 @@ export function DesktopStudyPlan({
                 )}
               </div>
 
-              <div className="desktop-files-tabs" onClick={(e) => e.stopPropagation()}>
-                <Button type="button" onClick={() => onEditSubject(subject.id)}>
-                  Upravit
-                </Button>
-                {subject.archived ? (
-                  <Button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
-                    Obnovit
-                  </Button>
-                ) : (
-                  <Button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
-                    Archivovat
-                  </Button>
-                )}
-                <Button type="button" onClick={() => onDeleteSubject(subject.id)}>
-                  Smazat
-                </Button>
-              </div>
+              <SubjectActionButtons
+                subjectId={subject.id}
+                isArchived={subject.archived}
+                className="desktop-files-tabs"
+                onEditSubject={onEditSubject}
+                onToggleArchiveSubject={onToggleArchiveSubject}
+                onDeleteSubject={onDeleteSubject}
+              />
             </div>
           </article>
-        ))}
+        )}
+      />
 
-        <Button type="button" className="desktop-subject-add-card" onClick={onCreateSubject}>
-          <div>＋</div>
-          <span>Zapsat další předmět</span>
-        </Button>
-      </div>
+      <Button type="button" className="desktop-subject-add-card" onClick={onCreateSubject}>
+        <div>＋</div>
+        <span>Zapsat další předmět</span>
+      </Button>
 
       <SubjectDetailModal 
         subject={selectedSubject}

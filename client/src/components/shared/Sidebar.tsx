@@ -9,24 +9,17 @@ type SidebarProps = {
 export function Sidebar({
   onLogout,
 }: SidebarProps) {
-
-  // aktuální URL pro active state
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   })
 
   const handleLogoClick = () => {
-    // návrat na home route
     window.location.href = '/'
   }
 
   return (
     <aside className="sidebar">
-<<<<<<< Updated upstream
-      <button
-=======
-      <Button 
->>>>>>> Stashed changes
+      <Button
         type="button"
         variant="ghost"
         className="brand-button"
@@ -51,7 +44,6 @@ export function Sidebar({
 
       <nav className="menu">
         <div className="menu-main">
-
           <Link
             to="/"
             className={`menu-item ${pathname === '/' ? 'active' : ''}`}
@@ -86,38 +78,24 @@ export function Sidebar({
           >
             Studijní plán
           </Link>
-
         </div>
 
         <div className="menu-bottom">
-
           <Link
             to="/profile"
             className={`menu-item ${pathname === '/profile' ? 'active' : ''}`}
           >
             Nastavení
-<<<<<<< Updated upstream
           </Link>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             className="menu-item menu-logout"
             onClick={onLogout}
           >
             Odhlásit se
-          </button>
-
-=======
-          </a>
-          <Button 
-            type="button" 
-            variant="ghost"
-            className="menu-item menu-logout" 
-            onClick={onLogout}
-          >
-            Odhlásit se
           </Button>
->>>>>>> Stashed changes
         </div>
       </nav>
     </aside>

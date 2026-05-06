@@ -1,7 +1,10 @@
 
 import React from 'react'
+import { Button } from '../../components/ui/button'
 import { Subject, SubjectVisual, ManagedFile } from '../../app/types'
 import { SubjectDetailModal } from '../../components/shared/SubjectDetailModal'
+import { SubjectActionButtons } from '../../components/shared/SubjectActionButtons'
+import { SubjectGrid } from '../../components/shared/SubjectGrid'
 
 type MobileStudyPlanScreenProps = {
     subjectSearch: string
@@ -51,8 +54,11 @@ return (
         </label>
     </div>
 
-    <div className="subjects-mobile-grid">
-        {filteredSubjects.map((subject) => {
+    <SubjectGrid
+        subjects={filteredSubjects}
+        gridClassName="subjects-mobile-grid"
+        emptyMessage="Nenalezeny žádné předměty."
+        renderSubjectCard={(subject) => {
         const visual = subjectVisualByCode[subject.code] ?? {
             icon: '📘',
             tone: 'amber' as const,
@@ -70,21 +76,18 @@ return (
                 <p>📄 {subject.files} souborů</p>
                 <p>📝 {subject.notes} poznámek</p>
             </div>
-            <div className="desktop-files-tabs" onClick={(e) => e.stopPropagation()}>
-                <Button type="button" onClick={() => onEditSubject(subject.id)}>Upravit</Button>
-                <Button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
-                {subject.archived ? 'Obnovit' : 'Archivovat'}
-                </Button>
-                <Button type="button" onClick={() => onDeleteSubject(subject.id)}>Smazat</Button>
-            </div>
+            <SubjectActionButtons
+                subjectId={subject.id}
+                isArchived={subject.archived}
+                className="desktop-files-tabs"
+                onEditSubject={onEditSubject}
+                onToggleArchiveSubject={onToggleArchiveSubject}
+                onDeleteSubject={onDeleteSubject}
+            />
             </article>
         )
-        })}
-    </div>
-
-    {filteredSubjects.length === 0 ? (
-        <p className="subjects-empty">Nenalezeny žádné předměty.</p>
-    ) : null}
+        }}
+    />
 
     <Button type="button" className="subjects-fab" aria-label="Přidat předmět" onClick={onCreateSubject}>
         +
@@ -93,6 +96,7 @@ return (
     <SubjectDetailModal 
         subject={selectedSubject}
         files={managedFiles}
+        lessons={[]}
         onClose={() => setSelectedSubjectId(null)}
         onAddNote={handleAddNote}
         onAddFile={handleAddFile}

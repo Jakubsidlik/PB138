@@ -5,10 +5,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
-    "build": "npm run build -w server && npm run build -w client",
-    "preview": "cd client && npm run preview",
-    "type-check": "npm run type-check -w server && npm run type-check -w client"
+    "dev": "concurrently \"cd server && bun run dev\" \"cd client && bun run dev\"",
+    "build": "cd server && bun run build && cd ../client && bun run build",
+    "preview": "cd client && bun run preview",
+    "type-check": "cd server && bun run type-check && cd ../client && bun run type-check"
   },
   "workspaces": [
     "server",

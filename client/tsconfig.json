@@ -6,6 +6,15 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "ignoreDeprecations": "5.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/components/*": ["src/components/*"],
+      "@/lib/*": ["src/lib/*"],
+      "@/app/*": ["src/app/*"],
+      "@/hooks/*": ["src/hooks/*"]
+    },
 
     /* Bundler mode */
     "moduleResolution": "bundler",

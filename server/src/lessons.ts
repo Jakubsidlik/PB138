@@ -1,12 +1,55 @@
 import express from 'express'
-import { prisma } from './prisma.js'
-import { lessonSchema, updateLessonSchema, lessonNoteSchema, updateLessonNoteSchema, textAnnotationSchema } from './schemas.js'
+import { and, asc, desc, eq, exists, inArray, isNull, or, sql } from 'drizzle-orm'
+
+import { db } from './db/client.js'
+import { fileRecords, lessonNotes, lessons, studyPlanCollaborators, studyPlans, subjects, textAnnotations } from './db/schema.js'
+import { lessonNoteSchema, lessonSchema, textAnnotationSchema, updateLessonNoteSchema, updateLessonSchema } from './schemas.js'
 import { asBigInt, asNumberId, parseAnnotationTargetType } from './utils.js'
 import { getActorFromRequest, isPublicActor, requireRegisteredActor, canActorReadAnnotationTarget } from './auth.js'
 
-export const lessonsRouter = express.Router()
-export const lessonNotesRouter = express.Router()
-export const annotationsRouter = express.Router()
+export const lessonsRouter: express.Router = express.Router()
+export const lessonNotesRouter: express.Router = express.Router()
+export const annotationsRouter: express.Router = express.Router()
+
+const lessonSelect = {
+  id: lessons.id,
+  subjectId: lessons.subjectId,
+  studyPlanId: lessons.studyPlanId,
+  title: lessons.title,
+  content: lessons.content,
+  isShared: lessons.isShared,
+  orderIndex: lessons.orderIndex,
+  deletedAt: lessons.deletedAt,
+  createdAt: lessons.createdAt,
+  updatedAt: lessons.updatedAt,
+}
+
+const countByLesson = async (table: any, lessonId: bigint) => {
+  const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(table).where(eq(table.lessonId, lessonId))
+  return row?.count ?? 0
+}
+
+const canActorManageLesson = async (actor: Awaited<ReturnType<typeof getActorFromRequest>>, lessonId: bigint) => {
+  if (actor.role === 'ADMIN') return true
+
+  const [lesson] = await db.select({ subjectId: lessons.subjectId, studyPlanId: lessons.studyPlanId }).from(lessons).where(eq(lessons.id, lessonId)).limit(1)
+  if (!lesson) return false
+
+  if (lesson.studyPlanId !== null) {
+    const [ownPlan] = await db.select({ id: studyPlans.id }).from(studyPlans).where(and(eq(studyPlans.id, lesson.studyPlanId), eq(studyPlans.userId, BigInt(actor.id)))).limit(1)
+    if (ownPlan) return true
+
+    const [collaborator] = await db.select({ id: studyPlanCollaborators.id }).from(studyPlanCollaborators).where(and(eq(studyPlanCollaborators.studyPlanId, lesson.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))).limit(1)
+    if (collaborator) return true
+  }
+
+  if (lesson.subjectId !== null) {
+    const [ownSubject] = await db.select({ id: subjects.id }).from(subjects).where(and(eq(subjects.id, lesson.subjectId), eq(subjects.userId, BigInt(actor.id)))).limit(1)
+    if (ownSubject) return true
+  }
+
+  return false
+}
 
 lessonsRouter.get('/', async (req, res, next) => {
   try {
@@ -15,52 +58,54 @@ lessonsRouter.get('/', async (req, res, next) => {
     const studyPlanId = asBigInt(req.query.studyPlanId)
     const includeDeleted = req.query.includeDeleted === 'true'
 
-    const lessons = await prisma.lesson.findMany({
-      where: isPublicActor(actor)
-        ? {
-            subjectId: subjectId ?? undefined,
-            studyPlanId: studyPlanId ?? undefined,
-            isShared: true,
-            deletedAt: includeDeleted ? undefined : null,
-          }
-        : {
-            subjectId: subjectId ?? undefined,
-            studyPlanId: studyPlanId ?? undefined,
-            deletedAt: includeDeleted ? undefined : null,
-            OR: [
-              { isShared: true },
-              { subject: { userId: BigInt(actor.id) } },
-              { studyPlan: { userId: BigInt(actor.id) } },
-              { studyPlan: { collaborators: { some: { userId: BigInt(actor.id) } } } },
-            ],
-          },
-      orderBy: [{ orderIndex: 'asc' }, { createdAt: 'asc' }],
-      include: {
-        _count: {
-          select: {
-            notes: true,
-            files: true,
-          },
-        },
-      },
-    })
+    const rows = await db
+      .select(lessonSelect)
+      .from(lessons)
+      .leftJoin(subjects, eq(lessons.subjectId, subjects.id))
+      .leftJoin(studyPlans, eq(lessons.studyPlanId, studyPlans.id))
+      .where(
+        isPublicActor(actor)
+          ? and(
+              subjectId ? eq(lessons.subjectId, subjectId) : undefined,
+              studyPlanId ? eq(lessons.studyPlanId, studyPlanId) : undefined,
+              eq(lessons.isShared, true),
+              includeDeleted ? undefined : isNull(lessons.deletedAt),
+            )
+          : and(
+              subjectId ? eq(lessons.subjectId, subjectId) : undefined,
+              studyPlanId ? eq(lessons.studyPlanId, studyPlanId) : undefined,
+              includeDeleted ? undefined : isNull(lessons.deletedAt),
+              or(
+                eq(lessons.isShared, true),
+                eq(subjects.userId, BigInt(actor.id)),
+                eq(studyPlans.userId, BigInt(actor.id)),
+                exists(
+                  db
+                    .select({ id: studyPlanCollaborators.id })
+                    .from(studyPlanCollaborators)
+                    .where(and(eq(studyPlanCollaborators.studyPlanId, lessons.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
+                ),
+              ),
+            ),
+      )
+      .orderBy(asc(lessons.orderIndex), asc(lessons.createdAt))
 
-    res.json(
-      lessons.map((lesson) => ({
-        id: Number(lesson.id),
-        subjectId: asNumberId(lesson.subjectId),
-        studyPlanId: asNumberId(lesson.studyPlanId),
-        title: lesson.title,
-        content: lesson.content,
-        isShared: lesson.isShared,
-        orderIndex: lesson.orderIndex,
-        notesCount: lesson._count.notes,
-        filesCount: lesson._count.files,
-        deletedAt: lesson.deletedAt ? lesson.deletedAt.toISOString() : null,
-        createdAt: lesson.createdAt.toISOString(),
-        updatedAt: lesson.updatedAt.toISOString(),
-      })),
-    )
+    const mappedLessons = await Promise.all(rows.map(async (row) => ({
+      id: Number(row.id),
+      subjectId: asNumberId(row.subjectId),
+      studyPlanId: asNumberId(row.studyPlanId),
+      title: row.title,
+      content: row.content,
+      isShared: row.isShared,
+      orderIndex: row.orderIndex,
+      notesCount: await countByLesson(lessonNotes, row.id),
+      filesCount: await countByLesson(fileRecords, row.id),
+      deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    })))
+
+    res.json(mappedLessons)
   } catch (error) {
     next(error)
   }
@@ -69,9 +114,7 @@ lessonsRouter.get('/', async (req, res, next) => {
 lessonsRouter.post('/', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const parsed = lessonSchema.safeParse(req.body)
     if (!parsed.success) {
@@ -80,16 +123,14 @@ lessonsRouter.post('/', async (req, res, next) => {
     }
     const payload = parsed.data
 
-    const created = await prisma.lesson.create({
-      data: {
-        subjectId: asBigInt(payload.subjectId),
-        studyPlanId: asBigInt(payload.studyPlanId),
-        title: payload.title,
-        content: payload.content ?? null,
-        isShared: payload.isShared,
-        orderIndex: Math.trunc(payload.orderIndex),
-      },
-    })
+    const [created] = await db.insert(lessons).values({
+      subjectId: asBigInt(payload.subjectId),
+      studyPlanId: asBigInt(payload.studyPlanId),
+      title: payload.title,
+      content: payload.content ?? null,
+      isShared: payload.isShared,
+      orderIndex: Math.trunc(payload.orderIndex),
+    }).returning(lessonSelect)
 
     res.status(201).json({
       id: Number(created.id),
@@ -111,9 +152,7 @@ lessonsRouter.post('/', async (req, res, next) => {
 lessonsRouter.patch('/:id', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const lessonId = asBigInt(req.params.id)
     if (!lessonId) {
@@ -121,25 +160,13 @@ lessonsRouter.patch('/:id', async (req, res, next) => {
       return
     }
 
-    const existing = await prisma.lesson.findUnique({ where: { id: lessonId } })
-    if (!existing) {
+    const existing = await db.select({ id: lessons.id }).from(lessons).where(eq(lessons.id, lessonId)).limit(1)
+    if (!existing.length) {
       res.status(404).json({ error: 'Lekce nebyla nalezena.' })
       return
     }
 
-    const ownsStudyPlan =
-      existing.studyPlanId !== null
-        ? (await prisma.studyPlan.findFirst({ where: { id: existing.studyPlanId, userId: BigInt(actor.id) } })) !==
-          null
-        : false
-
-    const ownsSubject =
-      existing.subjectId !== null
-        ? (await prisma.subject.findFirst({ where: { id: existing.subjectId, userId: BigInt(actor.id) } })) !== null
-        : false
-
-    const canEditLesson = actor.role === 'ADMIN' || ownsStudyPlan || ownsSubject
-
+    const canEditLesson = await canActorManageLesson(actor, lessonId)
     if (!canEditLesson) {
       res.status(403).json({ error: 'Nemate opravneni upravit tuto lekci.' })
       return
@@ -152,17 +179,14 @@ lessonsRouter.patch('/:id', async (req, res, next) => {
     }
     const payload = parsed.data
 
-    const updated = await prisma.lesson.update({
-      where: { id: lessonId },
-      data: {
-        subjectId: payload.subjectId !== undefined ? asBigInt(payload.subjectId) : undefined,
-        studyPlanId: payload.studyPlanId !== undefined ? asBigInt(payload.studyPlanId) : undefined,
-        title: payload.title,
-        content: payload.content,
-        isShared: payload.isShared,
-        orderIndex: payload.orderIndex !== undefined ? Math.trunc(payload.orderIndex) : undefined,
-      },
-    })
+    const [updated] = await db.update(lessons).set({
+      subjectId: payload.subjectId !== undefined ? asBigInt(payload.subjectId) : undefined,
+      studyPlanId: payload.studyPlanId !== undefined ? asBigInt(payload.studyPlanId) : undefined,
+      title: payload.title,
+      content: payload.content,
+      isShared: payload.isShared,
+      orderIndex: payload.orderIndex !== undefined ? Math.trunc(payload.orderIndex) : undefined,
+    }).where(eq(lessons.id, lessonId)).returning(lessonSelect)
 
     res.json({
       id: Number(updated.id),
@@ -184,9 +208,7 @@ lessonsRouter.patch('/:id', async (req, res, next) => {
 lessonsRouter.delete('/:id', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const lessonId = asBigInt(req.params.id)
     if (!lessonId) {
@@ -194,35 +216,19 @@ lessonsRouter.delete('/:id', async (req, res, next) => {
       return
     }
 
-    const existing = await prisma.lesson.findUnique({ where: { id: lessonId } })
-    if (!existing || existing.deletedAt) {
+    const existing = await db.select({ id: lessons.id, deletedAt: lessons.deletedAt }).from(lessons).where(eq(lessons.id, lessonId)).limit(1)
+    if (!existing.length || existing[0].deletedAt) {
       res.status(404).json({ error: 'Lekce nebyla nalezena.' })
       return
     }
 
-    const ownsStudyPlan =
-      existing.studyPlanId !== null
-        ? (await prisma.studyPlan.findFirst({ where: { id: existing.studyPlanId, userId: BigInt(actor.id) } })) !==
-          null
-        : false
-
-    const ownsSubject =
-      existing.subjectId !== null
-        ? (await prisma.subject.findFirst({ where: { id: existing.subjectId, userId: BigInt(actor.id) } })) !== null
-        : false
-
-    const canDeleteLesson = actor.role === 'ADMIN' || ownsStudyPlan || ownsSubject
-
+    const canDeleteLesson = await canActorManageLesson(actor, lessonId)
     if (!canDeleteLesson) {
       res.status(403).json({ error: 'Nemate opravneni smazat tuto lekci.' })
       return
     }
 
-    await prisma.lesson.update({
-      where: { id: lessonId },
-      data: { deletedAt: new Date() },
-    })
-
+    await db.update(lessons).set({ deletedAt: new Date() }).where(eq(lessons.id, lessonId))
     res.json({ success: true })
   } catch (error) {
     next(error)
@@ -238,7 +244,7 @@ lessonsRouter.get('/:id/notes', async (req, res, next) => {
       return
     }
 
-    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } })
+    const [lesson] = await db.select({ id: lessons.id, isShared: lessons.isShared, deletedAt: lessons.deletedAt }).from(lessons).where(eq(lessons.id, lessonId)).limit(1)
     if (!lesson || lesson.deletedAt) {
       res.status(404).json({ error: 'Lekce nebyla nalezena.' })
       return
@@ -250,37 +256,8 @@ lessonsRouter.get('/:id/notes', async (req, res, next) => {
         return
       }
 
-      const publicNotes = await prisma.lessonNote.findMany({
-        where: { lessonId },
-        orderBy: [{ isPinned: 'desc' }, { createdAt: 'asc' }],
-      })
-
-      res.json(
-        publicNotes.map((note) => ({
-          id: Number(note.id),
-          lessonId: Number(note.lessonId),
-          userId: Number(note.userId),
-          note: note.note,
-          isPinned: note.isPinned,
-          createdAt: note.createdAt.toISOString(),
-          updatedAt: note.updatedAt.toISOString(),
-        })),
-      )
-      return
-    }
-
-    const includeAll = req.query.includeAll === 'true' && actor.role === 'ADMIN'
-
-    const notes = await prisma.lessonNote.findMany({
-      where: {
-        lessonId,
-        userId: includeAll ? undefined : BigInt(actor.id),
-      },
-      orderBy: [{ isPinned: 'desc' }, { createdAt: 'asc' }],
-    })
-
-    res.json(
-      notes.map((note) => ({
+      const publicNotes = await db.select().from(lessonNotes).where(eq(lessonNotes.lessonId, lessonId)).orderBy(desc(lessonNotes.isPinned), asc(lessonNotes.createdAt))
+      res.json(publicNotes.map((note) => ({
         id: Number(note.id),
         lessonId: Number(note.lessonId),
         userId: Number(note.userId),
@@ -288,8 +265,25 @@ lessonsRouter.get('/:id/notes', async (req, res, next) => {
         isPinned: note.isPinned,
         createdAt: note.createdAt.toISOString(),
         updatedAt: note.updatedAt.toISOString(),
-      })),
-    )
+      })))
+      return
+    }
+
+    const includeAll = req.query.includeAll === 'true' && actor.role === 'ADMIN'
+
+    const notes = await db.select().from(lessonNotes).where(
+      includeAll ? eq(lessonNotes.lessonId, lessonId) : and(eq(lessonNotes.lessonId, lessonId), eq(lessonNotes.userId, BigInt(actor.id))),
+    ).orderBy(desc(lessonNotes.isPinned), asc(lessonNotes.createdAt))
+
+    res.json(notes.map((note) => ({
+      id: Number(note.id),
+      lessonId: Number(note.lessonId),
+      userId: Number(note.userId),
+      note: note.note,
+      isPinned: note.isPinned,
+      createdAt: note.createdAt.toISOString(),
+      updatedAt: note.updatedAt.toISOString(),
+    })))
   } catch (error) {
     next(error)
   }
@@ -298,9 +292,7 @@ lessonsRouter.get('/:id/notes', async (req, res, next) => {
 lessonsRouter.post('/:id/notes', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const lessonId = asBigInt(req.params.id)
     if (!lessonId) {
@@ -308,7 +300,7 @@ lessonsRouter.post('/:id/notes', async (req, res, next) => {
       return
     }
 
-    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } })
+    const [lesson] = await db.select({ id: lessons.id, deletedAt: lessons.deletedAt }).from(lessons).where(eq(lessons.id, lessonId)).limit(1)
     if (!lesson || lesson.deletedAt) {
       res.status(404).json({ error: 'Lekce nebyla nalezena.' })
       return
@@ -321,14 +313,12 @@ lessonsRouter.post('/:id/notes', async (req, res, next) => {
     }
     const payload = parsed.data
 
-    const created = await prisma.lessonNote.create({
-      data: {
-        lessonId,
-        userId: BigInt(actor.id),
-        note: payload.note,
-        isPinned: payload.isPinned,
-      },
-    })
+    const [created] = await db.insert(lessonNotes).values({
+      lessonId,
+      userId: BigInt(actor.id),
+      note: payload.note,
+      isPinned: payload.isPinned,
+    }).returning()
 
     res.status(201).json({
       id: Number(created.id),
@@ -347,9 +337,7 @@ lessonsRouter.post('/:id/notes', async (req, res, next) => {
 lessonNotesRouter.patch('/:id', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const noteId = asBigInt(req.params.id)
     if (!noteId) {
@@ -357,13 +345,13 @@ lessonNotesRouter.patch('/:id', async (req, res, next) => {
       return
     }
 
-    const existing = await prisma.lessonNote.findUnique({ where: { id: noteId } })
-    if (!existing) {
+    const existing = await db.select({ id: lessonNotes.id, userId: lessonNotes.userId }).from(lessonNotes).where(eq(lessonNotes.id, noteId)).limit(1)
+    if (!existing.length) {
       res.status(404).json({ error: 'Poznamka nebyla nalezena.' })
       return
     }
 
-    if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+    if (existing[0].userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
       res.status(403).json({ error: 'Nemate opravneni upravit tuto poznamku.' })
       return
     }
@@ -375,13 +363,10 @@ lessonNotesRouter.patch('/:id', async (req, res, next) => {
     }
     const payload = parsed.data
 
-    const updated = await prisma.lessonNote.update({
-      where: { id: noteId },
-      data: {
-        note: payload.note,
-        isPinned: payload.isPinned,
-      },
-    })
+    const [updated] = await db.update(lessonNotes).set({
+      note: payload.note,
+      isPinned: payload.isPinned,
+    }).where(eq(lessonNotes.id, noteId)).returning()
 
     res.json({
       id: Number(updated.id),
@@ -400,9 +385,7 @@ lessonNotesRouter.patch('/:id', async (req, res, next) => {
 lessonNotesRouter.delete('/:id', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const noteId = asBigInt(req.params.id)
     if (!noteId) {
@@ -410,19 +393,18 @@ lessonNotesRouter.delete('/:id', async (req, res, next) => {
       return
     }
 
-    const existing = await prisma.lessonNote.findUnique({ where: { id: noteId } })
-    if (!existing) {
+    const existing = await db.select({ id: lessonNotes.id, userId: lessonNotes.userId }).from(lessonNotes).where(eq(lessonNotes.id, noteId)).limit(1)
+    if (!existing.length) {
       res.status(404).json({ error: 'Poznamka nebyla nalezena.' })
       return
     }
 
-    if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+    if (existing[0].userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
       res.status(403).json({ error: 'Nemate opravneni smazat tuto poznamku.' })
       return
     }
 
-    await prisma.lessonNote.delete({ where: { id: noteId } })
-
+    await db.delete(lessonNotes).where(eq(lessonNotes.id, noteId))
     res.json({ success: true })
   } catch (error) {
     next(error)
@@ -446,28 +428,20 @@ annotationsRouter.get('/', async (req, res, next) => {
       return
     }
 
-    const annotations = await prisma.textAnnotation.findMany({
-      where: {
-        targetType,
-        targetId,
-      },
-      orderBy: { createdAt: 'asc' },
-    })
+    const annotations = await db.select().from(textAnnotations).where(and(eq(textAnnotations.targetType, targetType), eq(textAnnotations.targetId, targetId))).orderBy(asc(textAnnotations.createdAt))
 
-    res.json(
-      annotations.map((annotation) => ({
-        id: Number(annotation.id),
-        targetType: annotation.targetType,
-        targetId: Number(annotation.targetId),
-        userId: Number(annotation.userId),
-        startOffset: annotation.startOffset,
-        endOffset: annotation.endOffset,
-        selectedText: annotation.selectedText,
-        comment: annotation.comment,
-        createdAt: annotation.createdAt.toISOString(),
-        updatedAt: annotation.updatedAt.toISOString(),
-      })),
-    )
+    res.json(annotations.map((annotation) => ({
+      id: Number(annotation.id),
+      targetType: annotation.targetType,
+      targetId: Number(annotation.targetId),
+      userId: Number(annotation.userId),
+      startOffset: annotation.startOffset,
+      endOffset: annotation.endOffset,
+      selectedText: annotation.selectedText,
+      comment: annotation.comment,
+      createdAt: annotation.createdAt.toISOString(),
+      updatedAt: annotation.updatedAt.toISOString(),
+    })))
   } catch (error) {
     next(error)
   }
@@ -476,9 +450,7 @@ annotationsRouter.get('/', async (req, res, next) => {
 annotationsRouter.post('/', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const parsed = textAnnotationSchema.safeParse(req.body)
     if (!parsed.success) {
@@ -506,17 +478,15 @@ annotationsRouter.post('/', async (req, res, next) => {
       return
     }
 
-    const created = await prisma.textAnnotation.create({
-      data: {
-        targetType,
-        targetId,
-        userId: BigInt(actor.id),
-        startOffset: Math.trunc(payload.startOffset),
-        endOffset: Math.trunc(payload.endOffset),
-        selectedText: payload.selectedText.trim(),
-        comment: payload.comment.trim(),
-      },
-    })
+    const [created] = await db.insert(textAnnotations).values({
+      targetType,
+      targetId,
+      userId: BigInt(actor.id),
+      startOffset: Math.trunc(payload.startOffset),
+      endOffset: Math.trunc(payload.endOffset),
+      selectedText: payload.selectedText.trim(),
+      comment: payload.comment.trim(),
+    }).returning()
 
     res.status(201).json({
       id: Number(created.id),
@@ -538,9 +508,7 @@ annotationsRouter.post('/', async (req, res, next) => {
 annotationsRouter.delete('/:id', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const annotationId = asBigInt(req.params.id)
     if (!annotationId) {
@@ -548,18 +516,18 @@ annotationsRouter.delete('/:id', async (req, res, next) => {
       return
     }
 
-    const annotation = await prisma.textAnnotation.findUnique({ where: { id: annotationId } })
-    if (!annotation) {
+    const annotation = await db.select({ id: textAnnotations.id, userId: textAnnotations.userId }).from(textAnnotations).where(eq(textAnnotations.id, annotationId)).limit(1)
+    if (!annotation.length) {
       res.status(404).json({ error: 'Anotace nebyla nalezena.' })
       return
     }
 
-    if (annotation.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+    if (annotation[0].userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
       res.status(403).json({ error: 'Nemate opravneni smazat tuto anotaci.' })
       return
     }
 
-    await prisma.textAnnotation.delete({ where: { id: annotationId } })
+    await db.delete(textAnnotations).where(eq(textAnnotations.id, annotationId))
     res.json({ success: true })
   } catch (error) {
     next(error)

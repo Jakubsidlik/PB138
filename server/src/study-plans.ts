@@ -1,89 +1,95 @@
 import express from 'express'
-import { CollaborationRole, Prisma } from '@prisma/client'
-import { prisma } from './prisma.js'
-import { studyPlanSchema, updateStudyPlanSchema, shareStudyPlanSchema } from './schemas.js'
+import { and, asc, eq, exists, inArray, isNull, or, sql } from 'drizzle-orm'
+
+import { db } from './db/client.js'
+import { users, studyPlans, studyPlanCollaborators, subjects, tasks, lessons } from './db/schema.js'
+import { shareStudyPlanSchema, studyPlanSchema, updateStudyPlanSchema } from './schemas.js'
 import { asBigInt, parseOptionalDate, toDateOnlyIso } from './utils.js'
 import { getActorFromRequest, isPublicActor, requireRegisteredActor } from './auth.js'
 
-export const studyPlansRouter = express.Router()
+export const studyPlansRouter: express.Router = express.Router()
+
+const studyPlanSelect = {
+  id: studyPlans.id,
+  userId: studyPlans.userId,
+  name: studyPlans.name,
+  description: studyPlans.description,
+  faculty: studyPlans.faculty,
+  startDate: studyPlans.startDate,
+  endDate: studyPlans.endDate,
+  isActive: studyPlans.isActive,
+  isShared: studyPlans.isShared,
+  createdAt: studyPlans.createdAt,
+  updatedAt: studyPlans.updatedAt,
+}
+
+const countByStudyPlan = async (table: any, studyPlanId: bigint) => {
+  const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(table).where(eq(table.studyPlanId, studyPlanId))
+  return row?.count ?? 0
+}
 
 studyPlansRouter.get('/', async (req, res, next) => {
   try {
     const actor = await getActorFromRequest(req)
     const includeInactive = req.query.includeInactive === 'true'
 
-    const where: Prisma.StudyPlanWhereInput = isPublicActor(actor)
-      ? {
-          isShared: true,
-          isActive: includeInactive ? undefined : true,
-        }
-      : {
-          isActive: includeInactive ? undefined : true,
-          OR: [
-            { userId: BigInt(actor.id) },
-            { isShared: true },
-            { collaborators: { some: { userId: BigInt(actor.id) } } },
-          ],
-        }
+    const visibility = isPublicActor(actor)
+      ? eq(studyPlans.isShared, true)
+      : or(
+          eq(studyPlans.userId, BigInt(actor.id)),
+          eq(studyPlans.isShared, true),
+          exists(
+            db
+              .select({ id: studyPlanCollaborators.id })
+              .from(studyPlanCollaborators)
+              .where(and(eq(studyPlanCollaborators.studyPlanId, studyPlans.id), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
+          ),
+        )
 
-    const studyPlans = await prisma.studyPlan.findMany({
-      where,
-      orderBy: [{ isActive: 'desc' }, { startDate: 'asc' }],
-      include: {
-        _count: {
-          select: {
-            subjects: true,
-            tasks: true,
-            lessons: true,
-          },
-        },
-      },
-    })
+    const whereClause = and(
+      includeInactive ? undefined : eq(studyPlans.isActive, true),
+      visibility,
+    )
 
-    const collaboratorRoleByPlanId = new Map<string, CollaborationRole>()
-    if (!isPublicActor(actor) && studyPlans.length > 0) {
-      const collaborators = await prisma.studyPlanCollaborator.findMany({
-        where: {
-          userId: BigInt(actor.id),
-          studyPlanId: { in: studyPlans.map((plan) => plan.id) },
-        },
-        select: {
-          studyPlanId: true,
-          role: true,
-        },
-      })
+    const rows = await db.select(studyPlanSelect).from(studyPlans).where(whereClause).orderBy(asc(studyPlans.isActive), asc(studyPlans.startDate))
+
+    const collaboratorRoleByPlanId = new Map<string, string>()
+    if (!isPublicActor(actor) && rows.length > 0) {
+      const collaborators = await db
+        .select({ studyPlanId: studyPlanCollaborators.studyPlanId, role: studyPlanCollaborators.role })
+        .from(studyPlanCollaborators)
+        .where(and(eq(studyPlanCollaborators.userId, BigInt(actor.id)), inArray(studyPlanCollaborators.studyPlanId, rows.map((plan) => plan.id))))
 
       for (const collaborator of collaborators) {
         collaboratorRoleByPlanId.set(collaborator.studyPlanId.toString(), collaborator.role)
       }
     }
 
-    res.json(
-      studyPlans.map((plan) => ({
-        id: Number(plan.id),
-        userId: Number(plan.userId),
-        name: plan.name,
-        description: plan.description,
-        faculty: plan.faculty,
-        startDate: plan.startDate ? toDateOnlyIso(plan.startDate) : null,
-        endDate: plan.endDate ? toDateOnlyIso(plan.endDate) : null,
-        isActive: plan.isActive,
-        isShared: plan.isShared,
-        collaboratorRole: collaboratorRoleByPlanId.get(plan.id.toString()) ?? null,
-        canEditMetadata:
-          !isPublicActor(actor) && (actor.role === 'ADMIN' || plan.userId === BigInt(actor.id)),
-        canCreateSubjects:
-          !isPublicActor(actor) &&
-          (actor.role === 'ADMIN' ||
-            plan.userId === BigInt(actor.id) ||
-            collaboratorRoleByPlanId.get(plan.id.toString()) === 'CONTRIBUTOR'),
-        subjectsCount: plan._count.subjects,
-        tasksCount: plan._count.tasks,
-        lessonsCount: plan._count.lessons,
-        createdAt: plan.createdAt.toISOString(),
-        updatedAt: plan.updatedAt.toISOString(),
-      })),
-    )
+    const mappedPlans = await Promise.all(rows.map(async (plan) => ({
+      id: Number(plan.id),
+      userId: Number(plan.userId),
+      name: plan.name,
+      description: plan.description,
+      faculty: plan.faculty,
+      startDate: plan.startDate ? toDateOnlyIso(plan.startDate) : null,
+      endDate: plan.endDate ? toDateOnlyIso(plan.endDate) : null,
+      isActive: plan.isActive,
+      isShared: plan.isShared,
+      collaboratorRole: collaboratorRoleByPlanId.get(plan.id.toString()) ?? null,
+      canEditMetadata: !isPublicActor(actor) && (actor.role === 'ADMIN' || plan.userId === BigInt(actor.id)),
+      canCreateSubjects:
+        !isPublicActor(actor) &&
+        (actor.role === 'ADMIN' ||
+          plan.userId === BigInt(actor.id) ||
+          collaboratorRoleByPlanId.get(plan.id.toString()) === 'CONTRIBUTOR'),
+      subjectsCount: await countByStudyPlan(subjects, plan.id),
+      tasksCount: await countByStudyPlan(tasks, plan.id),
+      lessonsCount: await countByStudyPlan(lessons, plan.id),
+      createdAt: plan.createdAt.toISOString(),
+      updatedAt: plan.updatedAt.toISOString(),
+    })))
+
+    res.json(mappedPlans)
   } catch (error) {
     next(error)
   }
@@ -92,9 +98,7 @@ studyPlansRouter.get('/', async (req, res, next) => {
 studyPlansRouter.post('/', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const parsed = studyPlanSchema.safeParse(req.body)
     if (!parsed.success) {
@@ -115,18 +119,16 @@ studyPlansRouter.post('/', async (req, res, next) => {
       return
     }
 
-    const created = await prisma.studyPlan.create({
-      data: {
-        userId: BigInt(actor.id),
-        name: payload.name,
-        description: payload.description ?? null,
-        faculty: payload.faculty ?? null,
-        startDate: parsedStartDate,
-        endDate: parsedEndDate,
-        isActive: payload.isActive,
-        isShared: payload.isShared,
-      },
-    })
+    const [created] = await db.insert(studyPlans).values({
+      userId: BigInt(actor.id),
+      name: payload.name,
+      description: payload.description ?? null,
+      faculty: payload.faculty ?? null,
+      startDate: parsedStartDate,
+      endDate: parsedEndDate,
+      isActive: payload.isActive,
+      isShared: payload.isShared,
+    }).returning(studyPlanSelect)
 
     res.status(201).json({
       id: Number(created.id),
@@ -149,18 +151,15 @@ studyPlansRouter.post('/', async (req, res, next) => {
 studyPlansRouter.patch('/:id', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const studyPlanId = asBigInt(req.params.id)
-
     if (!studyPlanId) {
       res.status(400).json({ error: 'Neplatne ID studijniho planu.' })
       return
     }
 
-    const existing = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    const [existing] = await db.select(studyPlanSelect).from(studyPlans).where(eq(studyPlans.id, studyPlanId)).limit(1)
     if (!existing) {
       res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
       return
@@ -191,18 +190,15 @@ studyPlansRouter.patch('/:id', async (req, res, next) => {
       return
     }
 
-    const updated = await prisma.studyPlan.update({
-      where: { id: studyPlanId },
-      data: {
-        name: payload.name,
-        description: payload.description,
-        faculty: payload.faculty,
-        startDate: parsedStartDate ?? undefined,
-        endDate: parsedEndDate,
-        isActive: payload.isActive,
-        isShared: payload.isShared,
-      },
-    })
+    const [updated] = await db.update(studyPlans).set({
+      name: payload.name,
+      description: payload.description,
+      faculty: payload.faculty,
+      startDate: parsedStartDate ?? undefined,
+      endDate: parsedEndDate,
+      isActive: payload.isActive,
+      isShared: payload.isShared,
+    }).where(eq(studyPlans.id, studyPlanId)).returning(studyPlanSelect)
 
     res.json({
       id: Number(updated.id),
@@ -225,18 +221,15 @@ studyPlansRouter.patch('/:id', async (req, res, next) => {
 studyPlansRouter.delete('/:id', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const studyPlanId = asBigInt(req.params.id)
-
     if (!studyPlanId) {
       res.status(400).json({ error: 'Neplatne ID studijniho planu.' })
       return
     }
 
-    const existing = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    const [existing] = await db.select({ id: studyPlans.id, userId: studyPlans.userId }).from(studyPlans).where(eq(studyPlans.id, studyPlanId)).limit(1)
     if (!existing) {
       res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
       return
@@ -248,8 +241,7 @@ studyPlansRouter.delete('/:id', async (req, res, next) => {
       return
     }
 
-    await prisma.studyPlan.delete({ where: { id: studyPlanId } })
-
+    await db.delete(studyPlans).where(eq(studyPlans.id, studyPlanId))
     res.json({ success: true })
   } catch (error) {
     next(error)
@@ -259,9 +251,7 @@ studyPlansRouter.delete('/:id', async (req, res, next) => {
 studyPlansRouter.get('/:id/collaborators', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const studyPlanId = asBigInt(req.params.id)
     if (!studyPlanId) {
@@ -269,7 +259,7 @@ studyPlansRouter.get('/:id/collaborators', async (req, res, next) => {
       return
     }
 
-    const plan = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    const [plan] = await db.select({ id: studyPlans.id, userId: studyPlans.userId }).from(studyPlans).where(eq(studyPlans.id, studyPlanId)).limit(1)
     if (!plan) {
       res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
       return
@@ -278,28 +268,27 @@ studyPlansRouter.get('/:id/collaborators', async (req, res, next) => {
     const canRead =
       actor.role === 'ADMIN' ||
       plan.userId === BigInt(actor.id) ||
-      (await prisma.studyPlanCollaborator.findFirst({
-        where: { studyPlanId, userId: BigInt(actor.id) },
-      })) !== null
+      (await db.select({ id: studyPlanCollaborators.id }).from(studyPlanCollaborators).where(and(eq(studyPlanCollaborators.studyPlanId, studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))).limit(1)).length > 0
 
     if (!canRead) {
       res.status(403).json({ error: 'Nemate opravneni zobrazit spolupracovniky.' })
       return
     }
 
-    const collaborators = await prisma.studyPlanCollaborator.findMany({
-      where: { studyPlanId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
-    })
+    const collaborators = await db
+      .select({
+        id: studyPlanCollaborators.id,
+        studyPlanId: studyPlanCollaborators.studyPlanId,
+        userId: studyPlanCollaborators.userId,
+        role: studyPlanCollaborators.role,
+        userIdRef: users.id,
+        userFullName: users.fullName,
+        userEmail: users.email,
+      })
+      .from(studyPlanCollaborators)
+      .innerJoin(users, eq(studyPlanCollaborators.userId, users.id))
+      .where(eq(studyPlanCollaborators.studyPlanId, studyPlanId))
+      .orderBy(asc(studyPlanCollaborators.createdAt))
 
     res.json(
       collaborators.map((collaborator) => ({
@@ -308,9 +297,9 @@ studyPlansRouter.get('/:id/collaborators', async (req, res, next) => {
         userId: Number(collaborator.userId),
         role: collaborator.role,
         user: {
-          id: Number(collaborator.user.id),
-          fullName: collaborator.user.fullName,
-          email: collaborator.user.email,
+          id: Number(collaborator.userIdRef),
+          fullName: collaborator.userFullName,
+          email: collaborator.userEmail,
         },
       })),
     )
@@ -322,9 +311,7 @@ studyPlansRouter.get('/:id/collaborators', async (req, res, next) => {
 studyPlansRouter.post('/:id/share', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const studyPlanId = asBigInt(req.params.id)
     if (!studyPlanId) {
@@ -332,7 +319,7 @@ studyPlansRouter.post('/:id/share', async (req, res, next) => {
       return
     }
 
-    const plan = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    const [plan] = await db.select({ id: studyPlans.id, userId: studyPlans.userId }).from(studyPlans).where(eq(studyPlans.id, studyPlanId)).limit(1)
     if (!plan) {
       res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
       return
@@ -351,7 +338,7 @@ studyPlansRouter.post('/:id/share', async (req, res, next) => {
     }
     const payload = parsed.data
 
-    const user = await prisma.user.findFirst({ where: { email: payload.email.toLowerCase(), deletedAt: null } })
+    const [user] = await db.select({ id: users.id, fullName: users.fullName, email: users.email }).from(users).where(and(eq(users.email, payload.email.toLowerCase()), isNull(users.deletedAt))).limit(1)
     if (!user) {
       res.status(404).json({ error: 'Uzivatel s danym emailem nebyl nalezen.' })
       return
@@ -362,23 +349,23 @@ studyPlansRouter.post('/:id/share', async (req, res, next) => {
       return
     }
 
-    const role = payload.role
-    const collaborator = await prisma.studyPlanCollaborator.upsert({
-      where: {
-        studyPlanId_userId: {
-          studyPlanId,
-          userId: user.id,
-        },
-      },
-      update: {
-        role,
-      },
-      create: {
+    const [collaborator] = await db
+      .insert(studyPlanCollaborators)
+      .values({
         studyPlanId,
         userId: user.id,
-        role,
-      },
-    })
+        role: payload.role,
+      })
+      .onConflictDoUpdate({
+        target: [studyPlanCollaborators.studyPlanId, studyPlanCollaborators.userId],
+        set: { role: payload.role },
+      })
+      .returning({
+        id: studyPlanCollaborators.id,
+        studyPlanId: studyPlanCollaborators.studyPlanId,
+        userId: studyPlanCollaborators.userId,
+        role: studyPlanCollaborators.role,
+      })
 
     res.status(201).json({
       id: Number(collaborator.id),
@@ -399,9 +386,7 @@ studyPlansRouter.post('/:id/share', async (req, res, next) => {
 studyPlansRouter.delete('/:id/share/:userId', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const studyPlanId = asBigInt(req.params.id)
     const userId = asBigInt(req.params.userId)
@@ -410,7 +395,7 @@ studyPlansRouter.delete('/:id/share/:userId', async (req, res, next) => {
       return
     }
 
-    const plan = await prisma.studyPlan.findUnique({ where: { id: studyPlanId } })
+    const [plan] = await db.select({ id: studyPlans.id, userId: studyPlans.userId }).from(studyPlans).where(eq(studyPlans.id, studyPlanId)).limit(1)
     if (!plan) {
       res.status(404).json({ error: 'Studijni plan nebyl nalezen.' })
       return
@@ -422,13 +407,7 @@ studyPlansRouter.delete('/:id/share/:userId', async (req, res, next) => {
       return
     }
 
-    await prisma.studyPlanCollaborator.deleteMany({
-      where: {
-        studyPlanId,
-        userId,
-      },
-    })
-
+    await db.delete(studyPlanCollaborators).where(and(eq(studyPlanCollaborators.studyPlanId, studyPlanId), eq(studyPlanCollaborators.userId, userId)))
     res.json({ success: true })
   } catch (error) {
     next(error)

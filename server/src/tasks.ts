@@ -1,18 +1,33 @@
 import express from 'express'
-import { Prisma } from '@prisma/client'
-import { prisma } from './prisma.js'
-import { taskSchema, updateTaskSchema, bulkTasksSchema } from './schemas.js'
+import { and, asc, eq, gte, gt, ilike, inArray, isNull, lte } from 'drizzle-orm'
+
+import { db } from './db/client.js'
+import { tasks, subjects } from './db/schema.js'
+import { bulkTasksSchema, taskSchema, updateTaskSchema } from './schemas.js'
 import { asBigInt, parseCursorPagination, parseOptionalDate, parseTaskPriority, mapTask, toPaginatedPayload } from './utils.js'
 import { requireRegisteredActor } from './auth.js'
 
-export const tasksRouter = express.Router()
+export const tasksRouter: express.Router = express.Router()
+
+const taskSelect = {
+  id: tasks.id,
+  userId: tasks.userId,
+  subjectId: tasks.subjectId,
+  studyPlanId: tasks.studyPlanId,
+  title: tasks.title,
+  done: tasks.done,
+  favorite: tasks.favorite,
+  tag: tasks.tag,
+  deadline: tasks.deadline,
+  deletedAt: tasks.deletedAt,
+  createdAt: tasks.createdAt,
+  updatedAt: tasks.updatedAt,
+}
 
 tasksRouter.get('/', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const pagination = parseCursorPagination(req, { defaultLimit: 30, maxLimit: 200 })
     const subjectId = asBigInt(req.query.subjectId)
@@ -25,45 +40,40 @@ tasksRouter.get('/', async (req, res, next) => {
     const deadlineFrom = parseOptionalDate(req.query.deadlineFrom)
     const deadlineTo = parseOptionalDate(req.query.deadlineTo)
 
-    const findArgs: Prisma.TaskFindManyArgs = {
-      orderBy: { createdAt: 'asc' },
-      where: {
-        userId: BigInt(actor.id),
-        subjectId: subjectId ?? undefined,
-        studyPlanId: studyPlanId ?? undefined,
-        done: doneFilter === 'true' ? true : doneFilter === 'false' ? false : undefined,
-        favorite: favoriteFilter === 'true' ? true : favoriteFilter === 'false' ? false : undefined,
-        tag: tagFilter ? tagFilter : undefined,
-        title: search ? { contains: search, mode: 'insensitive' } : undefined,
-        deadline:
-          deadlineFrom || deadlineTo
-            ? {
-                gte: deadlineFrom ?? undefined,
-                lte: deadlineTo ?? undefined,
-              }
-            : undefined,
-        deletedAt: includeDeleted ? undefined : null,
-      },
-    }
+    const whereParts = [
+      eq(tasks.userId, BigInt(actor.id)),
+      subjectId ? eq(tasks.subjectId, subjectId) : undefined,
+      studyPlanId ? eq(tasks.studyPlanId, studyPlanId) : undefined,
+      doneFilter === 'true' ? eq(tasks.done, true) : doneFilter === 'false' ? eq(tasks.done, false) : undefined,
+      favoriteFilter === 'true' ? eq(tasks.favorite, true) : favoriteFilter === 'false' ? eq(tasks.favorite, false) : undefined,
+      tagFilter ? eq(tasks.tag, tagFilter) : undefined,
+      search ? ilike(tasks.title, `%${search}%`) : undefined,
+      deadlineFrom || deadlineTo
+        ? and(
+            deadlineFrom ? gte(tasks.deadline, deadlineFrom) : undefined,
+            deadlineTo ? lte(tasks.deadline, deadlineTo) : undefined,
+          )
+        : undefined,
+      includeDeleted ? undefined : isNull(tasks.deletedAt),
+      pagination.enabled && pagination.cursor ? gt(tasks.id, pagination.cursor) : undefined,
+    ].filter(Boolean)
 
-    if (pagination.enabled) {
-      findArgs.take = pagination.limit + 1
-      findArgs.skip = pagination.cursor ? 1 : 0
-      findArgs.cursor = pagination.cursor ? { id: pagination.cursor } : undefined
-      findArgs.orderBy = { id: 'asc' }
-    }
+    const whereClause = whereParts.length > 0 ? and(...(whereParts as Parameters<typeof and>)) : undefined
 
-    const tasks = await prisma.task.findMany(findArgs)
-    const mappedTasks = tasks.map(mapTask)
+    const query = db.select(taskSelect).from(tasks)
+    const rows = pagination.enabled
+      ? await query.where(whereClause).orderBy(asc(tasks.id)).limit(pagination.limit + 1).offset(pagination.cursor ? 1 : 0)
+      : await query.where(whereClause).orderBy(asc(tasks.createdAt))
+
+    const mappedTasks = rows.map(mapTask)
 
     if (!pagination.enabled) {
       res.json(mappedTasks)
       return
     }
 
-    const paginated = toPaginatedPayload(mappedTasks, pagination.limit)
     res.json({
-      ...paginated,
+      ...toPaginatedPayload(mappedTasks, pagination.limit),
       limit: pagination.limit,
     })
   } catch (error) {
@@ -74,9 +84,7 @@ tasksRouter.get('/', async (req, res, next) => {
 tasksRouter.post('/', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const parsed = taskSchema.safeParse(req.body)
     if (!parsed.success) {
@@ -91,25 +99,18 @@ tasksRouter.post('/', async (req, res, next) => {
       return
     }
 
-    const parsedTag =
-      tag !== undefined
-        ? tag || null
-        : priority !== undefined
-          ? parseTaskPriority(priority) ?? null
-          : null
+    const parsedTag = tag !== undefined ? tag || null : priority !== undefined ? parseTaskPriority(priority) ?? null : null
 
-    const created = await prisma.task.create({
-      data: {
-        userId: BigInt(actor.id),
-        title,
-        done,
-        subjectId: asBigInt(subjectId),
-        studyPlanId: asBigInt(studyPlanId),
-        favorite,
-        tag: parsedTag,
-        deadline: parsedDeadline,
-      },
-    })
+    const [created] = await db.insert(tasks).values({
+      userId: BigInt(actor.id),
+      title,
+      done,
+      subjectId: asBigInt(subjectId),
+      studyPlanId: asBigInt(studyPlanId),
+      favorite,
+      tag: parsedTag,
+      deadline: parsedDeadline ?? null,
+    }).returning(taskSelect)
 
     res.status(201).json(mapTask(created))
   } catch (error) {
@@ -120,9 +121,7 @@ tasksRouter.post('/', async (req, res, next) => {
 tasksRouter.patch('/:id', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const taskId = asBigInt(req.params.id)
     if (!taskId) {
@@ -130,7 +129,7 @@ tasksRouter.patch('/:id', async (req, res, next) => {
       return
     }
 
-    const existing = await prisma.task.findFirst({ where: { id: taskId, userId: BigInt(actor.id) } })
+    const [existing] = await db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, taskId), eq(tasks.userId, BigInt(actor.id)))).limit(1)
     if (!existing) {
       res.status(404).json({ error: 'Ukol nebyl nalezen.' })
       return
@@ -149,16 +148,11 @@ tasksRouter.patch('/:id', async (req, res, next) => {
       return
     }
 
-    const parsedTag =
-      tag !== undefined
-        ? tag || null
-        : priority !== undefined
-          ? (parseTaskPriority(priority) ?? null)
-          : undefined
+    const parsedTag = tag !== undefined ? tag || null : priority !== undefined ? parseTaskPriority(priority) ?? null : undefined
 
-    const updated = await prisma.task.update({
-      where: { id: taskId },
-      data: {
+    const [updated] = await db
+      .update(tasks)
+      .set({
         title,
         done,
         subjectId: subjectId !== undefined ? asBigInt(subjectId) : undefined,
@@ -166,8 +160,9 @@ tasksRouter.patch('/:id', async (req, res, next) => {
         favorite,
         tag: parsedTag,
         deadline: parsedDeadline,
-      },
-    })
+      })
+      .where(eq(tasks.id, taskId))
+      .returning(taskSelect)
 
     res.json(mapTask(updated))
   } catch (error) {
@@ -178,9 +173,7 @@ tasksRouter.patch('/:id', async (req, res, next) => {
 tasksRouter.delete('/:id', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const taskId = asBigInt(req.params.id)
     if (!taskId) {
@@ -188,17 +181,13 @@ tasksRouter.delete('/:id', async (req, res, next) => {
       return
     }
 
-    const existing = await prisma.task.findFirst({ where: { id: taskId, userId: BigInt(actor.id), deletedAt: null } })
+    const [existing] = await db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, taskId), eq(tasks.userId, BigInt(actor.id)), isNull(tasks.deletedAt))).limit(1)
     if (!existing) {
       res.status(404).json({ error: 'Ukol nebyl nalezen.' })
       return
     }
 
-    await prisma.task.update({
-      where: { id: taskId },
-      data: { deletedAt: new Date() },
-    })
-
+    await db.update(tasks).set({ deletedAt: new Date() }).where(eq(tasks.id, taskId))
     res.json({ success: true })
   } catch (error) {
     next(error)
@@ -208,9 +197,7 @@ tasksRouter.delete('/:id', async (req, res, next) => {
 tasksRouter.put('/', async (req, res, next) => {
   try {
     const actor = await requireRegisteredActor(req, res)
-    if (!actor) {
-      return
-    }
+    if (!actor) return
 
     const parsed = bulkTasksSchema.safeParse(req.body)
     if (!parsed.success) {
@@ -219,18 +206,15 @@ tasksRouter.put('/', async (req, res, next) => {
     }
     const typedTasks = parsed.data.tasks
 
-    const existingTasks = await prisma.task.findMany({ where: { userId: BigInt(actor.id), deletedAt: null } })
+    const existingTasks = await db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.userId, BigInt(actor.id)), isNull(tasks.deletedAt)))
+    const incomingIdSet = new Set(typedTasks.map((task) => BigInt(task.id).toString()))
 
-    const incomingIds = typedTasks.map((task) => BigInt(task.id))
-    const incomingIdSet = new Set(incomingIds.map((id) => id.toString()))
-
-    await prisma.$transaction(async (transaction) => {
-      const subjectIds = Array.from(new Set(typedTasks.map((t) => t.subjectId).filter((id) => id !== null))) as number[]
-      const validSubjects = await transaction.subject.findMany({
-        where: { id: { in: subjectIds.map((id) => BigInt(id)) } },
-        select: { id: true }
-      })
-      const validSubjectIds = new Set(validSubjects.map((s) => s.id.toString()))
+    await db.transaction(async (transaction) => {
+      const subjectIds = Array.from(new Set(typedTasks.map((task) => task.subjectId).filter((id) => id !== null))) as number[]
+      const validSubjects = subjectIds.length > 0
+        ? await transaction.select({ id: subjects.id }).from(subjects).where(inArray(subjects.id, subjectIds.map((id) => BigInt(id))))
+        : []
+      const validSubjectIds = new Set(validSubjects.map((subject) => subject.id.toString()))
 
       for (const task of typedTasks) {
         const taskId = BigInt(task.id)
@@ -240,16 +224,9 @@ tasksRouter.put('/', async (req, res, next) => {
           nextSubjectId = null
         }
 
-        await transaction.task.upsert({
-          where: { id: taskId },
-          update: {
-            title: task.title,
-            done: task.done,
-            subjectId: nextSubjectId,
-            userId: BigInt(actor.id),
-            deletedAt: null,
-          },
-          create: {
+        await transaction
+          .insert(tasks)
+          .values({
             id: taskId,
             title: task.title,
             done: task.done,
@@ -258,30 +235,26 @@ tasksRouter.put('/', async (req, res, next) => {
             favorite: false,
             tag: null,
             deletedAt: null,
-          },
-        })
+          })
+          .onConflictDoUpdate({
+            target: tasks.id,
+            set: {
+              title: task.title,
+              done: task.done,
+              subjectId: nextSubjectId,
+              userId: BigInt(actor.id),
+              deletedAt: null,
+            },
+          })
       }
 
       const removedTasks = existingTasks.filter((task) => !incomingIdSet.has(task.id.toString()))
-
       if (removedTasks.length > 0) {
-        await transaction.task.updateMany({
-          where: {
-            id: {
-              in: removedTasks.map((task) => task.id),
-            },
-          },
-          data: {
-            deletedAt: new Date(),
-          },
-        })
+        await transaction.update(tasks).set({ deletedAt: new Date() }).where(inArray(tasks.id, removedTasks.map((task) => task.id)))
       }
     })
 
-    const finalTasks = await prisma.task.findMany({
-      where: { userId: BigInt(actor.id), deletedAt: null },
-      orderBy: { createdAt: 'asc' },
-    })
+    const finalTasks = await db.select(taskSelect).from(tasks).where(and(eq(tasks.userId, BigInt(actor.id)), isNull(tasks.deletedAt))).orderBy(asc(tasks.createdAt))
 
     res.json({ success: true, tasks: finalTasks.map(mapTask) })
   } catch (error) {

@@ -1,5 +1,7 @@
 import { Task } from '../../app/types'
 import { Button } from '../../components/ui/button'
+import { TaskList } from '../../components/shared/TaskList'
+import { TaskStats } from '../../components/shared/TaskStats'
 
 type DesktopTasksScreenProps = {
     tasks: Task[]
@@ -17,49 +19,29 @@ return (
         <p>Přehled všech úkolů a jejich stavu</p>
     </div>
 
-    <div className="desktop-tasks-stats">
-        <div className="task-stat">
-        <span className="stat-label">Celkem úkolů</span>
-        <span className="stat-value">{tasks.length}</span>
-        </div>
-        <div className="task-stat">
-        <span className="stat-label">Splněno</span>
-        <span className="stat-value">{tasksDone}</span>
-        </div>
-        <div className="task-stat">
-        <span className="stat-label">Zbývá</span>
-        <span className="stat-value">{tasks.length - tasksDone}</span>
-        </div>
-    </div>
+    <TaskStats
+      wrapperClassName="desktop-tasks-stats"
+      itemClassName="task-stat"
+      totalLabel="Celkem úkolů"
+      completedLabel="Splněno"
+      remainingLabel="Zbývá"
+      total={tasks.length}
+      completed={tasksDone}
+    />
 
     <div className="desktop-tasks-controls">
         <Button onClick={addTask} className="btn btn-primary">+ Přidat úkol</Button>
     </div>
 
-    <div className="desktop-tasks-list">
-        {tasks.length > 0 ? (
-        <ul>
-            {tasks.map((task) => (
-                        <li key={task.id} className={`desktop-tasks-item ${task.done ? 'done' : ''}`}>
-                <label>
-                <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
-                <span>{task.title}</span>
-                </label>
-                                <Button
-                                    onClick={() => deleteTask(task.id)}
-                                    className="task-delete-btn"
-                                    aria-label={`Odstranit úkol ${task.title}`}
-                                    title="Odstranit úkol"
-                                >
-                                    ×
-                                </Button>
-            </li>
-            ))}
-        </ul>
-        ) : (
-        <p className="tasks-empty">Zatím nejsou evidované žádné úkoly. Paráda! 🎉</p>
-        )}
-    </div>
+    <TaskList
+      tasks={tasks}
+      onToggleTask={toggleTask}
+      onDeleteTask={deleteTask}
+      emptyMessage="Zatím nejsou evidované žádné úkoly. Paráda! 🎉"
+      listClassName="desktop-tasks-list"
+      itemClassName="desktop-tasks-item"
+      deleteButtonClassName="task-delete-btn"
+    />
     </section>
 )
 }

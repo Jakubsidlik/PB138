@@ -1,7 +1,19 @@
 import express from 'express'
 import { getAuth, clerkClient } from '@clerk/express'
-import { AnnotationTargetType, UserRole } from '@prisma/client'
-import { prisma } from './prisma.js'
+import { and, eq, isNull } from 'drizzle-orm'
+import { db } from './db/client.js'
+import {
+  type AnnotationTargetType,
+  type UserRole,
+  fileComments,
+  lessonNotes,
+  lessons,
+  fileRecords,
+  studyPlanCollaborators,
+  studyPlans,
+  subjects,
+  users,
+} from './db/schema.js'
 import { AuthActor } from './types.js'
 import { asBigInt } from './utils.js'
 
@@ -17,13 +29,24 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
   const requestedUserId = asBigInt(req.header('x-user-id'))
 
   if (requestedUserId && !auth.userId) {
-    const requestedUser = await prisma.user.findFirst({ where: { id: requestedUserId, deletedAt: null } })
+    const [requestedUser] = await db
+      .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role })
+      .from(users)
+      .where(and(eq(users.id, requestedUserId), isNull(users.deletedAt)))
+      .limit(1)
     if (requestedUser) return toAuthActor(requestedUser)
   }
 
   if (auth.userId) {
-    let user = await prisma.user.findUnique({ where: { clerkId: auth.userId } })
-    if (user && user.deletedAt === null) return toAuthActor(user)
+    const [existingUser] = await db
+      .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+      .from(users)
+      .where(eq(users.clerkId, auth.userId))
+      .limit(1)
+
+    if (existingUser && existingUser.deletedAt === null) return toAuthActor(existingUser)
+
+    let user = existingUser ?? null
 
     if (!user) {
       try {
@@ -31,19 +54,35 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
         const email = clerkUser.emailAddresses[0]?.emailAddress || ''
         const fullName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Uživatel'
 
-        if (email) user = await prisma.user.findUnique({ where: { email } })
+        if (email) {
+          const [foundUser] = await db
+            .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1)
+          user = foundUser ?? null
+        }
 
         if (user) {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: { clerkId: auth.userId, deletedAt: null, fullName: fullName !== 'Uživatel' ? fullName : user.fullName }
-          })
+          const [updatedUser] = await db
+            .update(users)
+            .set({
+              clerkId: auth.userId,
+              deletedAt: null,
+              fullName: fullName !== 'Uživatel' ? fullName : user.fullName,
+            })
+            .where(eq(users.id, user.id))
+            .returning({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+          user = updatedUser ?? null
         } else {
-          user = await prisma.user.create({
-            data: { clerkId: auth.userId, email, fullName, role: 'REGISTERED' }
-          })
+          const [createdUser] = await db
+            .insert(users)
+            .values({ clerkId: auth.userId, email, fullName, role: 'REGISTERED' })
+            .returning({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+          user = createdUser ?? null
         }
-        return toAuthActor(user)
+
+        if (user) return toAuthActor(user)
       } catch (err) {
         console.error(`Chyba při vytváření uživatele z Clerku:`, err)
       }
@@ -75,36 +114,59 @@ export const requireAdmin = async (req: express.Request, res: express.Response) 
 }
 
 export const canActorReadLessonTarget = async (lessonId: bigint, actor: AuthActor): Promise<boolean> => {
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: { id: true, deletedAt: true, isShared: true, subject: { select: { userId: true } }, studyPlan: { select: { id: true, userId: true } } },
-  })
+  const [lesson] = await db
+    .select({
+      id: lessons.id,
+      deletedAt: lessons.deletedAt,
+      isShared: lessons.isShared,
+      subjectUserId: subjects.userId,
+      studyPlanId: studyPlans.id,
+      studyPlanUserId: studyPlans.userId,
+    })
+    .from(lessons)
+    .leftJoin(subjects, eq(lessons.subjectId, subjects.id))
+    .leftJoin(studyPlans, eq(lessons.studyPlanId, studyPlans.id))
+    .where(eq(lessons.id, lessonId))
+    .limit(1)
   if (!lesson || lesson.deletedAt) return false
   if (lesson.isShared) return true
   if (isPublicActor(actor)) return false
   if (actor.role === 'ADMIN') return true
-  if (lesson.subject?.userId === BigInt(actor.id) || lesson.studyPlan?.userId === BigInt(actor.id)) return true
-  if (!lesson.studyPlan?.id) return false
+  if (lesson.subjectUserId === BigInt(actor.id) || lesson.studyPlanUserId === BigInt(actor.id)) return true
+  if (!lesson.studyPlanId) return false
 
-  const collaborator = await prisma.studyPlanCollaborator.findFirst({
-    where: { studyPlanId: lesson.studyPlan.id, userId: BigInt(actor.id) },
-  })
-  return collaborator !== null
+  const collaborator = await db
+    .select({ id: studyPlanCollaborators.id })
+    .from(studyPlanCollaborators)
+    .where(and(eq(studyPlanCollaborators.studyPlanId, lesson.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id))))
+    .limit(1)
+  return collaborator.length > 0
 }
 
 export const canActorReadAnnotationTarget = async (targetType: AnnotationTargetType, targetId: bigint, actor: AuthActor): Promise<boolean> => {
   if (targetType === 'LESSON') return canActorReadLessonTarget(targetId, actor)
   if (targetType === 'LESSON_NOTE') {
-    const note = await prisma.lessonNote.findUnique({ where: { id: targetId }, select: { lessonId: true } })
+    const [note] = await db
+      .select({ lessonId: lessonNotes.lessonId })
+      .from(lessonNotes)
+      .where(eq(lessonNotes.id, targetId))
+      .limit(1)
     if (!note) return false
     return canActorReadLessonTarget(note.lessonId, actor)
   }
-  const fileComment = await prisma.fileComment.findUnique({
-    where: { id: targetId },
-    select: { file: { select: { deletedAt: true, isShared: true, userId: true } } },
-  })
-  if (!fileComment || fileComment.file.deletedAt) return false
-  if (fileComment.file.isShared) return true
+  const [fileComment] = await db
+    .select({
+      fileDeletedAt: fileRecords.deletedAt,
+      fileIsShared: fileRecords.isShared,
+      fileUserId: fileRecords.userId,
+    })
+    .from(fileComments)
+    .innerJoin(fileRecords, eq(fileComments.fileId, fileRecords.id))
+    .where(eq(fileComments.id, targetId))
+    .limit(1)
+  if (!fileComment) return false
+  if (fileComment.fileDeletedAt) return false
+  if (fileComment.fileIsShared) return true
   if (isPublicActor(actor)) return false
-  return actor.role === 'ADMIN' || fileComment.file.userId === BigInt(actor.id)
+  return actor.role === 'ADMIN' || fileComment.fileUserId === BigInt(actor.id)
 }

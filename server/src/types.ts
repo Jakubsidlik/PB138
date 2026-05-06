@@ -1,4 +1,4 @@
-import { EventRecurrence, UserRole } from '@prisma/client'
+import { type EventRecurrence, type UserRole } from './db/schema.js'
 
 export type ApiTask = {
   id: number

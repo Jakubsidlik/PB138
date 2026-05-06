@@ -2,6 +2,7 @@ import React from 'react'
 import { Button } from '../../components/ui/button'
 import { CalendarCell, CalendarEvent, EventMeta } from '../../app/types'
 import { formatDateIso } from '../../app/utils'
+import { CalendarEventList } from '../../components/shared/CalendarEventList'
 
 type DesktopCalendarScreenProps = {
   monthLabel: string
@@ -124,35 +125,18 @@ export function DesktopCalendarScreen({
               }).format(new Date(selectedDateIso))}
             </h3>
 
-            <div className="events-list-desktop">
-              {selectedDayEvents.length === 0 ? (
-                <p className="empty-events">Pro vybraný den nejsou žádné události.</p>
-              ) : (
-                selectedDayEvents.map((event) => {
-                  const meta = eventMetaById[event.id] ?? getDefaultMetaForTitle(event.title)
-                  return (
-                    <article key={event.id} className={`desktop-event-item accent-${meta.accent}`}>
-                      <div className="desktop-event-icon">{meta.icon}</div>
-                      <div className="desktop-event-content">
-                        <h4>
-                          {event.title}
-                          {event.priority && (
-                            <span className={`event-priority-badge ${event.priority}`}>
-                              {event.priority === 'high' ? '!' : event.priority === 'medium' ? '◆' : '○'}
-                            </span>
-                          )}
-                        </h4>
-                        <p>{meta.time}</p>
-                        <small>{meta.location}</small>
-                      </div>
-                      <Button type="button" className="desktop-event-remove" onClick={() => removeEvent(event.id)}>
-                        Odebrat
-                      </Button>
-                    </article>
-                  )
-                })
-              )}
-            </div>
+            <CalendarEventList
+              events={selectedDayEvents}
+              eventMetaById={eventMetaById}
+              getDefaultMetaForTitle={getDefaultMetaForTitle}
+              emptyMessage="Pro vybraný den nejsou žádné události."
+              listClassName="events-list-desktop"
+              itemClassName="desktop-event-item"
+              iconClassName="desktop-event-icon"
+              contentClassName="desktop-event-content"
+              removeButtonClassName="desktop-event-remove"
+              onRemoveEvent={removeEvent}
+            />
           </section>
 
           <section className="events-card">
@@ -176,47 +160,26 @@ export function DesktopCalendarScreen({
               </div>
             </div>
 
-            <div className="events-list-desktop">
-              {(() => {
+            <CalendarEventList
+              events={(() => {
                 const today = formatDateIso(new Date())
                 const allEvents = Object.values(eventsByDate).flat()
-                const filteredEvents = allEvents.filter((event) => {
-                  const eventDate = event.date || Object.keys(eventsByDate).find((date) => eventsByDate[date]?.some((e) => e.id === event.id))
+                return allEvents.filter((event) => {
+                  const eventDate = event.date || Object.keys(eventsByDate).find((date) => eventsByDate[date]?.some((item) => item.id === event.id))
                   const isInFuture = eventDate && eventDate >= today
                   return eventFilter === 'future' ? isInFuture : !isInFuture
                 })
-
-                return filteredEvents.length === 0 ? (
-                  <p className="empty-events">
-                    {eventFilter === 'future' ? 'Žádné budoucí události.' : 'Žádné minulé události.'}
-                  </p>
-                ) : (
-                  filteredEvents.map((event) => {
-                    const meta = eventMetaById[event.id] ?? getDefaultMetaForTitle(event.title)
-                    return (
-                      <article key={event.id} className={`desktop-event-item accent-${meta.accent}`}>
-                        <div className="desktop-event-icon">{meta.icon}</div>
-                        <div className="desktop-event-content">
-                          <h4>
-                            {event.title}
-                            {event.priority && (
-                              <span className={`event-priority-badge ${event.priority}`}>
-                                {event.priority === 'high' ? '!' : event.priority === 'medium' ? '◆' : '○'}
-                              </span>
-                            )}
-                          </h4>
-                          <p>{meta.time}</p>
-                          <small>{meta.location}</small>
-                        </div>
-                        <Button type="button" className="desktop-event-remove" onClick={() => removeEvent(event.id)}>
-                          Odebrat
-                        </Button>
-                      </article>
-                    )
-                  })
-                )
               })()}
-            </div>
+              eventMetaById={eventMetaById}
+              getDefaultMetaForTitle={getDefaultMetaForTitle}
+              emptyMessage={eventFilter === 'future' ? 'Žádné budoucí události.' : 'Žádné minulé události.'}
+              listClassName="events-list-desktop"
+              itemClassName="desktop-event-item"
+              iconClassName="desktop-event-icon"
+              contentClassName="desktop-event-content"
+              removeButtonClassName="desktop-event-remove"
+              onRemoveEvent={removeEvent}
+            />
           </section>
         </aside>
       </div>

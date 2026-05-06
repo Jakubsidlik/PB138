@@ -1,8 +1,10 @@
 import cors from 'cors'
 import express from 'express'
 import { clerkMiddleware } from '@clerk/express'
-import { UserRole } from '@prisma/client'
-import { prisma } from './prisma.js'
+import { type UserRole } from './db/schema.js'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { db } from './db/client.js'
+import { users } from './db/schema.js'
 import { profileSchema, updateProfileSchema } from './schemas.js'
 import { toDateOnlyIso, parseOptionalDate } from './utils.js'
 import { requireRegisteredActor, requireAdmin } from './auth.js'
@@ -47,7 +49,7 @@ const defaultUserPayload = {
 
 app.get('/api/health', async (_req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`
+    await db.execute(sql`SELECT 1`)
     res.json({ status: 'OK', message: 'Server bezi', database: 'connected' })
   } catch {
     res.status(503).json({ status: 'ERROR', message: 'Databaze neni dostupna' })
@@ -61,9 +63,29 @@ app.get('/api/users', async (_req, res, next) => {
       return
     }
 
-    const users = await prisma.user.findMany({ where: { deletedAt: null }, orderBy: { id: 'asc' } })
+    const rows = await db
+      .select({
+        id: users.id,
+        fullName: users.fullName,
+        email: users.email,
+        role: users.role,
+        school: users.school,
+        faculty: users.faculty,
+        studyMajor: users.studyMajor,
+        studyYear: users.studyYear,
+        studyType: users.studyType,
+        birthDate: users.birthDate,
+        bio: users.bio,
+        avatarDataUrl: users.avatarDataUrl,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .where(isNull(users.deletedAt))
+      .orderBy(asc(users.id))
+
     res.json(
-      users.map((user) => ({
+      rows.map((user) => ({
         id: Number(user.id),
         fullName: user.fullName,
         email: user.email,
@@ -92,7 +114,25 @@ app.get('/api/profile', async (_req, res, next) => {
       return
     }
 
-    const user = await prisma.user.findUnique({ where: { id: BigInt(actor.id) } })
+    const [user] = await db
+      .select({
+        id: users.id,
+        fullName: users.fullName,
+        email: users.email,
+        role: users.role,
+        school: users.school,
+        faculty: users.faculty,
+        studyMajor: users.studyMajor,
+        studyYear: users.studyYear,
+        studyType: users.studyType,
+        birthDate: users.birthDate,
+        bio: users.bio,
+        avatarDataUrl: users.avatarDataUrl,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .where(eq(users.id, BigInt(actor.id)))
+      .limit(1)
 
     if (!user) {
       res.status(404).json({ error: 'Profil nebyl nalezen.' })
@@ -126,8 +166,13 @@ app.post('/api/profile', async (req, res, next) => {
       return
     }
 
-    const existing = await prisma.user.findFirst({ where: { deletedAt: null }, orderBy: { id: 'asc' } })
-    if (existing) {
+    const [existingUser] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(isNull(users.deletedAt))
+      .orderBy(asc(users.id))
+      .limit(1)
+    if (existingUser) {
       res.status(409).json({ error: 'Profil uz existuje. Pouzijte PUT /api/profile.' })
       return
     }
@@ -139,8 +184,9 @@ app.post('/api/profile', async (req, res, next) => {
     }
     const payload = parsed.data
 
-    const created = await prisma.user.create({
-      data: {
+    const [created] = await db
+      .insert(users)
+      .values({
         fullName: payload.fullName,
         email: payload.email.toLowerCase(),
         passwordHash: payload.password ?? defaultUserPayload.passwordHash,
@@ -153,8 +199,23 @@ app.post('/api/profile', async (req, res, next) => {
         birthDate: parseOptionalDate(payload.birthDate) ?? null,
         bio: payload.bio ?? null,
         avatarDataUrl: payload.avatarDataUrl ?? null,
-      },
-    })
+      })
+      .returning({
+        id: users.id,
+        fullName: users.fullName,
+        email: users.email,
+        role: users.role,
+        school: users.school,
+        faculty: users.faculty,
+        studyMajor: users.studyMajor,
+        studyYear: users.studyYear,
+        studyType: users.studyType,
+        birthDate: users.birthDate,
+        bio: users.bio,
+        avatarDataUrl: users.avatarDataUrl,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
 
     res.status(201).json({
       id: Number(created.id),
@@ -195,9 +256,9 @@ app.put('/api/profile', async (req, res, next) => {
       return
     }
 
-    const updated = await prisma.user.update({
-      where: { id: BigInt(actor.id) },
-      data: {
+    const [updated] = await db
+      .update(users)
+      .set({
         fullName: payload.fullName,
         role: actor.role === 'ADMIN' ? payload.role : undefined,
         school: payload.school,
@@ -208,8 +269,23 @@ app.put('/api/profile', async (req, res, next) => {
         birthDate: parsedBirthDate ?? undefined,
         bio: payload.bio,
         avatarDataUrl: payload.avatarDataUrl,
-      },
-    })
+      })
+      .where(eq(users.id, BigInt(actor.id)))
+      .returning({
+        id: users.id,
+        fullName: users.fullName,
+        email: users.email,
+        role: users.role,
+        school: users.school,
+        faculty: users.faculty,
+        studyMajor: users.studyMajor,
+        studyYear: users.studyYear,
+        studyType: users.studyType,
+        birthDate: users.birthDate,
+        bio: users.bio,
+        avatarDataUrl: users.avatarDataUrl,
+        updatedAt: users.updatedAt,
+      })
 
     res.json({
       id: Number(updated.id),
@@ -238,16 +314,17 @@ app.delete('/api/profile', async (_req, res, next) => {
       return
     }
 
-    const user = await prisma.user.findFirst({ where: { id: BigInt(actor.id), deletedAt: null } })
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, BigInt(actor.id)), isNull(users.deletedAt)))
+      .limit(1)
     if (!user) {
       res.status(404).json({ error: 'Profil nebyl nalezen.' })
       return
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { deletedAt: new Date() },
-    })
+    await db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, user.id))
 
     res.json({ success: true })
   } catch (error) {
@@ -260,7 +337,7 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
     error &&
     typeof error === 'object' &&
     'code' in error &&
-    (error as { code?: string }).code === 'P2002'
+    ((error as { code?: string }).code === '23505' || (error as { code?: string }).code === 'P2002')
   ) {
     res.status(409).json({ error: 'Konflikt unikatnich dat (pravdepodobne duplicitni code nebo email).' })
     return
@@ -271,15 +348,9 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
 })
 
 const start = async () => {
-  try {
-    await prisma.$connect()
-    app.listen(PORT, () => {
-      console.log(`Server bezi na http://localhost:${PORT}`)
-    })
-  } catch (error) {
-    console.error('Nepodarilo se pripojit k databazi:', error)
-    process.exit(1)
-  }
+  app.listen(PORT, () => {
+    console.log(`Server bezi na http://localhost:${PORT}`)
+  })
 }
 
 void start()

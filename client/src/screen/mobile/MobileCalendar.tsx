@@ -2,6 +2,7 @@ import React from 'react'
 import { Button } from '../../components/ui/button'
 import { CalendarCell, CalendarEvent, EventMeta } from '../../app/types'
 import { formatDateIso } from '../../app/utils'
+import { CalendarEventList } from '../../components/shared/CalendarEventList'
 
 type MobileCalendarScreenProps = {
   monthLabel: string
@@ -106,42 +107,20 @@ export function MobileCalendarScreen({
           </span>
         </div>
 
-        <div className="mobile-calendar-events-list">
-          {selectedDayEvents.length === 0 ? (
-            <p className="mobile-calendar-empty">Pro vybraný den nejsou žádné události.</p>
-          ) : (
-            selectedDayEvents.map((event) => {
-              const meta = eventMetaById[event.id] ?? getDefaultMetaForTitle(event.title)
-
-              return (
-                <article key={event.id} className="mobile-calendar-event-card">
-                  <div className="mobile-calendar-event-icon">{meta.icon}</div>
-                  <div className="mobile-calendar-event-content">
-                    <h4>
-                      {event.title}
-                      {event.priority && (
-                        <span className={`event-priority-badge ${event.priority}`}>
-                          {event.priority === 'high' ? '!' : event.priority === 'medium' ? '◆' : '○'}
-                        </span>
-                      )}
-                    </h4>
-                    <p>{meta.time}</p>
-                    <p>{meta.location}</p>
-                  </div>
-                  <div className="mobile-calendar-event-time">{meta.time.split(' - ')[0]}</div>
-                  <Button
-                    type="button"
-                    className="recent-file-more"
-                    aria-label="Odstranit událost"
-                    onClick={() => removeEvent(event.id)}
-                  >
-                    ×
-                  </Button>
-                </article>
-              )
-            })
-          )}
-        </div>
+        <CalendarEventList
+          events={selectedDayEvents}
+          eventMetaById={eventMetaById}
+          getDefaultMetaForTitle={getDefaultMetaForTitle}
+          emptyMessage="Pro vybraný den nejsou žádné události."
+          listClassName="mobile-calendar-events-list"
+          itemClassName="mobile-calendar-event-card"
+          iconClassName="mobile-calendar-event-icon"
+          contentClassName="mobile-calendar-event-content"
+          timeClassName="mobile-calendar-event-time"
+          removeButtonClassName="recent-file-more"
+          showTimeBadge
+          onRemoveEvent={removeEvent}
+        />
       </section>
 
       <section className="mobile-calendar-events">
@@ -166,54 +145,28 @@ export function MobileCalendarScreen({
           </Button>
         </div>
 
-        <div className="mobile-calendar-events-list">
-          {(() => {
+        <CalendarEventList
+          events={(() => {
             const today = formatDateIso(new Date())
             const allEvents = Object.values(eventsByDate).flat()
-            const filteredEvents = allEvents.filter((event) => {
-              const eventDate = event.date || Object.keys(eventsByDate).find((date) => eventsByDate[date]?.some((e) => e.id === event.id))
+            return allEvents.filter((event) => {
+              const eventDate = event.date || Object.keys(eventsByDate).find((date) => eventsByDate[date]?.some((item) => item.id === event.id))
               const isInFuture = eventDate && eventDate >= today
               return eventFilter === 'future' ? isInFuture : !isInFuture
             })
-
-            return filteredEvents.length === 0 ? (
-              <p className="mobile-calendar-empty">
-                {eventFilter === 'future' ? 'Žádné budoucí události.' : 'Žádné minulé události.'}
-              </p>
-            ) : (
-              filteredEvents.map((event) => {
-                const meta = eventMetaById[event.id] ?? getDefaultMetaForTitle(event.title)
-
-                return (
-                  <article key={event.id} className="mobile-calendar-event-card">
-                    <div className="mobile-calendar-event-icon">{meta.icon}</div>
-                    <div className="mobile-calendar-event-content">
-                      <h4>
-                        {event.title}
-                        {event.priority && (
-                          <span className={`event-priority-badge ${event.priority}`}>
-                            {event.priority === 'high' ? '!' : event.priority === 'medium' ? '◆' : '○'}
-                          </span>
-                        )}
-                      </h4>
-                      <p>{meta.time}</p>
-                      <p>{meta.location}</p>
-                    </div>
-                    <div className="mobile-calendar-event-time">{meta.time.split(' - ')[0]}</div>
-                    <Button
-                      type="button"
-                      className="recent-file-more"
-                      aria-label="Odstranit událost"
-                      onClick={() => removeEvent(event.id)}
-                    >
-                      ×
-                    </Button>
-                  </article>
-                )
-              })
-            )
           })()}
-        </div>
+          eventMetaById={eventMetaById}
+          getDefaultMetaForTitle={getDefaultMetaForTitle}
+          emptyMessage={eventFilter === 'future' ? 'Žádné budoucí události.' : 'Žádné minulé události.'}
+          listClassName="mobile-calendar-events-list"
+          itemClassName="mobile-calendar-event-card"
+          iconClassName="mobile-calendar-event-icon"
+          contentClassName="mobile-calendar-event-content"
+          timeClassName="mobile-calendar-event-time"
+          removeButtonClassName="recent-file-more"
+          showTimeBadge
+          onRemoveEvent={removeEvent}
+        />
       </section>
 
       <Button type="button" className="mobile-calendar-fab" aria-label="Přidat událost" onClick={addDesktopEvent}>

@@ -78,10 +78,7 @@ pb138/
 ├── server/                    # Express backend
 │   ├── src/
 │   │   ├── index.ts          # Server entry point
-│   │   └── prisma.ts         # Prisma klient
-│   ├── prisma/
-│   │   ├── schema.prisma     # Datový model
-│   │   └── seed.ts           # Seed data
+│   │   └── db/               # Drizzle schema + klient
 │   ├── package.json
 │   └── tsconfig.json
 ├── milestones/               # Projektové milníky
@@ -96,12 +93,12 @@ pb138/
 
 ### Instalace závislostí
 ```bash
-npm install
+bun install
 ```
 
 ### Vývoj (Dev mode - běží oba servery)
 ```bash
-npm run dev
+bun run dev
 ```
 
 Otevřete v prohlížeči:
@@ -110,17 +107,17 @@ Otevřete v prohlížeči:
 
 ### Kontrola TypeScript
 ```bash
-npm run type-check
+bun run type-check
 ```
 
 ### Build (produkce)
 ```bash
-npm run build
+bun run build
 ```
 
 ### Preview produkční build
 ```bash
-npm run preview
+bun run preview
 ```
 
 ## 📁 API Endpointy (placeholder)
@@ -131,7 +128,7 @@ npm run preview
 
 ## 🔧 Vývoj
 
-### Se spuštěnými servery (npm run dev)
+### Se spuštěnými servery (bun run dev)
 1. Frontend automaticky hot-reloaduje změny v `client/src/`
 2. Server restartuje při změnách v `server/src/`
 3. API proxy v Vite přeposílá `/api/*` na `http://localhost:5000`

@@ -1,6 +1,6 @@
-<<<<<<< Updated upstream
-=======
 @import "@fontsource-variable/geist";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 :root {
   --border: 214 31% 35%;
@@ -13,10 +13,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
->>>>>>> Stashed changes
 * {
   box-sizing: border-box;
 }
@@ -27,7 +24,7 @@ body,
   margin: 0;
   width: 100%;
   min-height: 100%;
-  font-family: 'IBM Plex Sans', 'Noto Sans', 'Segoe UI', sans-serif;
+  font-family: 'Geist Variable', 'IBM Plex Sans', 'Noto Sans', 'Segoe UI', sans-serif;
   color: #242f49;
   background: #fffdf6;
 }

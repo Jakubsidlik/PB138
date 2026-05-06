@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Button } from '../../components/ui/button'
-import { Calendar, Home, Files, User, Plus, CheckSquare, BookMarked } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from '@tanstack/react-router'
+import { BookMarked, Calendar, CheckSquare, Files, Home, Plus, User } from 'lucide-react'
+
+import { Button } from '../../components/ui/button'
 
 export function MobileBottomNav() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -13,7 +14,6 @@ export function MobileBottomNav() {
     setIsDropdownOpen(false)
   }
 
-  // Zavření dropdownu při kliknutí mimo
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -21,11 +21,14 @@ export function MobileBottomNav() {
       }
     }
 
-    if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside)
-      }
+    if (!isDropdownOpen) {
+      return undefined
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isDropdownOpen])
 
@@ -33,6 +36,8 @@ export function MobileBottomNav() {
     <nav className="mobile-bottom-nav" aria-label="Mobilní navigace">
       <div className="nav-dropdown-wrapper" ref={dropdownRef}>
         <Button
+          type="button"
+          variant="ghost"
           className={`nav-dropdown-btn ${isDropdownOpen ? 'active' : ''}`}
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           aria-label="Otevřít menu"
@@ -41,42 +46,34 @@ export function MobileBottomNav() {
           <Plus size={24} />
           <span className="nav-label">Více</span>
         </Button>
+
         {isDropdownOpen && (
           <div className="nav-dropdown-menu">
-<<<<<<< Updated upstream
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              className="nav-dropdown-item"
               onClick={() => handleNavigateTo('/tasks')}
             >
               <CheckSquare size={20} />
               <span>Úkoly</span>
-            </button>
-            <button
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              className="nav-dropdown-item"
               onClick={() => handleNavigateTo('/files')}
             >
               <Files size={20} />
               <span>Soubory</span>
-            </button>
-            <button
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              className="nav-dropdown-item"
               onClick={() => handleNavigateTo('/study')}
-=======
-            <Button
-              className={activeMobileNav === 'tasks' ? 'active' : ''}
-              onClick={() => handleDropdownItemClick('tasks')}
-            >
-              <CheckSquare size={20} />
-              <span>Úkoly</span>
-            </Button>
-            <Button
-              className={activeMobileNav === 'files' ? 'active' : ''}
-              onClick={() => handleDropdownItemClick('files')}
-            >
-              <Files size={20} />
-              <span>Soubory</span>
-            </Button>
-            <Button
-              className={activeMobileNav === 'study-plan' ? 'active' : ''}
-              onClick={() => handleDropdownItemClick('study-plan')}
->>>>>>> Stashed changes
             >
               <BookMarked size={20} />
               <span>Studijní plán</span>
@@ -84,26 +81,36 @@ export function MobileBottomNav() {
           </div>
         )}
       </div>
-      <button
+
+      <Button
+        type="button"
+        variant="ghost"
+        className="nav-item"
         onClick={() => handleNavigateTo('/calendar')}
       >
         <Calendar size={24} />
         <span className="nav-label">Kalendář</span>
-      </button>
-      <button
+      </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        className="nav-item"
         onClick={() => handleNavigateTo('/')}
       >
         <Home size={24} />
         <span className="nav-label">Domů</span>
-      </button>
-      <button
+      </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        className="nav-item"
         onClick={() => handleNavigateTo('/profile')}
       >
         <User size={24} />
         <span className="nav-label">Profil</span>
-      </button>
+      </Button>
     </nav>
   )
 }
-
-

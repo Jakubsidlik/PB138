@@ -21,7 +21,7 @@ export function RootLayout() {
 
   const isCalendarScreen = pathname === '/calendar'
   const isFilesScreen = pathname === '/files'
-  const isTasksScreen = pathname === '/tasks'
+  const isTasksScreen = pathname === '/tasks' || pathname.startsWith('/tasks/')
   const isStudyPlanScreen = pathname === '/study'
   const isProfileScreen = pathname === '/profile'
 

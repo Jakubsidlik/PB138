@@ -1,5 +1,5 @@
-import { AnnotationTargetType, CollaborationRole, EventRecurrence, TaskPriority, UserRole } from '@prisma/client'
 import express from 'express'
+import { type AnnotationTargetType, type CollaborationRole, type EventRecurrence, type TaskPriority, type UserRole } from './db/schema.js'
 import { ApiEvent, ApiTask, CursorPagination } from './types.js'
 
 export const asBigInt = (value: unknown): bigint | null => {
