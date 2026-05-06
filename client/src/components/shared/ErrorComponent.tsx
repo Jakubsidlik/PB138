@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { useRouter } from '@tanstack/react-router'
 
 type ErrorComponentProps = {
@@ -9,7 +9,7 @@ export function ErrorComponent({ error }: ErrorComponentProps) {
   const router = useRouter()
 
   const handleRetry = () => {
-    router.reload()
+    router.invalidate()
   }
 
   return (

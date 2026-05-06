@@ -1,6 +1,5 @@
 import React from 'react'
 import './App.css'
-import './App-subject-modal.css'
 
 import { RouterProvider } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'

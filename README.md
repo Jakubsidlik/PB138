@@ -1,205 +1,130 @@
-# PB138 - Studijní Plán (Learning Management App)
+# PB138 - Lonely Student (Study Planner)
 
-Webová aplikace, která umožňuje studentům lépe organizovat své studium. Aplikace poskytuje funkce pro vytváření studijních položek, vedení poznámek, správu úkolů a kalendář s nadcházejícími událostmi.
-
-## 🎯 Hlavní Funkcionality
-
-- **Studijní položky (Subjects)** - Vytváření a správa předmětů/kurzů
-- **Poznámky** - Psaní a správa poznámek pro každou položku
-- **Úkoly a Termíny** - Sledování deadlinů, lekcí, cvičení
-- **Kalendář** - Přehled všech nadcházejících událostí
-- **Souborový systém** - Ukládání studijních materiálů a přednášek
+Webová aplikace pro organizaci studia — správa předmětů, úkolů, kalendáře, souborů a studijních plánů.
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **React** 18.2.0
-- **TypeScript** 5.3.3
-- **Vite** 5.0.8
-- **Port**: 5173
+- **React** 18 + **TypeScript** 5
+- **Vite** 5 (dev server + build)
+- **TanStack Router** (file-based routing)
+- **TanStack Query** (server-state management)
+- **Clerk** (authentication)
+- **shadcn/ui** (component library)
 
 ### Backend
-- **Express.js** 4.18.2
-- **TypeScript** 5.3.3
-- **Node.js** runtime
-- **Port**: 5000
+- **Express.js** 4 + **TypeScript** 5
+- **Drizzle ORM** (PostgreSQL)
+- **Zod** (validation)
+- **Clerk** (authentication middleware)
+- **AWS S3** (file storage)
 
-## 📋 Struktura Projektu
+### Infrastructure
+- **Bun** (package manager & runtime)
+- **Monorepo** with workspaces (`client/` + `server/`)
+
+## 🚀 Getting Started
+
+### 1. Install dependencies
+```bash
+bun install
+```
+
+### 2. Configure environment variables
+
+Copy the example files and fill in your values:
+
+```bash
+# Client
+cp client/.env.example client/.env
+
+# Server
+cp server/.env.example server/.env
+```
+
+#### Client (`client/.env`)
+| Variable | Description |
+|---|---|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk publishable key from [dashboard.clerk.com](https://dashboard.clerk.com) |
+| `VITE_API_URL` | Backend API URL (default: `http://localhost:5000`) |
+
+#### Server (`server/.env`)
+| Variable | Description |
+|---|---|
+| `PORT` | Server port (default: `5000`) |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Clerk secret key |
+| `S3_REGION` | AWS S3 region (default: `eu-west-1`) |
+| `S3_ENDPOINT` | Custom S3 endpoint (optional) |
+| `S3_ACCESS_KEY` | AWS access key |
+| `S3_SECRET_KEY` | AWS secret key |
+| `S3_BUCKET_NAME` | S3 bucket name (default: `pb138-bucket`) |
+
+### 3. Run development servers
+```bash
+bun run dev
+```
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:5000
+
+### 4. Type checking
+```bash
+bun run type-check
+```
+
+## 📋 Project Structure
 
 ```
 pb138/
 ├── client/                    # React frontend
 │   ├── src/
-│   │   ├── app/              # Aplikační logika
-│   │   │   ├── api.ts
-│   │   │   ├── data.ts
-│   │   │   ├── hooks.ts
-│   │   │   ├── storage.ts
-│   │   │   ├── types.ts
-│   │   │   ├── useDashboardState.ts
-│   │   │   └── utils.ts
-│   │   ├── components/       # React komponenty
-│   │   │   ├── authentication/
-│   │   │   │   └── AuthScreen.tsx
-│   │   │   ├── shared/
-│   │   │   │   ├── AvatarUpload.tsx
-│   │   │   │   ├── CircularProgress.tsx
-│   │   │   │   ├── DashboardHomeContent.tsx
-│   │   │   │   ├── PlannerCalendar.tsx
-│   │   │   │   ├── Sidebar.tsx
-│   │   │   │   ├── ThemeSelector.tsx
-│   │   │   │   └── Topbar.tsx
-│   │   │   └── ui/           # UI komponenty
-│   │   │       ├── badge.tsx
-│   │   │       └── card.tsx
-│   │   ├── screen/           # Obrazovky (desktop & mobile)
-│   │   │   ├── desktop/
-│   │   │   │   ├── DesktopCalendarScreen.tsx
-│   │   │   │   ├── DesktopFilesScreen.tsx
-│   │   │   │   ├── DesktopProfileScreen.tsx
-│   │   │   │   └── DesktopSubjectsScreen.tsx
-│   │   │   └── mobile/
-│   │   │       ├── MobileBottomNav.tsx
-│   │   │       ├── MobileCalendarScreen.tsx
-│   │   │       ├── MobileFilesScreen.tsx
-│   │   │       ├── MobileProfileScreen.tsx
-│   │   │       └── MobileSubjectsScreen.tsx
-│   │   ├── assets/
-│   │   ├── App.tsx
-│   │   ├── App.css
-│   │   ├── index.css
-│   │   ├── main.tsx
-│   │   └── vite-env.d.ts
-│   ├── index.html
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── tsconfig.node.json
-│   └── vite.config.ts
+│   │   ├── app/              # Core logic (api, queries, state, types, utils)
+│   │   ├── components/       # Reusable components
+│   │   │   ├── shared/       # Shared components (Sidebar, Topbar, etc.)
+│   │   │   ├── ui/           # shadcn/ui components
+│   │   │   ├── layout/       # Layout components (RootLayout)
+│   │   │   └── authentication/
+│   │   ├── screen/           # Screen components (responsive, unified)
+│   │   │   ├── CalendarScreen.tsx
+│   │   │   ├── FilesScreen.tsx
+│   │   │   ├── ProfileScreen.tsx
+│   │   │   ├── StudyPlanScreen.tsx
+│   │   │   └── TasksScreen.tsx
+│   │   ├── routes/           # TanStack Router file-based routes
+│   │   └── App.tsx
+│   └── package.json
 ├── server/                    # Express backend
 │   ├── src/
-│   │   ├── index.ts          # Server entry point
-│   │   └── db/               # Drizzle schema + klient
-│   ├── package.json
-│   └── tsconfig.json
-├── milestones/               # Projektové milníky
-│   ├── first/
-|   ├── second/
-│   └── third
-├── package.json              # Kořenový package.json (monorepo)
+│   │   ├── db/               # Drizzle schema + client
+│   │   ├── middleware/       # Error handler, validation
+│   │   ├── repositories/    # Data access layer (repository pattern)
+│   │   ├── schemas.ts        # Zod validation schemas
+│   │   ├── auth.ts           # Clerk auth helpers
+│   │   └── index.ts          # Server entry point
+│   └── package.json
+├── package.json              # Root (monorepo workspaces)
 └── README.md
 ```
 
-## 🚀 Spuštění Projektu
+## 📁 API Endpoints
 
-### Instalace závislostí
-```bash
-bun install
-```
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/health` | Health check |
+| `GET/POST` | `/api/tasks` | CRUD for tasks |
+| `GET/POST` | `/api/events` | CRUD for calendar events |
+| `GET/POST` | `/api/subjects` | CRUD for subjects |
+| `GET/POST` | `/api/files` | CRUD for files |
+| `GET/POST` | `/api/lessons` | CRUD for lessons |
+| `GET/POST` | `/api/study-plans` | CRUD for study plans |
+| `GET/PUT` | `/api/profile` | User profile management |
 
-### Vývoj (Dev mode - běží oba servery)
-```bash
-bun run dev
-```
+## 👤 Authors
 
-Otevřete v prohlížeči:
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:5000
+PB138 Team
 
-### Kontrola TypeScript
-```bash
-bun run type-check
-```
-
-### Build (produkce)
-```bash
-bun run build
-```
-
-### Preview produkční build
-```bash
-bun run preview
-```
-
-## 📁 API Endpointy (placeholder)
-
-- `GET /api/health` - Kontrola stavu serveru
-- `GET /api/subjects` - Získat všechny studijní položky
-- `POST /api/subjects` - Vytvořit novou studijní položku
-
-## 🔧 Vývoj
-
-### Se spuštěnými servery (bun run dev)
-1. Frontend automaticky hot-reloaduje změny v `client/src/`
-2. Server restartuje při změnách v `server/src/`
-3. API proxy v Vite přeposílá `/api/*` na `http://localhost:5000`
-
-### Přidání nových závislostí
-```bash
-# Pro frontend
-cd client
-npm install <package>
-
-# Pro backend
-cd server
-npm install <package>
-```
-
-## 📝 TODO
-1. Datový model a Backend (ERD & API)
-- [ ] Upravit datový model a schéma 
-- [ ] Přejmenovat entitu SUBJECT na TAG (klasifikační prvek) 
-- [✅] Zrušit entitu TASK_ARCHIVE a nahradit ji logikou LESSON_NOTE a LESSON_COMMENT v ERD
-- [ ] Přidat do entity USER pole: datum narození, fakulta, studijní typ a rok 
-- [ ] Vytvořit entitu COMMENT s vazbou na konkrétní části textu v poznámkách 
-- [ ] Zajistit, aby pole v ERD (např. u Task) byla správně nastavena jako nullable 
-- [ ] Postavit API endpointy (CRUD pro všechny entity) 
-- [ ] Implementovat Create, Update, Delete pro Tagy, Úkoly, Plány, Lekce a Poznámky 
-- [ ] Vytvořit endpointy pro správu komentářů a označování částí textu
-- [ ] Implementovat systém ukládání souborů a avatarů 
-- [ ] Nastavit ukládání mimo server (Amazon S3 / Blob storage) pomocí GUID jako klíče
-- [ ] Propojit soubory (FILE_RECORD) přímo s entitou LESSON 
-
-2. Autentifikace, Role a Práva
-- [ ] Implementovat autentifikaci a profily
-- [ ] Nastavit ukládání přihlašovacích údajů (hashovaná hesla) a session management 
-- [ ] Vytvořit role a jejich oprávnění:
-    - [ ] Neregistrovaný: Vidí pouze veřejná data, poznámky má "read-only"
-    - [ ] Registrovaný: Plný přístup k vlastním datům a žádostem o zveřejnění 
-    - [ ] Admin: Schvalování obsahu a moderování 
-
-3. Klíčové funkce aplikace
-- [ ] Organizace lekcí a předmětů: Vytvořit systém položek pro správu lekcí a studijních materiálů.
-- [ ] Správa úkolů a deadlinů: Možnost zápisu termínů odevzdání (assignments) a dat cvičení/přednášek.
-- [ ] Souborový systém: Implementovat úložiště pro přednášky a další studijní podklady u každé položky.
-- [ ] Kalendář: Implementovat zobrazení nadcházejících událostí a deadlinů v kalendáři.
-- [ ] Opakované události: Podpora pro pravidelné přednášky a cvičení.
-- [ ] Vytvořit logiku sdílení
-- [ ] Implementovat proces "Žádost o zveřejnění" pro poznámky a plány??? 
-- [ ] Umožnit propojování entit (např. napojení vlastního předmětu na cizí studijní plán)??? 
-- [ ] Kalendář a události: Implementovat kalendář s podporou opakovaných událostí 
-
-4. Frontend a React komponenty
-- [ ] Vytvořit React komponenty a UI 
-- [ ] Implementovat dashboard s přehledem úkolů a pokročilým filtrováním 
-- [ ] Vytvořit interaktivní textový editor pro poznámky s funkcí komentování označeného textu 
-- [ ] Vytvořit komponentu pro správu profilu a nahrávání avatara 
-- [ ] Postavit komponentu pro kalendář (zobrazení měsíc/týden) 
-
-5. Finální integrace a testování
-- [ ] Ověřit, že neregistrovaní uživatelé vidí pouze schválený obsah 
-- [ ] Otestovat nahrávání souborů, správné generování GUID a ukládání na externí storage 
-- [ ] Zkontrolovat všechna nullable pole, aby aplikace nevyhazovala chyby při chybějících datech 
-
-## 📝 Poznámky
-
-- Projekt je nastavен v monorepo struktuře s `npm workspaces`
-- `concurrently` běží oba dev servery paralelně
-- Frontend automaticky proxy-uje API požadavky na backend
-
-## 👤 Autor
-
-PB138 - Studijní plán
-
-## 📄 Licence
+## 📄 License
 
 ISC

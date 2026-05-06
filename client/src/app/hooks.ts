@@ -4,18 +4,10 @@ import type {
   CalendarEvent,
   CreateEventRequest,
   CreateTaskRequest,
-  FileComment,
-  FileRecord,
-  Lesson,
-  LessonNote,
   PaginatedResponse,
-  StudyPlan,
-  Subject,
   Task,
-  TextAnnotation,
   UpdateEventRequest,
   UpdateTaskRequest,
-  User,
 } from './types'
 
 interface UseQueryState<T> {

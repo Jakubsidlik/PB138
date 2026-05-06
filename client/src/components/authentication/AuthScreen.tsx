@@ -117,10 +117,14 @@ const handleSignInSubmit = async (e: React.FormEvent) => {
 
       if (result.status === 'complete') {
         await setSignInActive({ session: result.createdSessionId })
-      } else if (result.status === 'needs_factor_two' || result.status === 'needs_second_factor') {
-        setPendingSignInCode('totp')
-        setCode('')
-      } else if (result.status === 'needs_factor_one' || result.status === 'needs_first_factor') {
+      } else {
+        const status = signIn.status as string
+        if (status === 'needs_second_factor') {
+          throw new Error('Dvoufázové ověření není v této aplikaci podporováno.')
+        }
+        if (status === 'needs_first_factor') {
+          throw new Error('Neplatné přihlašovací údaje.')
+        }
         const emailFactor = result.supportedFirstFactors?.find((f: any) => f.strategy === 'email_code')
         if (emailFactor) {
           await signIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: (emailFactor as any).emailAddressId })
@@ -129,8 +133,6 @@ const handleSignInSubmit = async (e: React.FormEvent) => {
         } else {
           setError(`Účet vyžaduje dodatečné ověření, které není podporováno.`)
         }
-      } else {
-        setError(`Nepodporovaný stav přihlášení: ${result.status}.`)
       }
     } catch (err: any) {
       setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Nesprávné přihlašovací údaje.')

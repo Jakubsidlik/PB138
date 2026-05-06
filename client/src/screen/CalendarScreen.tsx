@@ -1,11 +1,11 @@
 import React from 'react'
-import { Button } from '../../components/ui/button'
-import { CalendarCell, CalendarEvent, EventMeta } from '../../app/types'
-import { formatDateIso } from '../../app/utils'
-import { CalendarEventList } from '../../components/shared/CalendarEventList'
-import { MonthSwitcher } from '../../components/shared/MonthSwitcher'
-import { EventFilterButtons } from '../../components/shared/EventFilterButtons'
-import { filterEventsByTime, formatCzechDate } from '../../components/shared/calendarUtils'
+import { Button } from '../components/ui/button'
+import { CalendarCell, CalendarEvent, EventMeta } from '../app/types'
+import { formatDateIso } from '../app/utils'
+import { CalendarEventList } from '../components/shared/CalendarEventList'
+import { MonthSwitcher } from '../components/shared/MonthSwitcher'
+import { EventFilterButtons } from '../components/shared/EventFilterButtons'
+import { filterEventsByTime, formatCzechDate } from '../components/shared/calendarUtils'
 
 type DesktopCalendarScreenProps = {
   monthLabel: string

@@ -1,8 +1,10 @@
 import React from 'react'
-import { Button } from '../../components/ui/button'
-import { ManagedFile } from '../../app/types'
-import { getFileIcon } from '../../components/shared/fileUtils'
-import { HiddenFileInput } from '../../components/shared/HiddenFileInput'
+import { Button } from '../components/ui/button'
+import { ManagedFile } from '../app/types'
+import { getFileIcon } from '../components/shared/fileUtils'
+import { HiddenFileInput } from '../components/shared/HiddenFileInput'
+import { ShareFileModal } from '../components/shared/ShareFileModal'
+import { useState } from 'react'
 
 type DesktopFilesScreenProps = {
   managedFiles: ManagedFile[]
@@ -10,7 +12,7 @@ type DesktopFilesScreenProps = {
   onUploadFiles: (files: FileList | null) => void
   onManageFile: (fileId: number) => void
   onDeleteFile: (fileId: number) => void
-  onToggleFileShared: (fileId: number) => void
+  onToggleFileShared: (fileId: number, email?: string) => Promise<void>
 }
 
 export function DesktopFilesScreen({
@@ -21,6 +23,8 @@ export function DesktopFilesScreen({
   onDeleteFile,
   onToggleFileShared,
 }: DesktopFilesScreenProps) {
+  const [shareModalFileId, setShareModalFileId] = useState<number | null>(null)
+
   const rows = managedFiles
 
   return (
@@ -69,8 +73,8 @@ export function DesktopFilesScreen({
                         <Button
                           type="button"
                           className="desktop-file-download"
-                          onClick={() => onToggleFileShared(file.id)}
-                          title={file.shared ? 'Odebrat sdílení' : 'Sdílet'}
+                          onClick={() => setShareModalFileId(file.id)}
+                          title="Sdílet soubor s konkrétním uživatelem"
                         >
                           {file.shared ? '👥' : '🔒'}
                         </Button>
@@ -116,6 +120,17 @@ export function DesktopFilesScreen({
           />
         </div>
       </section>
+
+      {shareModalFileId && (
+        <ShareFileModal
+          isOpen={!!shareModalFileId}
+          onClose={() => setShareModalFileId(null)}
+          onShare={async (email) => {
+            await onToggleFileShared(shareModalFileId, email)
+          }}
+          fileName={managedFiles.find(f => f.id === shareModalFileId)?.name || 'Soubor'}
+        />
+      )}
     </section>
   )
 }

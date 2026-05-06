@@ -15,6 +15,7 @@ import { studyPlansRouter } from './study-plans.js'
 import { subjectsRouter } from './subjects.js'
 import { filesRouter, adminFilesRouter, fileCommentsRouter } from './files.js'
 import { lessonsRouter, lessonNotesRouter, annotationsRouter } from './lessons.js'
+import { errorHandler } from './middleware/error-handler.js'
 
 const app = express()
 const PORT = env.PORT
@@ -128,6 +129,7 @@ app.get('/api/profile', async (_req, res, next) => {
         birthDate: users.birthDate,
         bio: users.bio,
         avatarDataUrl: users.avatarDataUrl,
+        contactEmail: users.contactEmail,
         updatedAt: users.updatedAt,
       })
       .from(users)
@@ -152,6 +154,7 @@ app.get('/api/profile', async (_req, res, next) => {
       birthDate: user.birthDate ? toDateOnlyIso(user.birthDate) : null,
       bio: user.bio,
       avatarDataUrl: user.avatarDataUrl,
+      contactEmail: user.contactEmail,
       updatedAt: user.updatedAt.toISOString(),
     })
   } catch (error) {
@@ -199,6 +202,7 @@ app.post('/api/profile', async (req, res, next) => {
         birthDate: parseOptionalDate(payload.birthDate) ?? null,
         bio: payload.bio ?? null,
         avatarDataUrl: payload.avatarDataUrl ?? null,
+        contactEmail: payload.contactEmail ?? null,
       })
       .returning({
         id: users.id,
@@ -213,6 +217,7 @@ app.post('/api/profile', async (req, res, next) => {
         birthDate: users.birthDate,
         bio: users.bio,
         avatarDataUrl: users.avatarDataUrl,
+        contactEmail: users.contactEmail,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       })
@@ -230,6 +235,7 @@ app.post('/api/profile', async (req, res, next) => {
       birthDate: created.birthDate ? toDateOnlyIso(created.birthDate) : null,
       bio: created.bio,
       avatarDataUrl: created.avatarDataUrl,
+      contactEmail: created.contactEmail,
     })
   } catch (error) {
     next(error)
@@ -269,6 +275,7 @@ app.put('/api/profile', async (req, res, next) => {
         birthDate: parsedBirthDate ?? undefined,
         bio: payload.bio,
         avatarDataUrl: payload.avatarDataUrl,
+        contactEmail: payload.contactEmail,
       })
       .where(eq(users.id, BigInt(actor.id)))
       .returning({
@@ -284,6 +291,7 @@ app.put('/api/profile', async (req, res, next) => {
         birthDate: users.birthDate,
         bio: users.bio,
         avatarDataUrl: users.avatarDataUrl,
+        contactEmail: users.contactEmail,
         updatedAt: users.updatedAt,
       })
 
@@ -300,6 +308,7 @@ app.put('/api/profile', async (req, res, next) => {
       birthDate: updated.birthDate ? toDateOnlyIso(updated.birthDate) : null,
       bio: updated.bio,
       avatarDataUrl: updated.avatarDataUrl,
+      contactEmail: updated.contactEmail,
       updatedAt: updated.updatedAt.toISOString(),
     })
   } catch (error) {
@@ -332,20 +341,8 @@ app.delete('/api/profile', async (_req, res, next) => {
   }
 })
 
-app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  if (
-    error &&
-    typeof error === 'object' &&
-    'code' in error &&
-    ((error as { code?: string }).code === '23505' || (error as { code?: string }).code === 'P2002')
-  ) {
-    res.status(409).json({ error: 'Konflikt unikatnich dat (pravdepodobne duplicitni code nebo email).' })
-    return
-  }
-
-  console.error(error)
-  res.status(500).json({ error: 'Interni chyba serveru' })
-})
+// Global error handler middleware
+app.use(errorHandler)
 
 const start = async () => {
   app.listen(PORT, () => {

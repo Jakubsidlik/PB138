@@ -1,6 +1,6 @@
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
-import cs from 'date-fns/locale/cs'
+import { cs } from 'date-fns/locale/cs'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { Badge } from '../ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
@@ -54,7 +54,7 @@ export function PlannerCalendar({ items, selectedItemId, onSelectItem, activeRol
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-muted-foreground">Kalendář</p>
             <CardTitle className="mt-1 text-3xl">Lekce a události</CardTitle>
           </div>
-          <Badge variant={activeRole === 'student' ? 'student' : activeRole === 'registered' ? 'registered' : 'public'}>
+          <Badge variant={activeRole === 'student' ? 'default' : activeRole === 'registered' ? 'secondary' : 'outline'}>
             {activeRole === 'student' ? 'Správce' : activeRole === 'registered' ? 'Registrovaný' : 'Veřejnost'}
           </Badge>
         </div>
@@ -105,7 +105,7 @@ export function PlannerCalendar({ items, selectedItemId, onSelectItem, activeRol
                   <Badge variant={selectedItem.kind === 'lesson' ? 'secondary' : 'outline'}>
                     {selectedItem.kind === 'lesson' ? 'Lekce' : 'Událost'}
                   </Badge>
-                  <Badge variant={selectedItem.shared ? 'public' : 'student'}>
+                  <Badge variant={selectedItem.shared ? 'outline' : 'default'}>
                     {selectedItem.shared ? 'Sdílené' : 'Soukromé'}
                   </Badge>
                 </div>

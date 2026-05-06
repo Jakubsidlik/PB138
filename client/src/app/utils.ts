@@ -1,25 +1,5 @@
-import { CalendarCell, EventMeta, FileCategory, MobileNavItem } from './types'
+import { CalendarCell, EventMeta, FileCategory } from './types'
 
-export const getNavFromHash = (hash: string): MobileNavItem => {
-  if (hash === '#calendar') {
-    return 'calendar'
-  }
-  if (hash === '#tasks') {
-    return 'tasks'
-  }
-  if (hash === '#files') {
-    return 'files'
-  }
-  if (hash === '#study-plan') {
-    return 'study-plan'
-  }
-
-  if (hash === '#profile') {
-    return 'profile'
-  }
-
-  return 'home'
-}
 
 export const formatDateIso = (date: Date) => {
   const year = date.getFullYear()

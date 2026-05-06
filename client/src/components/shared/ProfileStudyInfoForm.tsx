@@ -2,8 +2,8 @@ import { UserProfile } from '../../app/types'
 import { studyYearOptions, studyTypeOptions } from './profileConstants'
 
 type ProfileStudyInfoFormProps = {
-  profile: UserProfile
-  onChangeProfile: (field: keyof Omit<UserProfile, 'avatarDataUrl'>, value: string) => void
+  profile: Partial<UserProfile>
+  onChangeProfile: (updates: Partial<UserProfile>) => void
 }
 
 export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyInfoFormProps) {
@@ -12,15 +12,16 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
       <label>
         <span>Škola</span>
         <input
-          type="text"
-          value={profile.school}
-          onChange={(event) => onChangeProfile('school', event.target.value)}
+          id="school"
+          value={profile.school || ''}
+          onChange={(e) => onChangeProfile({ school: e.target.value })}
+          placeholder="např. Masarykova Univerzita"
         />
       </label>
 
       <label>
         <span>Typ studia</span>
-        <select value={profile.studyType} onChange={(event) => onChangeProfile('studyType', event.target.value)}>
+        <select value={profile.studyType} onChange={(event) => onChangeProfile({ studyType: event.target.value })}>
           {studyTypeOptions.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -32,15 +33,16 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
       <label>
         <span>Studijní zaměření</span>
         <input
-          type="text"
-          value={profile.studyMajor}
-          onChange={(event) => onChangeProfile('studyMajor', event.target.value)}
+          id="studyMajor"
+          value={profile.studyMajor || ''}
+          onChange={(e) => onChangeProfile({ studyMajor: e.target.value })}
+          placeholder="např. Aplikovaná informatika"
         />
       </label>
 
       <label>
         <span>Ročník</span>
-        <select value={profile.studyYear} onChange={(event) => onChangeProfile('studyYear', event.target.value)}>
+        <select value={profile.studyYear} onChange={(event) => onChangeProfile({ studyYear: event.target.value })}>
           {studyYearOptions.map((option) => (
             <option key={option} value={option}>
               {option}

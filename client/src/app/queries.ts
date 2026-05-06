@@ -59,6 +59,7 @@ const fetchProfile = async (): Promise<UserProfile> => {
     birthDate: null,
     bio: '',
     avatarDataUrl: '',
+    contactEmail: '',
   }
 }
 

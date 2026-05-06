@@ -9,7 +9,9 @@ import {
   uniqueIndex,
   index,
   bigint,
+  primaryKey,
 } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
 
 export const taskPriorityValues = ['NONE', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const
 export type TaskPriority = (typeof taskPriorityValues)[number]
@@ -46,6 +48,7 @@ export const users = pgTable('User', {
   birthDate: date('birthDate', { mode: 'date' }),
   bio: text('bio'),
   avatarDataUrl: text('avatarDataUrl'),
+  contactEmail: text('contactEmail'),
   deletedAt: timestamp('deletedAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
@@ -143,6 +146,28 @@ export const fileRecords = pgTable('FileRecord', {
   lessonIdIdx: index('FileRecord_lessonId_idx').on(table.lessonId),
   isSharedIdx: index('FileRecord_isShared_idx').on(table.isShared),
   deletedAtIdx: index('FileRecord_deletedAt_idx').on(table.deletedAt),
+}))
+
+export const fileShares = pgTable(
+  'FileShare',
+  {
+    fileId: bigint('fileId', { mode: 'bigint' }).notNull(),
+    userId: bigint('userId', { mode: 'bigint' }).notNull(),
+    permission: text('permission').notNull().default('read'),
+    createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.fileId, table.userId] }),
+      fileIdIdx: index('FileShare_fileId_idx').on(table.fileId),
+      userIdIdx: index('FileShare_userId_idx').on(table.userId),
+    }
+  },
+)
+
+export const fileSharesRelations = relations(fileShares, ({ one }) => ({
+  file: one(fileRecords, { fields: [fileShares.fileId], references: [fileRecords.id] }),
+  user: one(users, { fields: [fileShares.userId], references: [users.id] }),
 }))
 
 export const fileComments = pgTable('FileComment', {

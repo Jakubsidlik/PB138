@@ -4,7 +4,7 @@ import { useAuth } from '@clerk/clerk-react'
 import { useDashboardState } from '../../app/useDashboardState'
 import { Sidebar } from '../shared/Sidebar'
 import { Topbar } from '../shared/Topbar'
-import { MobileBottomNav } from '../../screen/mobile/MobileBottomNav'
+
 
 export function RootLayout() {
   const state = useDashboardState()
@@ -62,8 +62,6 @@ export function RootLayout() {
           onChange={(e) => state.onUploadFiles(e.target.files)}
         />
       </main>
-
-      <MobileBottomNav />
     </div>
   )
 }

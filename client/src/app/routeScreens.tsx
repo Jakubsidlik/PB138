@@ -2,11 +2,11 @@ import React from 'react'
 import { useDashboardState } from './useDashboardState'
 import { getDeadlineMeta, getRelativeDaysLabel, getDefaultMetaForTitle } from './utils'
 import { DashboardHomeContent } from '../components/shared/DashboardHomeContent'
-import { DesktopCalendarScreen } from '../screen/desktop/DesktopCalendar'
-import { DesktopFilesScreen } from '../screen/desktop/DesktopFiles'
-import { DesktopTasksScreen } from '../screen/desktop/DesktopTasks'
-import { DesktopStudyPlan } from '../screen/desktop/DesktopStudyPlan'
-import { DesktopProfileScreen } from '../screen/desktop/DesktopProfile'
+import { DesktopCalendarScreen } from '../screen/CalendarScreen'
+import { DesktopFilesScreen } from '../screen/FilesScreen'
+import { DesktopTasksScreen } from '../screen/TasksScreen'
+import { DesktopStudyPlan } from '../screen/StudyPlanScreen'
+import { DesktopProfileScreen } from '../screen/ProfileScreen'
 import { calendarWeekDays } from './data'
 
 // Home route component
@@ -22,6 +22,8 @@ export function HomeComponent() {
       getDeadlineMeta={getDeadlineMeta}
       getRelativeDaysLabel={getRelativeDaysLabel}
       toggleTask={state.toggleTask}
+      subjectsCount={state.subjects.length}
+      filesCount={state.managedFiles.length}
     />
   )
 }

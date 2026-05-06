@@ -1,7 +1,7 @@
-import { Task } from '../../app/types'
-import { Button } from '../../components/ui/button'
-import { TaskList } from '../../components/shared/TaskList'
-import { TaskStats } from '../../components/shared/TaskStats'
+import { Task } from '../app/types'
+import { Button } from '../components/ui/button'
+import { TaskList } from '../components/shared/TaskList'
+import { TaskStats } from '../components/shared/TaskStats'
 
 type DesktopTasksScreenProps = {
     tasks: Task[]

@@ -59,6 +59,11 @@ export const fileSchema = z.object({
 })
 export const updateFileSchema = fileSchema.partial()
 
+export const shareFileSchema = z.object({
+  targetUserEmail: z.string().email('Neplatný formát e-mailu'),
+  permission: z.enum(['read', 'write']).default('read'),
+})
+
 export const fileCommentSchema = z.object({
   comment: z.string().trim().min(1, 'Pole comment je povinne.')
 })
@@ -98,9 +103,10 @@ export const profileSchema = z.object({
   studyMajor: z.string().trim().nullable().optional(),
   studyYear: z.string().trim().nullable().optional(),
   studyType: z.string().trim().nullable().optional(),
-  birthDate: z.string().nullable().optional(),
-  bio: z.string().trim().nullable().optional(),
+  birthDate: z.union([z.string(), z.date()]).nullable().optional(),
+  bio: z.string().nullable().optional(),
   avatarDataUrl: z.string().nullable().optional(),
+  contactEmail: z.string().email('Neplatný formát e-mailu').nullable().optional(),
 })
 export const updateProfileSchema = profileSchema.partial()
 

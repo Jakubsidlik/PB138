@@ -36,7 +36,6 @@ import {
   formatFileSize,
   getDefaultMetaForTitle,
   getManagedFileCategory,
-  getNavFromHash,
 } from './utils'
 
 type SubjectFilter = 'all' | 'active' | 'archived'
@@ -588,14 +587,14 @@ export function useDashboardState() {
     setActiveMobileNav('profile')
   }
 
-  const onChangeProfile = (field: keyof Omit<UserProfile, 'avatarDataUrl'>, value: string) => {
+  const onChangeProfile = (updates: Partial<UserProfile>) => {
     if (!ensureAuthenticated()) {
       return
     }
 
     setProfile((prevProfile) => ({
       ...prevProfile,
-      [field]: value,
+      ...updates,
     }))
   }
 
@@ -813,13 +812,31 @@ export function useDashboardState() {
     updateFile(fileId, { name: nextName })
   }
 
-  const toggleFileShared = (fileId: number) => {
+  const toggleFileShared = async (fileId: number, email?: string) => {
     const file = managedFiles.find((item) => item.id === fileId)
     if (!file) {
       return
     }
 
-    updateFile(fileId, { shared: !file.shared })
+    if (email) {
+      try {
+        const res = await apiFetch(`/api/files/${fileId}/share`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetUserEmail: email, permission: 'read' }),
+        })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Nepodařilo se nasdílet soubor.')
+        }
+        alert(`Soubor úspěšně nasdílen uživateli ${email}`)
+      } catch (err: any) {
+        alert(err.message)
+        throw err
+      }
+    } else {
+      updateFile(fileId, { shared: !file.shared })
+    }
   }
 
   const manageFile = (fileId: number) => {

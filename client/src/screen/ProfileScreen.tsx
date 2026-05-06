@@ -1,17 +1,18 @@
 import React from 'react'
-import { Button } from '../../components/ui/button'
-import { AuthSession, UserProfile, ThemeMode, AccentPalette } from '../../app/types'
-import { AvatarPreview } from '../../components/shared/AvatarPreview'
-import { HiddenFileInput } from '../../components/shared/HiddenFileInput'
-import { ProfileAuthInfo } from '../../components/shared/ProfileAuthInfo'
-import { ProfileStudyInfoForm } from '../../components/shared/ProfileStudyInfoForm'
-import { ProfileThemeSection } from '../../components/shared/ProfileThemeSection'
-import { ProfileSaveActions } from '../../components/shared/ProfileSaveActions'
+import { Button } from '../components/ui/button'
+import { AuthSession, UserProfile, ThemeMode, AccentPalette } from '../app/types'
+import { AvatarPreview } from '../components/shared/AvatarPreview'
+import { HiddenFileInput } from '../components/shared/HiddenFileInput'
+import { ProfileAuthInfo } from '../components/shared/ProfileAuthInfo'
+import { ProfileStudyInfoForm } from '../components/shared/ProfileStudyInfoForm'
+import { ProfileThemeSection } from '../components/shared/ProfileThemeSection'
+import { ProfileSaveActions } from '../components/shared/ProfileSaveActions'
+import { ProfileContactEmail } from '../components/shared/ProfileContactEmail'
 
 type DesktopProfileScreenProps = {
   profile: UserProfile
   authSession: AuthSession | null
-  onChangeProfile: (field: keyof Omit<UserProfile, 'avatarDataUrl'>, value: string) => void
+  onChangeProfile: (updates: Partial<UserProfile>) => void
   onUploadAvatar: (files: FileList | null) => void
   onRemoveAvatar: () => void
   onResetProfile: () => void
@@ -80,6 +81,11 @@ export function DesktopProfileScreen({
       <section className="profile-card">
         <h3>Registrovaný uživatel</h3>
         <ProfileAuthInfo authSession={authSession} />
+      </section>
+
+      <section className="profile-card">
+        <h3>Kontaktní e-mail</h3>
+        <ProfileContactEmail profile={profile} onChangeProfile={onChangeProfile} />
       </section>
 
       <section className="profile-card">

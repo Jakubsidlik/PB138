@@ -1,4 +1,5 @@
 // Auth & User types
+export type UserRole = 'student' | 'registered' | 'public'
 export interface AuthSession {
   userId: number | string
   role: 'REGISTERED' | 'ADMIN'
@@ -19,6 +20,7 @@ export interface User {
   birthDate?: string | null
   bio?: string | null
   avatarDataUrl?: string | null
+  contactEmail?: string | null
   createdAt?: string
   updatedAt?: string
 }
@@ -360,10 +362,14 @@ export type UserProfile = {
   fullName: string
   email: string
   school: string
+  faculty: string
   studyMajor: string
   studyYear: string
   studyType: string
+  birthDate: string | null
+  bio: string | null
   avatarDataUrl: string | null
+  contactEmail: string | null
 }
 
 export type SubjectVisual = {

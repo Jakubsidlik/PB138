@@ -1,9 +1,9 @@
 import React from 'react'
-import { Button } from '../../components/ui/button'
-import { DesktopSubjectMeta, DesktopSubjectTone, Subject, ManagedFile, Lesson } from '../../app/types'
-import { SubjectDetailModal } from '../../components/shared/SubjectDetailModal'
-import { SubjectActionButtons } from '../../components/shared/SubjectActionButtons'
-import { SubjectGrid } from '../../components/shared/SubjectGrid'
+import { Button } from '../components/ui/button'
+import { DesktopSubjectMeta, DesktopSubjectTone, Subject, ManagedFile, Lesson } from '../app/types'
+import { SubjectDetailModal } from '../components/shared/SubjectDetailModal'
+import { SubjectActionButtons } from '../components/shared/SubjectActionButtons'
+import { SubjectGrid } from '../components/shared/SubjectGrid'
 
 type DesktopSubject = Subject & {
   meta: DesktopSubjectMeta
