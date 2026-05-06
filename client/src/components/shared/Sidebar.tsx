@@ -1,5 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import ghostLogo from '../../assets/ghostLogo.jpg'
+import { Button } from '../ui/button'
 
 type SidebarProps = {
   onLogout: () => void
@@ -21,8 +22,13 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
+<<<<<<< Updated upstream
       <button
+=======
+      <Button 
+>>>>>>> Stashed changes
         type="button"
+        variant="ghost"
         className="brand-button"
         onClick={handleLogoClick}
         aria-label="Přejít na hlavní stránku"
@@ -41,7 +47,7 @@ export function Sidebar({
           />
           <h1>Lonely Student</h1>
         </div>
-      </button>
+      </Button>
 
       <nav className="menu">
         <div className="menu-main">
@@ -90,6 +96,7 @@ export function Sidebar({
             className={`menu-item ${pathname === '/profile' ? 'active' : ''}`}
           >
             Nastavení
+<<<<<<< Updated upstream
           </Link>
 
           <button
@@ -100,6 +107,17 @@ export function Sidebar({
             Odhlásit se
           </button>
 
+=======
+          </a>
+          <Button 
+            type="button" 
+            variant="ghost"
+            className="menu-item menu-logout" 
+            onClick={onLogout}
+          >
+            Odhlásit se
+          </Button>
+>>>>>>> Stashed changes
         </div>
       </nav>
     </aside>

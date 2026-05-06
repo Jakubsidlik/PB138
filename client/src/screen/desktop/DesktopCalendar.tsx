@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../../components/ui/button'
 import { CalendarCell, CalendarEvent, EventMeta } from '../../app/types'
 import { formatDateIso } from '../../app/utils'
 
@@ -42,7 +43,7 @@ export function DesktopCalendarScreen({
         </div>
         <div className="desktop-calendar-controls">
           <div className="month-switch">
-            <button
+            <Button
               type="button"
               onClick={() =>
                 setDisplayMonth(
@@ -52,9 +53,9 @@ export function DesktopCalendarScreen({
               }
             >
               ‹
-            </button>
+            </Button>
             <span>{monthLabel}</span>
-            <button
+            <Button
               type="button"
               onClick={() =>
                 setDisplayMonth(
@@ -64,11 +65,11 @@ export function DesktopCalendarScreen({
               }
             >
               ›
-            </button>
+            </Button>
           </div>
-          <button type="button" className="primary" onClick={addDesktopEvent}>
+          <Button type="button" className="primary" onClick={addDesktopEvent}>
             Přidat událost
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -87,7 +88,7 @@ export function DesktopCalendarScreen({
               const isSelected = cell.iso === selectedDateIso
 
               return (
-                <button
+                <Button
                   key={cell.iso}
                   type="button"
                   className={`month-cell ${cell.inCurrentMonth ? '' : 'muted'} ${
@@ -106,7 +107,7 @@ export function DesktopCalendarScreen({
                       </span>
                     ))}
                   </div>
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -144,9 +145,9 @@ export function DesktopCalendarScreen({
                         <p>{meta.time}</p>
                         <small>{meta.location}</small>
                       </div>
-                      <button type="button" className="desktop-event-remove" onClick={() => removeEvent(event.id)}>
+                      <Button type="button" className="desktop-event-remove" onClick={() => removeEvent(event.id)}>
                         Odebrat
-                      </button>
+                      </Button>
                     </article>
                   )
                 })
@@ -158,20 +159,20 @@ export function DesktopCalendarScreen({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3>Události</h3>
               <div className="event-filter-buttons">
-                <button
+                <Button
                   type="button"
                   onClick={() => setEventFilter('future')}
                   className={eventFilter === 'future' ? 'active' : ''}
                 >
                   Budoucí
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => setEventFilter('past')}
                   className={eventFilter === 'past' ? 'active' : ''}
                 >
                   Minulé
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -207,9 +208,9 @@ export function DesktopCalendarScreen({
                           <p>{meta.time}</p>
                           <small>{meta.location}</small>
                         </div>
-                        <button type="button" className="desktop-event-remove" onClick={() => removeEvent(event.id)}>
+                        <Button type="button" className="desktop-event-remove" onClick={() => removeEvent(event.id)}>
                           Odebrat
-                        </button>
+                        </Button>
                       </article>
                     )
                   })
@@ -222,3 +223,5 @@ export function DesktopCalendarScreen({
     </section>
   )
 }
+
+

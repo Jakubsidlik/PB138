@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../../components/ui/button'
 import { FileTab, ManagedFile } from '../../app/types'
 
 type MobileFilesScreenProps = {
@@ -27,23 +28,23 @@ export function MobileFilesScreen({
   return (
     <section className="mobile-files-screen" id="files-mobile">
       <div className="file-tabs">
-        <button type="button" className={fileTab === 'all' ? 'active' : ''} onClick={() => setFileTab('all')}>
+        <Button type="button" className={fileTab === 'all' ? 'active' : ''} onClick={() => setFileTab('all')}>
           Všechny
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           className={fileTab === 'recent' ? 'active' : ''}
           onClick={() => setFileTab('recent')}
         >
           Nedávné
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           className={fileTab === 'shared' ? 'active' : ''}
           onClick={() => setFileTab('shared')}
         >
           Sdílené
-        </button>
+        </Button>
       </div>
 
       <section className="files-section">
@@ -62,14 +63,14 @@ export function MobileFilesScreen({
                   {file.shared ? 'Sdílený' : 'Soukromý'} • {file.size}
                 </small>
               </div>
-              <button
+              <Button
                 type="button"
                 className="recent-file-more"
                 aria-label="Více možností"
                 onClick={() => onManageFile(file.id)}
               >
                 ⋮
-              </button>
+              </Button>
             </article>
           ))}
         </div>
@@ -107,3 +108,5 @@ export function MobileFilesScreen({
     </section>
   )
 }
+
+

@@ -71,11 +71,11 @@ return (
                 <p>📝 {subject.notes} poznámek</p>
             </div>
             <div className="desktop-files-tabs" onClick={(e) => e.stopPropagation()}>
-                <button type="button" onClick={() => onEditSubject(subject.id)}>Upravit</button>
-                <button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
+                <Button type="button" onClick={() => onEditSubject(subject.id)}>Upravit</Button>
+                <Button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
                 {subject.archived ? 'Obnovit' : 'Archivovat'}
-                </button>
-                <button type="button" onClick={() => onDeleteSubject(subject.id)}>Smazat</button>
+                </Button>
+                <Button type="button" onClick={() => onDeleteSubject(subject.id)}>Smazat</Button>
             </div>
             </article>
         )
@@ -86,9 +86,9 @@ return (
         <p className="subjects-empty">Nenalezeny žádné předměty.</p>
     ) : null}
 
-    <button type="button" className="subjects-fab" aria-label="Přidat předmět" onClick={onCreateSubject}>
+    <Button type="button" className="subjects-fab" aria-label="Přidat předmět" onClick={onCreateSubject}>
         +
-    </button>
+    </Button>
 
     <SubjectDetailModal 
         subject={selectedSubject}
@@ -100,3 +100,5 @@ return (
     </section>
 )
 }
+
+

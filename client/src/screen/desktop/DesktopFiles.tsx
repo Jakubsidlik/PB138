@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../../components/ui/button'
 import { ManagedFile } from '../../app/types'
 
 type DesktopFilesScreenProps = {
@@ -77,30 +78,30 @@ export function DesktopFilesScreen({
                     <td>{file.size}</td>
                     <td>
                       <div className="desktop-view-switch">
-                        <button
+                        <Button
                           type="button"
                           className="desktop-file-download"
                           onClick={() => onToggleFileShared(file.id)}
                           title={file.shared ? 'Odebrat sdílení' : 'Sdílet'}
                         >
                           {file.shared ? '👥' : '🔒'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
                           className="desktop-file-download"
                           onClick={() => onManageFile(file.id)}
                           title="Upravit"
                         >
                           ✎
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
                           className="desktop-file-download"
                           onClick={() => onDeleteFile(file.id)}
                           title="Smazat"
                         >
                           🗑
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -117,9 +118,9 @@ export function DesktopFilesScreen({
           <div className="desktop-upload-icon">☁️</div>
           <h3>Rychlé nahrávání</h3>
           <p>Přetáhněte soubory sem nebo klikněte pro výběr z počítače.</p>
-          <button type="button" onClick={() => fileInputRef.current?.click()}>
+          <Button type="button" onClick={() => fileInputRef.current?.click()}>
             Procházet soubory
-          </button>
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
@@ -135,3 +136,5 @@ export function DesktopFilesScreen({
     </section>
   )
 }
+
+

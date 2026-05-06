@@ -1,5 +1,6 @@
 import React from 'react'
 import { useSignIn, useSignUp } from '@clerk/clerk-react'
+import { Button } from '../ui/button'
 
 export function AuthScreen() {
 const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn()
@@ -148,24 +149,24 @@ return (
             <div className="auth-choice-content">
                 <h1>Vítej!</h1>
                 <p>Co chceš udělat?</p>
-                <button className="auth-choice-btn auth-choice-btn-login" onClick={() => setMobileMode('login')}>
+                <Button className="auth-choice-btn auth-choice-btn-login" onClick={() => setMobileMode('login')}>
                 Přihlásit se
-                </button>
-                <button className="auth-choice-btn auth-choice-btn-register" onClick={() => setMobileMode('register')}>
+                </Button>
+                <Button className="auth-choice-btn auth-choice-btn-register" onClick={() => setMobileMode('register')}>
                 Registrace
-                </button>
+                </Button>
             </div>
             </div>
         ) : mobileMode === 'login' ? (
             <div className="auth-form-screen">
-            <button className="auth-back-btn" onClick={() => { pendingSignInCode ? setPendingSignInCode(null) : setMobileMode('choice'); setError(''); setCode(''); }}>← Zpět</button>
+            <Button type="button" variant="ghost" className="auth-back-btn" onClick={() => { pendingSignInCode ? setPendingSignInCode(null) : setMobileMode('choice'); setError(''); setCode(''); }}>← Zpět</Button>
             {pendingSignInCode ? (
                 <form onSubmit={handleSignInCodeSubmit}>
                     <h1>Ověření</h1>
                     <span>{pendingSignInCode === 'email_code' ? 'Zadej kód zaslaný na email' : 'Zadej kód z aplikace'}</span>
                     <input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
                     {error && <span className="auth-error">{error}</span>}
-                    <button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</button>
+                    <Button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</Button>
                 </form>
             ) : (
                 <form onSubmit={handleSignInSubmit}>
@@ -173,20 +174,20 @@ return (
                     <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
                     <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                     {error && <span className="auth-error">{error}</span>}
-                    <button type="submit">{isLoading ? 'Čekám...' : 'Přihlásit se'}</button>
+                    <Button type="submit">{isLoading ? 'Čekám...' : 'Přihlásit se'}</Button>
                 </form>
             )}
             </div>
         ) : (
             <div className="auth-form-screen">
-            <button className="auth-back-btn" onClick={() => { pendingVerification ? setPendingVerification(false) : setMobileMode('choice'); setError(''); }}>← Zpět</button>
+            <Button type="button" variant="ghost" className="auth-back-btn" onClick={() => { pendingVerification ? setPendingVerification(false) : setMobileMode('choice'); setError(''); }}>← Zpět</Button>
             {pendingVerification ? (
                 <form onSubmit={handleVerificationSubmit}>
                     <h1>Ověření</h1>
                     <span>Zadej kód zaslaný na email</span>
                     <input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
                     {error && <span className="auth-error">{error}</span>}
-                    <button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</button>
+                    <Button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</Button>
                 </form>
             ) : (
                 <form onSubmit={handleSignUpSubmit}>
@@ -195,7 +196,7 @@ return (
                     <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
                     <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                     {error && <span className="auth-error">{error}</span>}
-                    <button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</button>
+                    <Button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</Button>
                 </form>
             )}
             </div>
@@ -211,7 +212,7 @@ return (
                 <span>Zadej kód zaslaný na email</span>
                 <input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
                 {error && isSignUp && <span className="auth-error">{error}</span>}
-                <button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</button>
+                <Button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</Button>
             </form>
         ) : (
             <form onSubmit={handleSignUpSubmit}>
@@ -220,7 +221,7 @@ return (
                 <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
                 <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                 {error && isSignUp && <span className="auth-error">{error}</span>}
-                <button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</button>
+                <Button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</Button>
             </form>
         )}
         </div>
@@ -232,7 +233,7 @@ return (
                 <span>{pendingSignInCode === 'email_code' ? 'Zadej kód zaslaný na email' : 'Zadej kód z aplikace'}</span>
                 <input type="text" placeholder="Kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
                 {error && !isSignUp && <span className="auth-error">{error}</span>}
-                <button type="submit">{isLoading ? 'Čekám...' : 'Ověřit kód'}</button>
+                <Button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</Button>
             </form>
         ) : (
             <form onSubmit={handleSignInSubmit}>
@@ -241,7 +242,7 @@ return (
                 <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
                 <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                 {error && !isSignUp && <span className="auth-error">{error}</span>}
-                <button type="submit">{isLoading ? 'Čekám...' : 'Přihlásit se'}</button>
+                <Button type="submit">{isLoading ? 'Čekám...' : 'Přihlásit se'}</Button>
             </form>
         )}
         </div>
@@ -251,12 +252,12 @@ return (
             <div className="auth-overlay-panel auth-overlay-left">
             <h1>Ahoj!</h1>
             <p>Pokud už máš účet, přihlaš se</p>
-            <button className="auth-ghost" onClick={() => { setIsSignUp(false); setError(''); setPendingSignInCode(null); setPendingVerification(false); }} type="button">Přihlášení</button>
+            <Button className="auth-ghost" onClick={() => { setIsSignUp(false); setError(''); setPendingSignInCode(null); setPendingVerification(false); }} type="button">Přihlášení</Button>
             </div>
             <div className="auth-overlay-panel auth-overlay-right">
             <h1>Vítej!</h1>
             <p>Zadej své údaje a začni s námi svou cestu</p>
-            <button className="auth-ghost" onClick={() => { setIsSignUp(true); setError(''); setPendingSignInCode(null); setPendingVerification(false); }} type="button">Registrace</button>
+            <Button className="auth-ghost" onClick={() => { setIsSignUp(true); setError(''); setPendingSignInCode(null); setPendingVerification(false); }} type="button">Registrace</Button>
             </div>
         </div>
         </div>

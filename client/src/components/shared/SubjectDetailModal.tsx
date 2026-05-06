@@ -1,5 +1,6 @@
 import React from 'react'
 import { Subject, ManagedFile, Lesson } from '../../app/types'
+import { Button } from '../ui/button'
 
 type SubjectDetailModalProps = {
   subject: Subject | null
@@ -56,9 +57,9 @@ export function SubjectDetailModal({
       <div className="subject-detail-modal" onClick={(e) => e.stopPropagation()}>
         <div className="subject-detail-modal-header">
           <h2>{subject.name}</h2>
-          <button type="button" className="subject-detail-modal-close" onClick={onClose}>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="subject-detail-modal-close">
             ✕
-          </button>
+          </Button>
         </div>
 
         <div className="subject-detail-modal-body">
@@ -89,13 +90,13 @@ export function SubjectDetailModal({
                 onChange={handleAddFile}
                 style={{ display: 'none' }}
               />
-              <button 
+              <Button 
                 type="button" 
                 className="subject-detail-add-button"
                 onClick={() => fileInputRef.current?.click()}
               >
                 + Přidat soubor
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -110,14 +111,14 @@ export function SubjectDetailModal({
                 className="subject-note-input"
                 rows={3}
               />
-              <button 
+              <Button 
                 type="button" 
                 className="subject-detail-add-button"
                 onClick={handleAddNote}
                 disabled={!noteText.trim()}
               >
                 Přidat poznámku
-              </button>
+              </Button>
             </div>
 
             {subjectLessons.length > 0 ? (
@@ -138,9 +139,9 @@ export function SubjectDetailModal({
         </div>
 
         <div className="subject-detail-modal-footer">
-          <button type="button" className="subject-detail-modal-button" onClick={onClose}>
+          <Button type="button" className="subject-detail-modal-button" onClick={onClose}>
             Zavřít
-          </button>
+          </Button>
         </div>
       </div>
     </div>

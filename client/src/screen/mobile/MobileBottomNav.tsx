@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { Button } from '../../components/ui/button'
 import { Calendar, Home, Files, User, Plus, CheckSquare, BookMarked } from 'lucide-react'
 import { useRouter } from '@tanstack/react-router'
 
@@ -31,7 +32,7 @@ export function MobileBottomNav() {
   return (
     <nav className="mobile-bottom-nav" aria-label="Mobilní navigace">
       <div className="nav-dropdown-wrapper" ref={dropdownRef}>
-        <button
+        <Button
           className={`nav-dropdown-btn ${isDropdownOpen ? 'active' : ''}`}
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           aria-label="Otevřít menu"
@@ -39,9 +40,10 @@ export function MobileBottomNav() {
         >
           <Plus size={24} />
           <span className="nav-label">Více</span>
-        </button>
+        </Button>
         {isDropdownOpen && (
           <div className="nav-dropdown-menu">
+<<<<<<< Updated upstream
             <button
               onClick={() => handleNavigateTo('/tasks')}
             >
@@ -56,10 +58,29 @@ export function MobileBottomNav() {
             </button>
             <button
               onClick={() => handleNavigateTo('/study')}
+=======
+            <Button
+              className={activeMobileNav === 'tasks' ? 'active' : ''}
+              onClick={() => handleDropdownItemClick('tasks')}
+            >
+              <CheckSquare size={20} />
+              <span>Úkoly</span>
+            </Button>
+            <Button
+              className={activeMobileNav === 'files' ? 'active' : ''}
+              onClick={() => handleDropdownItemClick('files')}
+            >
+              <Files size={20} />
+              <span>Soubory</span>
+            </Button>
+            <Button
+              className={activeMobileNav === 'study-plan' ? 'active' : ''}
+              onClick={() => handleDropdownItemClick('study-plan')}
+>>>>>>> Stashed changes
             >
               <BookMarked size={20} />
               <span>Studijní plán</span>
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -84,3 +105,5 @@ export function MobileBottomNav() {
     </nav>
   )
 }
+
+

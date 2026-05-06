@@ -1,6 +1,7 @@
 import React from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { getDailyMotto } from '../../app/utils'
+import { Button } from '../ui/button'
 
 type TopbarProps = {
   isCalendarScreen: boolean
@@ -45,53 +46,61 @@ export function Topbar({
       <div className="topbar-mobile">
         {isProfileScreen ? (
           <>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               className="mobile-header-icon"
               aria-label="Zpět"
               onClick={handleBackClick}
             >
               ←
-            </button>
+            </Button>
             <h2 className="mobile-subjects-title">Nastavení profilu</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
           </>
         ) : isCalendarScreen ? (
           <>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               className="mobile-header-icon"
               aria-label="Zpět"
               onClick={handleBackClick}
             >
               ←
-            </button>
+            </Button>
             <h2 className="mobile-subjects-title">Kalendář</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
           </>
         ) : isTasksScreen ? (
           <>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               className="mobile-header-icon"
               aria-label="Zpět"
               onClick={handleBackClick}
             >
               ←
-            </button>
+            </Button>
             <h2 className="mobile-subjects-title">Úkoly</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
           </>
         ) : isStudyPlanScreen ? (
           <>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               className="mobile-header-icon"
               aria-label="Zpět"
               onClick={handleBackClick}
             >
               ←
-            </button>
+            </Button>
             <h2 className="mobile-subjects-title">Studijní plán</h2>
             <div className="mobile-header-icon" aria-hidden="true" />
           </>
@@ -105,14 +114,16 @@ export function Topbar({
 
         {isTasksScreen || isStudyPlanScreen || isCalendarScreen || isProfileScreen ? null : isFilesScreen ? (
           <div className="mobile-files-actions">
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="icon"
               className="mobile-notification mobile-notification-primary"
               aria-label="Přidat soubor"
               onClick={() => fileInputRef.current?.click()}
             >
               ＋
-            </button>
+            </Button>
           </div>
         ) : null}
       </div>
@@ -121,7 +132,12 @@ export function Topbar({
         <div className="desktop-title-wrap">
           <p className="subtitle">{getDailyMotto()}</p>
         </div>
-        <button type="button" className="profile" onClick={onOpenProfile}>
+        <Button 
+          type="button" 
+          variant="ghost"
+          className="profile" 
+          onClick={onOpenProfile}
+        >
           <div>
             <p className="name">{profileName}</p>
           </div>
@@ -132,7 +148,7 @@ export function Topbar({
               initials
             )}
           </div>
-        </button>
+        </Button>
       </div>
     </header>
   )

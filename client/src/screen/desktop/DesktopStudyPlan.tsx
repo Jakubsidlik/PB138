@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../../components/ui/button'
 import { DesktopSubjectMeta, DesktopSubjectTone, Subject, ManagedFile, Lesson } from '../../app/types'
 import { SubjectDetailModal } from '../../components/shared/SubjectDetailModal'
 
@@ -55,27 +56,27 @@ export function DesktopStudyPlan({
       </div>
 
       <div className="desktop-subjects-filters">
-        <button
+        <Button
           type="button"
           className={subjectFilter === 'all' ? 'active' : ''}
           onClick={() => setSubjectFilter('all')}
         >
           Všechny
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           className={subjectFilter === 'active' ? 'active' : ''}
           onClick={() => setSubjectFilter('active')}
         >
           Aktivní
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           className={subjectFilter === 'archived' ? 'active' : ''}
           onClick={() => setSubjectFilter('archived')}
         >
           Archivované
-        </button>
+        </Button>
       </div>
 
       <div className="desktop-subjects-grid">
@@ -108,30 +109,30 @@ export function DesktopStudyPlan({
               </div>
 
               <div className="desktop-files-tabs" onClick={(e) => e.stopPropagation()}>
-                <button type="button" onClick={() => onEditSubject(subject.id)}>
+                <Button type="button" onClick={() => onEditSubject(subject.id)}>
                   Upravit
-                </button>
+                </Button>
                 {subject.archived ? (
-                  <button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
+                  <Button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
                     Obnovit
-                  </button>
+                  </Button>
                 ) : (
-                  <button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
+                  <Button type="button" onClick={() => onToggleArchiveSubject(subject.id)}>
                     Archivovat
-                  </button>
+                  </Button>
                 )}
-                <button type="button" onClick={() => onDeleteSubject(subject.id)}>
+                <Button type="button" onClick={() => onDeleteSubject(subject.id)}>
                   Smazat
-                </button>
+                </Button>
               </div>
             </div>
           </article>
         ))}
 
-        <button type="button" className="desktop-subject-add-card" onClick={onCreateSubject}>
+        <Button type="button" className="desktop-subject-add-card" onClick={onCreateSubject}>
           <div>＋</div>
           <span>Zapsat další předmět</span>
-        </button>
+        </Button>
       </div>
 
       <SubjectDetailModal 
@@ -145,3 +146,5 @@ export function DesktopStudyPlan({
     </section>
   )
 }
+
+

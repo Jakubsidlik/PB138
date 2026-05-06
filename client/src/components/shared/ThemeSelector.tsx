@@ -1,5 +1,6 @@
 import React from 'react'
 import { ThemeMode, AccentPalette } from '../../app/types'
+import { Button } from '../ui/button'
 
 type ThemeSelectorProps = {
   currentTheme: ThemeMode
@@ -31,15 +32,16 @@ export function ThemeSelector({
 
   return (
     <div className="theme-selector">
-      <button
+      <Button
         type="button"
+        variant="outline"
         className="theme-selector-trigger"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Otevřít nastavení tématu"
       >
         <span>Nastavení vzhledu</span>
         <span aria-hidden="true">{isOpen ? '✕' : '›'}</span>
-      </button>
+      </Button>
 
       {isOpen && (
         <div className="theme-selector-panel">
@@ -47,16 +49,17 @@ export function ThemeSelector({
             <h4>Režim</h4>
             <div className="theme-options">
               {themeOptions.map((option) => (
-                <button
+                <Button
                   key={option.value}
                   type="button"
+                  variant={currentTheme === option.value ? 'default' : 'outline'}
                   className={`theme-option ${currentTheme === option.value ? 'active' : ''}`}
                   onClick={() => {
                     onThemeChange(option.value)
                   }}
                 >
                   {option.label}
-                </button>
+                </Button>
               ))}
             </div>
           </section>
@@ -65,9 +68,11 @@ export function ThemeSelector({
             <h4>Barva</h4>
             <div className="palette-options">
               {paletteOptions.map((option) => (
-                <button
+                <Button
                   key={option.value}
                   type="button"
+                  variant={currentPalette === option.value ? 'default' : 'outline'}
+                  size="icon"
                   className={`palette-option palette-${option.value} ${currentPalette === option.value ? 'active' : ''}`}
                   onClick={() => {
                     onPaletteChange(option.value)
@@ -75,7 +80,7 @@ export function ThemeSelector({
                   title={option.label}
                 >
                   <span className="palette-dot" />
-                </button>
+                </Button>
               ))}
             </div>
           </section>

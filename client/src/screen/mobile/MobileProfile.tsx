@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../../components/ui/button'
 import { AuthSession, UserProfile, ThemeMode, AccentPalette } from '../../app/types'
 import { ThemeSelector } from '../../components/shared/ThemeSelector'
 
@@ -62,14 +63,14 @@ export function MobileProfileScreen({
             </div>
           )}
 
-          <button
+          <Button
             type="button"
             className="mobile-profile-avatar-action"
             onClick={() => fileInputRef.current?.click()}
             aria-label="Nahrát profilovou fotku"
           >
             📷
-          </button>
+          </Button>
 
           <input
             ref={fileInputRef}
@@ -86,9 +87,9 @@ export function MobileProfileScreen({
         <h2>{profile.fullName || 'Uživatel'}</h2>
         <p>{profile.studyType}</p>
 
-        <button type="button" className="mobile-profile-remove-photo" onClick={onRemoveAvatar}>
+        <Button type="button" className="mobile-profile-remove-photo" onClick={onRemoveAvatar}>
           Odebrat fotku
-        </button>
+        </Button>
       </div>
 
       <section className="mobile-profile-section">
@@ -162,22 +163,24 @@ export function MobileProfileScreen({
       
       <section className="mobile-profile-section">
         <div className="profile-actions-row">
-          <button type="button" className="secondary" onClick={onResetProfile}>
+          <Button type="button" className="secondary" onClick={onResetProfile}>
             Zahodit změny
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             className="primary"
             disabled={!hasUnsavedChanges || isSavingProfile}
             onClick={onSaveProfile}
           >
             {isSavingProfile ? 'Ukládám...' : 'Uložit'}
-          </button>
+          </Button>
         </div>
-        <button type="button" className="mobile-profile-logout" onClick={onLogout}>
+        <Button type="button" className="mobile-profile-logout" onClick={onLogout}>
           Odhlásit se
-        </button>
+        </Button>
       </section>
     </section>
   )
 }
+
+

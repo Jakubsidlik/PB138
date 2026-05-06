@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../../components/ui/button'
 import { CalendarCell, CalendarEvent, EventMeta } from '../../app/types'
 import { formatDateIso } from '../../app/utils'
 
@@ -36,7 +37,7 @@ export function MobileCalendarScreen({
     <section className="mobile-calendar-screen" id="calendar-mobile">
       <div className="mobile-calendar-panel">
         <div className="mobile-calendar-month-head">
-          <button
+          <Button
             type="button"
             className="mobile-month-arrow"
             aria-label="Předchozí měsíc"
@@ -48,9 +49,9 @@ export function MobileCalendarScreen({
             }
           >
             ‹
-          </button>
+          </Button>
           <h3>{monthLabel}</h3>
-          <button
+          <Button
             type="button"
             className="mobile-month-arrow"
             aria-label="Další měsíc"
@@ -62,7 +63,7 @@ export function MobileCalendarScreen({
             }
           >
             ›
-          </button>
+          </Button>
         </div>
 
         <div className="mobile-month-grid">
@@ -77,7 +78,7 @@ export function MobileCalendarScreen({
             const isSelected = cell.iso === selectedDateIso
 
             return (
-              <button
+              <Button
                 key={cell.iso}
                 type="button"
                 className={`mobile-month-cell ${cell.inCurrentMonth ? '' : 'muted'} ${
@@ -87,7 +88,7 @@ export function MobileCalendarScreen({
               >
                 <span>{cell.date.getDate()}</span>
                 {dayEvents.length > 0 ? <i /> : null}
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -128,14 +129,14 @@ export function MobileCalendarScreen({
                     <p>{meta.location}</p>
                   </div>
                   <div className="mobile-calendar-event-time">{meta.time.split(' - ')[0]}</div>
-                  <button
+                  <Button
                     type="button"
                     className="recent-file-more"
                     aria-label="Odstranit událost"
                     onClick={() => removeEvent(event.id)}
                   >
                     ×
-                  </button>
+                  </Button>
                 </article>
               )
             })
@@ -149,20 +150,20 @@ export function MobileCalendarScreen({
         </div>
 
         <div className="event-filter-buttons">
-          <button
+          <Button
             type="button"
             onClick={() => setEventFilter('future')}
             className={eventFilter === 'future' ? 'active' : ''}
           >
             Budoucí
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => setEventFilter('past')}
             className={eventFilter === 'past' ? 'active' : ''}
           >
             Minulé
-          </button>
+          </Button>
         </div>
 
         <div className="mobile-calendar-events-list">
@@ -199,14 +200,14 @@ export function MobileCalendarScreen({
                       <p>{meta.location}</p>
                     </div>
                     <div className="mobile-calendar-event-time">{meta.time.split(' - ')[0]}</div>
-                    <button
+                    <Button
                       type="button"
                       className="recent-file-more"
                       aria-label="Odstranit událost"
                       onClick={() => removeEvent(event.id)}
                     >
                       ×
-                    </button>
+                    </Button>
                   </article>
                 )
               })
@@ -215,9 +216,11 @@ export function MobileCalendarScreen({
         </div>
       </section>
 
-      <button type="button" className="mobile-calendar-fab" aria-label="Přidat událost" onClick={addDesktopEvent}>
+      <Button type="button" className="mobile-calendar-fab" aria-label="Přidat událost" onClick={addDesktopEvent}>
         +
-      </button>
+      </Button>
     </section>
   )
 }
+
+

@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../../components/ui/button'
 import { AuthSession, UserProfile, ThemeMode, AccentPalette } from '../../app/types'
 import { ThemeSelector } from '../../components/shared/ThemeSelector'
 
@@ -63,20 +64,20 @@ export function DesktopProfileScreen({
                   .toUpperCase() || 'U'}
               </div>
             )}
-            <button type="button" className="profile-photo-edit" onClick={() => fileInputRef.current?.click()}>
+            <Button type="button" className="profile-photo-edit" onClick={() => fileInputRef.current?.click()}>
               📷
-            </button>
+            </Button>
           </div>
 
           <div className="profile-photo-actions">
             <p>Nahraj JPG nebo PNG (max 5MB) nebo odeber současný avatar.</p>
             <div>
-              <button type="button" className="primary" onClick={() => fileInputRef.current?.click()}>
+              <Button type="button" className="primary" onClick={() => fileInputRef.current?.click()}>
                 Nahrát novou fotku
-              </button>
-              <button type="button" onClick={onRemoveAvatar}>
+              </Button>
+              <Button type="button" onClick={onRemoveAvatar}>
                 Odebrat
-              </button>
+              </Button>
             </div>
             <input
               ref={fileInputRef}
@@ -165,18 +166,20 @@ export function DesktopProfileScreen({
       </section>
 
       <div className="profile-actions-row">
-        <button type="button" className="secondary" onClick={onResetProfile}>
+        <Button type="button" className="secondary" onClick={onResetProfile}>
           Zahodit změny
-        </button>
-        <button 
+        </Button>
+        <Button 
           type="button" 
           className="primary" 
           disabled={!hasUnsavedChanges || isSavingProfile}
           onClick={onSaveProfile}
         >
           {isSavingProfile ? 'Ukládám...' : 'Uložit'}
-        </button>
+        </Button>
       </div>
     </section>
   )
 }
+
+

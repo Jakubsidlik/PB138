@@ -1,3 +1,22 @@
+<<<<<<< Updated upstream
+=======
+@import "@fontsource-variable/geist";
+
+:root {
+  --border: 214 31% 35%;
+  --input: 214 31% 35%;
+  --ring: 222 47% 11%;
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+>>>>>>> Stashed changes
 * {
   box-sizing: border-box;
 }

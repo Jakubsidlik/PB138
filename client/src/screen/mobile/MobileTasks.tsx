@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../../components/ui/button'
 import { useDashboardState } from '../../app/useDashboardState'
 
 export function MobileTasks() {
@@ -36,7 +37,7 @@ export function MobileTasks() {
                     />
                     <span>{task.title}</span>
                   </label>
-                  <button onClick={() => state.deleteTask(task.id)} className="btn btn-danger btn-sm" aria-label="Odstranit úkol">Odstranit</button>
+                  <Button onClick={() => state.deleteTask(task.id)} className="btn btn-danger btn-sm" aria-label="Odstranit úkol">Odstranit</Button>
                 </li>
               ))}
             </ul>
@@ -45,10 +46,11 @@ export function MobileTasks() {
           )}
         </div>
 
-        <button type="button" className="mobile-tasks-fab" aria-label="Přidat úkol" onClick={state.addTask}>
+        <Button type="button" className="mobile-tasks-fab" aria-label="Přidat úkol" onClick={state.addTask}>
           +
-        </button>
+        </Button>
       </div>
     </div>
   )
 }
+

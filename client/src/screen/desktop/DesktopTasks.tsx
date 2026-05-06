@@ -1,4 +1,5 @@
 import { Task } from '../../app/types'
+import { Button } from '../../components/ui/button'
 
 type DesktopTasksScreenProps = {
     tasks: Task[]
@@ -32,7 +33,7 @@ return (
     </div>
 
     <div className="desktop-tasks-controls">
-        <button onClick={addTask} className="btn btn-primary">+ Přidat úkol</button>
+        <Button onClick={addTask} className="btn btn-primary">+ Přidat úkol</Button>
     </div>
 
     <div className="desktop-tasks-list">
@@ -44,14 +45,14 @@ return (
                 <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
                 <span>{task.title}</span>
                 </label>
-                                <button
+                                <Button
                                     onClick={() => deleteTask(task.id)}
                                     className="task-delete-btn"
                                     aria-label={`Odstranit úkol ${task.title}`}
                                     title="Odstranit úkol"
                                 >
                                     ×
-                                </button>
+                                </Button>
             </li>
             ))}
         </ul>
@@ -62,3 +63,5 @@ return (
     </section>
 )
 }
+
+
