@@ -2,8 +2,8 @@ import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
 import cs from 'date-fns/locale/cs'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
-import { Badge } from '../ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Badge } from '../ui/badge-old'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card-old'
 import { PlannerCalendarItem, UserRole } from '../../app/types'
 
 type PlannerCalendarProps = {
