@@ -204,7 +204,7 @@ eventsRouter.put('/', async (req, res, next) => {
     const incomingIdSet = new Set(typedEvents.map((event) => BigInt(event.id).toString()))
 
     await db.transaction(async (transaction) => {
-      const subjectIds = Array.from(new Set(typedEvents.map((event) => event.subjectId).filter((id) => id !== null))) as number[]
+      const subjectIds = Array.from(new Set(typedEvents.map((event) => event.subjectId).filter((id) => id != null))) as number[]
       const validSubjects = subjectIds.length > 0
         ? await transaction.select({ id: subjects.id }).from(subjects).where(inArray(subjects.id, subjectIds.map((id) => BigInt(id))))
         : []

@@ -138,6 +138,7 @@ export function useDashboardState() {
       }
 
       return fetch(input, {
+        cache: 'no-store',
         ...init,
         headers,
       })
@@ -160,10 +161,11 @@ export function useDashboardState() {
     }
 
     localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
+    setIsHydrated(false)
   }, [authSession])
 
   React.useEffect(() => {
-    if (!isLoaded) return
+    if (!isLoaded || isHydrated) return
 
     const hydrateData = async () => {
       if (!authSession && !isSignedIn) {
@@ -183,72 +185,50 @@ export function useDashboardState() {
       let loadedProfile = localProfile
 
       try {
-        const tasksResponse = await apiFetch('/api/tasks')
-        if (tasksResponse.ok) {
-          const serverTasks: unknown = await tasksResponse.json()
-          if (Array.isArray(serverTasks)) {
-            loadedTasks = serverTasks as Task[]
-          }
-        }
-      } catch {
-      }
+        const [
+          tasksRes,
+          eventsRes,
+          subjectsRes,
+          filesRes,
+          lessonsRes,
+          profileRes
+        ] = await Promise.allSettled([
+          apiFetch('/api/tasks'),
+          apiFetch('/api/events'),
+          apiFetch('/api/subjects'),
+          apiFetch('/api/files'),
+          apiFetch('/api/lessons'),
+          apiFetch('/api/profile')
+        ])
 
-      try {
-        const eventsResponse = await apiFetch('/api/events')
-        if (eventsResponse.ok) {
-          const serverEvents: unknown = await eventsResponse.json()
-          if (Array.isArray(serverEvents)) {
-            loadedEvents = serverEvents as CalendarEvent[]
-          }
+        if (tasksRes.status === 'fulfilled' && tasksRes.value.ok) {
+          const serverTasks = await tasksRes.value.json()
+          if (Array.isArray(serverTasks)) loadedTasks = serverTasks as Task[]
         }
-      } catch {
-      }
-
-      try {
-        const subjectsResponse = await apiFetch('/api/subjects')
-        if (subjectsResponse.ok) {
-          const serverSubjects: unknown = await subjectsResponse.json()
-          if (Array.isArray(serverSubjects)) {
-            loadedSubjects = serverSubjects as typeof subjectsSeed
-          }
+        if (eventsRes.status === 'fulfilled' && eventsRes.value.ok) {
+          const serverEvents = await eventsRes.value.json()
+          if (Array.isArray(serverEvents)) loadedEvents = serverEvents as CalendarEvent[]
         }
-      } catch {
-      }
-
-      try {
-        const filesResponse = await apiFetch('/api/files')
-        if (filesResponse.ok) {
-          const serverFiles: unknown = await filesResponse.json()
-          if (Array.isArray(serverFiles)) {
-            loadedFiles = serverFiles as ManagedFile[]
-          }
+        if (subjectsRes.status === 'fulfilled' && subjectsRes.value.ok) {
+          const serverSubjects = await subjectsRes.value.json()
+          if (Array.isArray(serverSubjects)) loadedSubjects = serverSubjects as typeof subjectsSeed
         }
-      } catch {
-      }
-
-      try {
-        const lessonsResponse = await apiFetch('/api/lessons')
-        if (lessonsResponse.ok) {
-          const serverLessons: unknown = await lessonsResponse.json()
-          if (Array.isArray(serverLessons)) {
-            loadedLessons = serverLessons as Lesson[]
-          }
+        if (filesRes.status === 'fulfilled' && filesRes.value.ok) {
+          const serverFiles = await filesRes.value.json()
+          if (Array.isArray(serverFiles)) loadedFiles = serverFiles as ManagedFile[]
         }
-      } catch {
-      }
-
-      try {
-        const profileResponse = await apiFetch('/api/profile')
-        if (profileResponse.ok) {
-          const serverProfile: unknown = await profileResponse.json()
+        if (lessonsRes.status === 'fulfilled' && lessonsRes.value.ok) {
+          const serverLessons = await lessonsRes.value.json()
+          if (Array.isArray(serverLessons)) loadedLessons = serverLessons as Lesson[]
+        }
+        if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
+          const serverProfile = await profileRes.value.json()
           if (typeof serverProfile === 'object' && serverProfile !== null) {
-            loadedProfile = {
-              ...userProfileSeed,
-              ...(serverProfile as Partial<UserProfile>),
-            }
+            loadedProfile = { ...userProfileSeed, ...(serverProfile as Partial<UserProfile>) }
           }
         }
-      } catch {
+      } catch (e) {
+        console.error('Hydration error:', e)
       }
 
       const nextMetaById = loadedEvents.reduce<Record<number, EventMeta>>((acc, event) => {
@@ -268,39 +248,18 @@ export function useDashboardState() {
     }
 
     void hydrateData()
-  }, [apiFetch, authSession, isLoaded, isSignedIn])
+  }, [apiFetch, authSession, isLoaded, isSignedIn, isHydrated])
 
+  // Save tasks/events to localStorage whenever they change (for offline fallback)
   React.useEffect(() => {
-    if (!isHydrated || !authSession) {
-      return
-    }
-
+    if (!isHydrated || !authSession) return
     localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks))
-
-    void apiFetch('/api/tasks', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ tasks }),
-    })
-  }, [tasks, isHydrated, apiFetch, authSession])
+  }, [tasks, isHydrated, authSession])
 
   React.useEffect(() => {
-    if (!isHydrated || !authSession) {
-      return
-    }
-
+    if (!isHydrated || !authSession) return
     localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events))
-
-    void apiFetch('/api/events', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ events }),
-    })
-  }, [events, isHydrated, apiFetch, authSession])
+  }, [events, isHydrated, authSession])
 
   React.useEffect(() => {
     if (!isHydrated || !authSession) {
@@ -388,65 +347,100 @@ export function useDashboardState() {
     }
   }
 
-  const toggleTask = (taskId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+  const toggleTask = async (taskId: number) => {
+    if (!ensureAuthenticated()) return
 
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)),
-    )
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task) return
+
+    const newDone = !task.done
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: newDone } : t)))
+
+    try {
+      await apiFetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done: newDone }),
+      })
+    } catch (e) {
+      console.error('Failed to toggle task:', e)
+      // Revert on failure
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: !newDone } : t)))
+    }
   }
 
   const addTask = () => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+    if (!ensureAuthenticated()) return
 
     const title = window.prompt('Název nového úkolu')?.trim()
-    if (!title) {
-      return
-    }
+    if (!title) return
 
-    const newTask: Task = {
-      id: Math.max(...tasks.map(t => t.id), 0) + 1,
-      title,
-      done: false,
-    }
+    // Show task immediately in UI
+    const tempId = Date.now()
+    const tempTask: Task = { id: tempId, title, done: false }
+    console.log('[addTask] Adding temp task:', tempTask, 'current tasks count:', tasks.length)
+    setTasks((prev) => {
+      console.log('[addTask] setTasks called, prev count:', prev.length, 'new count:', prev.length + 1)
+      return [...prev, tempTask]
+    })
 
-    setTasks((prevTasks) => [...prevTasks, newTask])
+    // Persist to server in background (don't block render)
+    apiFetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, done: false }),
+    }).then((res) => {
+      console.log('[addTask] Server response status:', res.status)
+      if (res.ok) {
+        return res.json().then((serverTask: Task) => {
+          console.log('[addTask] Server task:', serverTask)
+          setTasks((prev) => prev.map((t) => (t.id === tempId ? serverTask : t)))
+        })
+      }
+      console.error('Failed to create task, status:', res.status)
+    }).catch((e) => {
+      console.error('Failed to create task:', e)
+    })
   }
 
-  const deleteTask = (taskId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+  const deleteTask = async (taskId: number) => {
+    if (!ensureAuthenticated()) return
 
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
+    const prev = tasks
+    setTasks((p) => p.filter((t) => t.id !== taskId))
+
+    try {
+      await apiFetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+    } catch (e) {
+      console.error('Failed to delete task:', e)
+      setTasks(prev) // Revert on failure
+    }
   }
 
-  const removeEvent = (eventId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+  const removeEvent = async (eventId: number) => {
+    if (!ensureAuthenticated()) return
 
-    setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId))
+    const prev = events
+    setEvents((p) => p.filter((e) => e.id !== eventId))
     setEventMetaById((prevMeta) => {
       const updatedMeta = { ...prevMeta }
       delete updatedMeta[eventId]
       return updatedMeta
     })
+
+    try {
+      await apiFetch(`/api/events/${eventId}`, { method: 'DELETE' })
+    } catch (e) {
+      console.error('Failed to delete event:', e)
+      setEvents(prev) // Revert on failure
+    }
   }
 
   const addDesktopEvent = () => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+    if (!ensureAuthenticated()) return
 
     const title = window.prompt('Název události')?.trim()
-    if (!title) {
-      return
-    }
+    if (!title) return
 
     const time = window.prompt('Čas (např. 09:00 - 10:30)')
     const location = window.prompt('Místo')
@@ -461,10 +455,10 @@ export function useDashboardState() {
       priority = 'high'
     }
 
-    const newEventId = Date.now()
+    const tempId = Date.now()
     const defaultMeta = getDefaultMetaForTitle(title)
     const nextEvent: CalendarEvent = {
-      id: newEventId,
+      id: tempId,
       title,
       date: selectedDateIso,
       time: time?.trim() || defaultMeta.time,
@@ -473,16 +467,45 @@ export function useDashboardState() {
       priority,
     }
 
+    // Show event immediately in UI
     setEvents((prevEvents) => [...prevEvents, nextEvent])
-
     setEventMetaById((prevMeta) => ({
       ...prevMeta,
-      [newEventId]: {
+      [tempId]: {
         ...defaultMeta,
         time: time?.trim() || defaultMeta.time,
         location: location?.trim() || defaultMeta.location,
       },
     }))
+
+    // Persist to server in background (don't block render)
+    apiFetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        date: selectedDateIso,
+        time: time?.trim() || null,
+        location: location?.trim() || null,
+      }),
+    }).then((res) => {
+      if (res.ok) {
+        return res.json().then((body: any) => {
+          const serverEvent: CalendarEvent = body.event ?? body
+          setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...serverEvent, priority } : e)))
+          setEventMetaById((prevMeta) => {
+            const updated = { ...prevMeta }
+            const meta = updated[tempId]
+            delete updated[tempId]
+            if (meta) updated[serverEvent.id] = meta
+            return updated
+          })
+        })
+      }
+      console.error('Failed to create event, status:', res.status)
+    }).catch((e) => {
+      console.error('Failed to create event:', e)
+    })
   }
 
   const onUploadFiles = async (incomingFiles: FileList | File[] | null, options?: { subjectId?: number; lessonId?: number }) => {

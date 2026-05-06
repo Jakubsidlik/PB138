@@ -153,7 +153,7 @@ export class TaskRepository {
     const incomingIdSet = new Set(incomingTasks.map((task) => BigInt(task.id).toString()))
 
     await db.transaction(async (transaction) => {
-      const subjectIds = Array.from(new Set(incomingTasks.map((task) => task.subjectId).filter((id) => id !== null))) as number[]
+      const subjectIds = Array.from(new Set(incomingTasks.map((task) => task.subjectId).filter((id) => id != null))) as number[]
       const validSubjects = subjectIds.length > 0
         ? await transaction.select({ id: subjects.id }).from(subjects).where(inArray(subjects.id, subjectIds.map((id) => BigInt(id))))
         : []

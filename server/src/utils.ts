@@ -23,7 +23,12 @@ export const asNumberId = (value: bigint | null | undefined): number | null => {
   return Number.isSafeInteger(numeric) ? numeric : null
 }
 
-export const toDateOnlyIso = (value: Date) => value.toISOString().slice(0, 10)
+export const toDateOnlyIso = (value: Date) => {
+  const y = value.getFullYear()
+  const m = String(value.getMonth() + 1).padStart(2, '0')
+  const d = String(value.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 export const parseOptionalDate = (value: unknown): Date | null | undefined => {
   if (value === undefined) return undefined

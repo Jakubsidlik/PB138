@@ -15,8 +15,7 @@ export function RootLayout() {
   })
 
   const handleLogout = async () => {
-    await signOut()
-    state.logout()
+    await state.logout()
   }
 
   const isCalendarScreen = pathname === '/calendar'
