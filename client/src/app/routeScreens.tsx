@@ -84,7 +84,6 @@ export function TasksComponent() {
 // Study plan route component
 export function StudyComponent() {
   const state = useDashboardState()
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   return (
     <DesktopStudyPlan
@@ -106,14 +105,13 @@ export function StudyComponent() {
 // Profile route component
 export function ProfileComponent() {
   const state = useDashboardState()
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   return (
     <DesktopProfileScreen
       profile={state.profile}
       authSession={state.authSession}
       onChangeProfile={state.onChangeProfile}
-      onUploadAvatar={state.onUploadAvatar}
+      onUploadAvatar={state.onUploadProfileAvatar}
       onRemoveAvatar={state.onRemoveProfileAvatar}
       onResetProfile={state.resetProfile}
       themeMode={state.themeMode}

@@ -114,7 +114,7 @@ export function useDashboardState() {
     readAuthSessionFromStorage(),
   )
   const [isSavingProfile, setIsSavingProfile] = React.useState(false)
-  const { getToken, isLoaded, isSignedIn } = useAuth()
+  const { getToken, isLoaded, isSignedIn, signOut } = useAuth()
 
   const apiFetch = React.useCallback(
     async (input: string, init?: RequestInit) => {
