@@ -3,6 +3,9 @@ import { Button } from '../../components/ui/button'
 import { CalendarCell, CalendarEvent, EventMeta } from '../../app/types'
 import { formatDateIso } from '../../app/utils'
 import { CalendarEventList } from '../../components/shared/CalendarEventList'
+import { MonthSwitcher } from '../../components/shared/MonthSwitcher'
+import { EventFilterButtons } from '../../components/shared/EventFilterButtons'
+import { filterEventsByTime, formatCzechDate } from '../../components/shared/calendarUtils'
 
 type DesktopCalendarScreenProps = {
   monthLabel: string
@@ -43,31 +46,7 @@ export function DesktopCalendarScreen({
           <p>Správa studijních událostí a termínů.</p>
         </div>
         <div className="desktop-calendar-controls">
-          <div className="month-switch">
-            <Button
-              type="button"
-              onClick={() =>
-                setDisplayMonth(
-                  (prevMonth) =>
-                    new Date(prevMonth.getFullYear(), prevMonth.getMonth() - 1, 1),
-                )
-              }
-            >
-              ‹
-            </Button>
-            <span>{monthLabel}</span>
-            <Button
-              type="button"
-              onClick={() =>
-                setDisplayMonth(
-                  (prevMonth) =>
-                    new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 1),
-                )
-              }
-            >
-              ›
-            </Button>
-          </div>
+          <MonthSwitcher monthLabel={monthLabel} setDisplayMonth={setDisplayMonth} />
           <Button type="button" className="primary" onClick={addDesktopEvent}>
             Přidat událost
           </Button>
@@ -118,11 +97,7 @@ export function DesktopCalendarScreen({
           <section className="events-card">
             <h3>
               Události pro{' '}
-              {new Intl.DateTimeFormat('cs-CZ', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              }).format(new Date(selectedDateIso))}
+              {formatCzechDate(selectedDateIso)}
             </h3>
 
             <CalendarEventList
@@ -142,34 +117,11 @@ export function DesktopCalendarScreen({
           <section className="events-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3>Události</h3>
-              <div className="event-filter-buttons">
-                <Button
-                  type="button"
-                  onClick={() => setEventFilter('future')}
-                  className={eventFilter === 'future' ? 'active' : ''}
-                >
-                  Budoucí
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => setEventFilter('past')}
-                  className={eventFilter === 'past' ? 'active' : ''}
-                >
-                  Minulé
-                </Button>
-              </div>
+              <EventFilterButtons eventFilter={eventFilter} onFilterChange={setEventFilter} />
             </div>
 
             <CalendarEventList
-              events={(() => {
-                const today = formatDateIso(new Date())
-                const allEvents = Object.values(eventsByDate).flat()
-                return allEvents.filter((event) => {
-                  const eventDate = event.date || Object.keys(eventsByDate).find((date) => eventsByDate[date]?.some((item) => item.id === event.id))
-                  const isInFuture = eventDate && eventDate >= today
-                  return eventFilter === 'future' ? isInFuture : !isInFuture
-                })
-              })()}
+              events={filterEventsByTime(eventsByDate, eventFilter)}
               eventMetaById={eventMetaById}
               getDefaultMetaForTitle={getDefaultMetaForTitle}
               emptyMessage={eventFilter === 'future' ? 'Žádné budoucí události.' : 'Žádné minulé události.'}

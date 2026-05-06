@@ -1,8 +1,10 @@
 import React from 'react'
 import { Button } from '../../components/ui/button'
 import { CalendarCell, CalendarEvent, EventMeta } from '../../app/types'
-import { formatDateIso } from '../../app/utils'
 import { CalendarEventList } from '../../components/shared/CalendarEventList'
+import { MonthSwitcher } from '../../components/shared/MonthSwitcher'
+import { EventFilterButtons } from '../../components/shared/EventFilterButtons'
+import { filterEventsByTime, formatCzechDate } from '../../components/shared/calendarUtils'
 
 type MobileCalendarScreenProps = {
   monthLabel: string
@@ -37,35 +39,13 @@ export function MobileCalendarScreen({
   return (
     <section className="mobile-calendar-screen" id="calendar-mobile">
       <div className="mobile-calendar-panel">
-        <div className="mobile-calendar-month-head">
-          <Button
-            type="button"
-            className="mobile-month-arrow"
-            aria-label="Předchozí měsíc"
-            onClick={() =>
-              setDisplayMonth(
-                (prevMonth) =>
-                  new Date(prevMonth.getFullYear(), prevMonth.getMonth() - 1, 1),
-              )
-            }
-          >
-            ‹
-          </Button>
-          <h3>{monthLabel}</h3>
-          <Button
-            type="button"
-            className="mobile-month-arrow"
-            aria-label="Další měsíc"
-            onClick={() =>
-              setDisplayMonth(
-                (prevMonth) =>
-                  new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 1),
-              )
-            }
-          >
-            ›
-          </Button>
-        </div>
+          <MonthSwitcher
+            monthLabel={monthLabel}
+            setDisplayMonth={setDisplayMonth}
+            className="mobile-calendar-month-head"
+            prevClassName="mobile-month-arrow"
+            nextClassName="mobile-month-arrow"
+          />
 
         <div className="mobile-month-grid">
           {calendarWeekDays.map((dayLabel) => (
@@ -98,13 +78,7 @@ export function MobileCalendarScreen({
       <section className="mobile-calendar-events">
         <div className="mobile-calendar-events-head">
           <h3>Události dne</h3>
-          <span>
-            {new Intl.DateTimeFormat('cs-CZ', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            }).format(new Date(selectedDateIso))}
-          </span>
+          <span>{formatCzechDate(selectedDateIso)}</span>
         </div>
 
         <CalendarEventList
@@ -128,33 +102,10 @@ export function MobileCalendarScreen({
           <h3>Všechny události</h3>
         </div>
 
-        <div className="event-filter-buttons">
-          <Button
-            type="button"
-            onClick={() => setEventFilter('future')}
-            className={eventFilter === 'future' ? 'active' : ''}
-          >
-            Budoucí
-          </Button>
-          <Button
-            type="button"
-            onClick={() => setEventFilter('past')}
-            className={eventFilter === 'past' ? 'active' : ''}
-          >
-            Minulé
-          </Button>
-        </div>
+        <EventFilterButtons eventFilter={eventFilter} onFilterChange={setEventFilter} />
 
         <CalendarEventList
-          events={(() => {
-            const today = formatDateIso(new Date())
-            const allEvents = Object.values(eventsByDate).flat()
-            return allEvents.filter((event) => {
-              const eventDate = event.date || Object.keys(eventsByDate).find((date) => eventsByDate[date]?.some((item) => item.id === event.id))
-              const isInFuture = eventDate && eventDate >= today
-              return eventFilter === 'future' ? isInFuture : !isInFuture
-            })
-          })()}
+          events={filterEventsByTime(eventsByDate, eventFilter)}
           eventMetaById={eventMetaById}
           getDefaultMetaForTitle={getDefaultMetaForTitle}
           emptyMessage={eventFilter === 'future' ? 'Žádné budoucí události.' : 'Žádné minulé události.'}

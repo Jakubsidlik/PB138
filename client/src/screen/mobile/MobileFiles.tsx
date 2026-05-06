@@ -1,6 +1,7 @@
 import React from 'react'
 import { Button } from '../../components/ui/button'
 import { FileTab, ManagedFile } from '../../app/types'
+import { HiddenFileInput } from '../../components/shared/HiddenFileInput'
 
 type MobileFilesScreenProps = {
   fileTab: FileTab
@@ -94,15 +95,10 @@ export function MobileFilesScreen({
           <p>Přetáhněte soubory sem</p>
           <small>nebo klikněte pro výběr z počítače</small>
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
+        <HiddenFileInput
+          inputRef={fileInputRef}
           multiple
-          className="hidden-file-input"
-          onChange={(event) => {
-            onUploadFiles(event.target.files)
-            event.currentTarget.value = ''
-          }}
+          onChange={onUploadFiles}
         />
       </section>
     </section>

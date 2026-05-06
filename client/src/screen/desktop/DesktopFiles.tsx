@@ -1,6 +1,8 @@
 import React from 'react'
 import { Button } from '../../components/ui/button'
 import { ManagedFile } from '../../app/types'
+import { getFileIcon } from '../../components/shared/fileUtils'
+import { HiddenFileInput } from '../../components/shared/HiddenFileInput'
 
 type DesktopFilesScreenProps = {
   managedFiles: ManagedFile[]
@@ -9,20 +11,6 @@ type DesktopFilesScreenProps = {
   onManageFile: (fileId: number) => void
   onDeleteFile: (fileId: number) => void
   onToggleFileShared: (fileId: number) => void
-}
-
-const getFileIcon = (category: ManagedFile['category']) => {
-  if (category === 'pdf') {
-    return { icon: '📕', tone: 'red' }
-  }
-  if (category === 'image') {
-    return { icon: '🖼️', tone: 'green' }
-  }
-  if (category === 'document') {
-    return { icon: '📄', tone: 'blue' }
-  }
-
-  return { icon: '📁', tone: 'slate' }
 }
 
 export function DesktopFilesScreen({
@@ -121,15 +109,10 @@ export function DesktopFilesScreen({
           <Button type="button" onClick={() => fileInputRef.current?.click()}>
             Procházet soubory
           </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
+          <HiddenFileInput
+            inputRef={fileInputRef}
             multiple
-            className="hidden-file-input"
-            onChange={(event) => {
-              onUploadFiles(event.target.files)
-              event.currentTarget.value = ''
-            }}
+            onChange={onUploadFiles}
           />
         </div>
       </section>
