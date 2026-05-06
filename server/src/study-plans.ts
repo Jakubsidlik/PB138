@@ -250,7 +250,7 @@ studyPlansRouter.delete('/:id', async (req, res, next) => {
 
     await prisma.studyPlan.delete({ where: { id: studyPlanId } })
 
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }
@@ -429,7 +429,7 @@ studyPlansRouter.delete('/:id/share/:userId', async (req, res, next) => {
       },
     })
 
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }

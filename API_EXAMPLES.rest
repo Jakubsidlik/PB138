@@ -1,0 +1,239 @@
+@baseUrl = http://localhost:3000/api
+@bearerToken = {{token}}
+
+### ===== TASKS =====
+
+### GET - Všechny úkoly (bez paginace)
+GET {{baseUrl}}/tasks
+
+### GET - Úkoly s paginací
+GET {{baseUrl}}/tasks?paginated=true&limit=10&cursor=0
+
+### GET - Úkoly filtrované podle předmětu
+GET {{baseUrl}}/tasks?subjectId=42
+
+### GET - Úkoly filtrované podle studijního plánu
+GET {{baseUrl}}/tasks?studyPlanId=5
+
+### GET - Completed úkoly
+GET {{baseUrl}}/tasks?done=true
+
+### GET - Oblíbené úkoly
+GET {{baseUrl}}/tasks?favorite=true
+
+### GET - Úkoly s konkrétním tagem
+GET {{baseUrl}}/tasks?tag=homework
+
+### GET - Vyhledávání v názvu
+GET {{baseUrl}}/tasks?search=exam
+
+### GET - Úkoly s deadline mezi daty
+GET {{baseUrl}}/tasks?deadlineFrom=2026-05-01&deadlineTo=2026-05-31
+
+### GET - Zahrnout smazané úkoly
+GET {{baseUrl}}/tasks?includeDeleted=true
+
+### GET - Kombinované filtry
+GET {{baseUrl}}/tasks?subjectId=42&done=false&favorite=true&deadlineFrom=2026-05-01
+
+### POST - Vytvořit jednoduchý úkol
+POST {{baseUrl}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Study for exam"
+}
+
+### POST - Vytvořit úkol s detaily
+POST {{baseUrl}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Write essay on history",
+  "done": false,
+  "subjectId": 42,
+  "studyPlanId": 5,
+  "favorite": true,
+  "tag": "important",
+  "deadline": "2026-05-20"
+}
+
+### POST - Vytvořit úkol s prioritou
+POST {{baseUrl}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Emergency meeting",
+  "priority": "URGENT",
+  "deadline": "2026-05-10"
+}
+
+### PATCH - Označit úkol jako hotový
+PATCH {{baseUrl}}/tasks/1
+Content-Type: application/json
+
+{
+  "done": true
+}
+
+### PATCH - Aktualizovat úkol
+PATCH {{baseUrl}}/tasks/1
+Content-Type: application/json
+
+{
+  "title": "Updated task title",
+  "done": false,
+  "favorite": true,
+  "tag": "updated-tag"
+}
+
+### PATCH - Změnit deadline
+PATCH {{baseUrl}}/tasks/1
+Content-Type: application/json
+
+{
+  "deadline": "2026-06-01"
+}
+
+### PATCH - Přepojit na jiný předmět
+PATCH {{baseUrl}}/tasks/1
+Content-Type: application/json
+
+{
+  "subjectId": 99
+}
+
+### DELETE - Smazat úkol
+DELETE {{baseUrl}}/tasks/1
+
+### PUT - Hromadná aktualizace úkolů
+PUT {{baseUrl}}/tasks
+Content-Type: application/json
+
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "First task",
+      "done": false,
+      "subjectId": 42
+    },
+    {
+      "id": 2,
+      "title": "Second task",
+      "done": true,
+      "subjectId": 42
+    },
+    {
+      "id": 3,
+      "title": "New task",
+      "done": false,
+      "subjectId": null
+    }
+  ]
+}
+
+### ===== SUBJECTS =====
+
+### GET - Všechny předměty (bez paginace)
+GET {{baseUrl}}/subjects
+
+### GET - Předměty s paginací
+GET {{baseUrl}}/subjects?paginated=true&limit=10
+
+### GET - Předměty v konkrétním studijním plánu
+GET {{baseUrl}}/subjects?studyPlanId=5
+
+### GET - Zahrnout archivované předměty
+GET {{baseUrl}}/subjects?includeDeleted=true
+
+### GET - Kombinované filtry
+GET {{baseUrl}}/subjects?studyPlanId=5&paginated=true&limit=20
+
+### POST - Vytvořit jednoduchý předmět
+POST {{baseUrl}}/subjects
+Content-Type: application/json
+
+{
+  "name": "Linear Algebra",
+  "teacher": "Prof. Smith",
+  "code": "LA101"
+}
+
+### POST - Vytvořit předmět se studijním plánem
+POST {{baseUrl}}/subjects
+Content-Type: application/json
+
+{
+  "name": "Discrete Mathematics",
+  "teacher": "Dr. Johnson",
+  "code": "DM201",
+  "studyPlanId": 5,
+  "isShared": false
+}
+
+### POST - Vytvořit sdílený předmět
+POST {{baseUrl}}/subjects
+Content-Type: application/json
+
+{
+  "name": "Advanced Calculus",
+  "teacher": "Prof. Anderson",
+  "code": "AC301",
+  "isShared": true
+}
+
+### PUT - Aktualizovat předmět
+PUT {{baseUrl}}/subjects/42
+Content-Type: application/json
+
+{
+  "name": "Linear Algebra II",
+  "teacher": "Prof. Smith",
+  "code": "LA102"
+}
+
+### PUT - Archivovat předmět
+PUT {{baseUrl}}/subjects/42
+Content-Type: application/json
+
+{
+  "archived": true
+}
+
+### PUT - Odarchivovat předmět
+PUT {{baseUrl}}/subjects/42
+Content-Type: application/json
+
+{
+  "archived": false
+}
+
+### PUT - Sdílet předmět
+PUT {{baseUrl}}/subjects/42
+Content-Type: application/json
+
+{
+  "isShared": true
+}
+
+### PUT - Přesunout předmět do studijního plánu
+PUT {{baseUrl}}/subjects/42
+Content-Type: application/json
+
+{
+  "studyPlanId": 10
+}
+
+### DELETE - Smazat předmět (včetně všech úkolů, souborů, lekcí, událostí)
+DELETE {{baseUrl}}/subjects/42
+
+### ===== NOTES =====
+### 
+### Přípravu na pokročilejší testování:
+### 1. Nahraďte {{token}} vaším Bearer tokenem
+### 2. Nahraďte {{baseUrl}} svou skutečnou URL
+### 3. Nahraďte ID (1, 42, 5, atd.) s vašimi skutečnými ID
+### 4. Kód 401 = chybí autentizace
+### 5. Kód 403 = chybí oprávnění
+### 6. Kód 404 = data nenalezena

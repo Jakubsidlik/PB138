@@ -252,7 +252,7 @@ subjectsRouter.delete('/:id', async (req, res, next) => {
       prisma.event.updateMany({ where: { subjectId, deletedAt: null }, data: { deletedAt } }),
     ])
 
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }

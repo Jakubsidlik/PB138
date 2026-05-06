@@ -194,7 +194,7 @@ eventsRouter.delete('/:id', async (req, res, next) => {
 
     await prisma.event.update({ where: { id: eventId }, data: { deletedAt: new Date() } })
 
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }

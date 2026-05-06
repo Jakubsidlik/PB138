@@ -27,6 +27,8 @@ export const queryKeys = {
   all: ['app'],
   tasks: ['app', 'tasks'],
   task: (id: number) => [...queryKeys.tasks, id],
+  subjects: ['app', 'subjects'],
+  subject: (id: number) => [...queryKeys.subjects, id],
   events: ['app', 'events'],
   calendar: ['app', 'calendar'],
   profile: ['app', 'profile'],

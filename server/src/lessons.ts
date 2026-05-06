@@ -223,7 +223,7 @@ lessonsRouter.delete('/:id', async (req, res, next) => {
       data: { deletedAt: new Date() },
     })
 
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }
@@ -423,7 +423,7 @@ lessonNotesRouter.delete('/:id', async (req, res, next) => {
 
     await prisma.lessonNote.delete({ where: { id: noteId } })
 
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }
@@ -560,7 +560,7 @@ annotationsRouter.delete('/:id', async (req, res, next) => {
     }
 
     await prisma.textAnnotation.delete({ where: { id: annotationId } })
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }

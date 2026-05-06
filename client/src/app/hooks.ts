@@ -1,301 +1,109 @@
-import React from 'react'
-import { apiClient } from './api'
-import type {
-  CalendarEvent,
-  CreateEventRequest,
-  CreateTaskRequest,
-  FileComment,
-  FileRecord,
-  Lesson,
-  LessonNote,
-  PaginatedResponse,
-  StudyPlan,
-  Subject,
-  Task,
-  TextAnnotation,
-  UpdateEventRequest,
-  UpdateTaskRequest,
-  User,
-} from './types'
+/**
+ * React Query Hooks - Generated from OpenAPI specification
+ *
+ * This file provides React Query hooks for data fetching and mutations.
+ * The actual hooks are generated from openapi.yaml using Kubb.
+ *
+ * Direct imports from generated code:
+ * import { useTasks, useCreateTask, useUpdateTask, etc. } from '../gen/hooks'
+ */
 
-interface UseQueryState<T> {
-  data: T | null
-  loading: boolean
-  error: Error | null
-}
+import { apiClients } from './api'
 
-interface UsePaginatedState<T> {
-  data: T[]
-  loading: boolean
-  error: Error | null
-  hasMore: boolean
-  nextCursor?: string | null
+// Re-export all generated hooks
+export * from '../gen/hooks'
+
+// Convenience hooks that use the singleton apiClients instance
+import {
+  useTasks as _useTasks,
+  useTasksInfinite as _useTasksInfinite,
+  useCreateTask as _useCreateTask,
+  useUpdateTask as _useUpdateTask,
+  useDeleteTask as _useDeleteTask,
+  useBulkUpdateTasks as _useBulkUpdateTasks,
+  useSubjects as _useSubjects,
+  useSubjectsInfinite as _useSubjectsInfinite,
+  useCreateSubject as _useCreateSubject,
+  useUpdateSubject as _useUpdateSubject,
+  useDeleteSubject as _useDeleteSubject,
+} from '../gen/hooks'
+
+// Convenience wrappers - pass apiClients automatically
+/**
+ * Fetch tasks with filters and optional pagination
+ */
+export function useTasks(params?: any) {
+  return _useTasks(apiClients.tasks, params)
 }
 
 /**
- * Generic hook for fetching data
+ * Fetch tasks with infinite pagination (for scroll loading)
  */
-export function useQuery<T>(
-  fetcher: () => Promise<T>,
-  dependencies: React.DependencyList = [],
-): UseQueryState<T> {
-  const [state, setState] = React.useState<UseQueryState<T>>({
-    data: null,
-    loading: true,
-    error: null,
-  })
-
-  React.useEffect(() => {
-    let isMounted = true
-
-    const load = async () => {
-      try {
-        const data = await fetcher()
-        if (isMounted) {
-          setState({ data, loading: false, error: null })
-        }
-      } catch (error) {
-        if (isMounted) {
-          setState({
-            data: null,
-            loading: false,
-            error: error instanceof Error ? error : new Error(String(error)),
-          })
-        }
-      }
-    }
-
-    load()
-
-    return () => {
-      isMounted = false
-    }
-  }, dependencies)
-
-  return state
+export function useTasksInfinite(params?: any) {
+  return _useTasksInfinite(apiClients.tasks, params)
 }
 
 /**
- * Hook for paginated data fetching
+ * Create a new task
  */
-export function usePaginatedQuery<T>(
-  fetcher: (cursor?: string) => Promise<PaginatedResponse<T>>,
-  dependencies: React.DependencyList = [],
-): UsePaginatedState<T> & {
-  loadMore: () => Promise<void>
-} {
-  const [state, setState] = React.useState<UsePaginatedState<T>>({
-    data: [],
-    loading: true,
-    error: null,
-    hasMore: false,
-  })
-
-  React.useEffect(() => {
-    let isMounted = true
-
-    const load = async () => {
-      try {
-        const response = await fetcher()
-        if (isMounted) {
-          setState({
-            data: response.data,
-            loading: false,
-            error: null,
-            hasMore: response.hasMore,
-            nextCursor: response.nextCursor,
-          })
-        }
-      } catch (error) {
-        if (isMounted) {
-          setState((prev) => ({
-            ...prev,
-            loading: false,
-            error: error instanceof Error ? error : new Error(String(error)),
-          }))
-        }
-      }
-    }
-
-    load()
-
-    return () => {
-      isMounted = false
-    }
-  }, dependencies)
-
-  const loadMore = React.useCallback(async () => {
-    if (!state.hasMore || state.loading) return
-
-    try {
-      const response = await fetcher(state.nextCursor || undefined)
-      setState((prev) => ({
-        ...prev,
-        data: [...prev.data, ...response.data],
-        hasMore: response.hasMore,
-        nextCursor: response.nextCursor,
-      }))
-    } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        error: error instanceof Error ? error : new Error(String(error)),
-      }))
-    }
-  }, [state.hasMore, state.loading, state.nextCursor])
-
-  return { ...state, loadMore }
+export function useCreateTask() {
+  return _useCreateTask(apiClients.tasks)
 }
 
 /**
- * Hook for mutation operations (create/update/delete)
+ * Update an existing task
  */
-export function useMutation<TData, TVariables>(
-  mutationFn: (variables: TVariables) => Promise<TData>,
-) {
-  const [state, setState] = React.useState({
-    data: null as TData | null,
-    loading: false,
-    error: null as Error | null,
-  })
-
-  const mutate = React.useCallback(async (variables: TVariables) => {
-    setState({ data: null, loading: true, error: null })
-    try {
-      const data = await mutationFn(variables)
-      setState({ data, loading: false, error: null })
-      return data
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error))
-      setState({ data: null, loading: false, error: err })
-      throw err
-    }
-  }, [mutationFn])
-
-  return { ...state, mutate }
+export function useUpdateTask() {
+  return _useUpdateTask(apiClients.tasks)
 }
 
-// Specific hooks
-
-export function useProfile() {
-  return useQuery(() => apiClient.getProfile())
+/**
+ * Delete a task
+ */
+export function useDeleteTask() {
+  return _useDeleteTask(apiClients.tasks)
 }
 
-export function useStudyPlans() {
-  return usePaginatedQuery(() => apiClient.getStudyPlans())
+/**
+ * Bulk update/upsert multiple tasks
+ */
+export function useBulkUpdateTasks() {
+  return _useBulkUpdateTasks(apiClients.tasks)
 }
 
-export function useSubjects(studyPlanId?: number | null) {
-  return usePaginatedQuery(() => apiClient.getSubjects(studyPlanId), [studyPlanId])
+/**
+ * Fetch subjects with filters and optional pagination
+ */
+export function useSubjects(params?: any) {
+  return _useSubjects(apiClients.subjects, params)
 }
 
-export function useTasks(studyPlanId?: number | null) {
-  const [tasks, setTasks] = React.useState<Task[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<Error | null>(null)
-
-  React.useEffect(() => {
-    let isMounted = true
-
-    const load = async () => {
-      try {
-        const response = await apiClient.getTasks(studyPlanId)
-        if (isMounted) {
-          setTasks(response.data)
-          setLoading(false)
-          setError(null)
-        }
-      } catch (err) {
-        if (isMounted) {
-          setTasks([])
-          setLoading(false)
-          setError(err instanceof Error ? err : new Error(String(err)))
-        }
-      }
-    }
-
-    load()
-
-    return () => {
-      isMounted = false
-    }
-  }, [studyPlanId])
-
-  const createTask = useMutation<Task, CreateTaskRequest>((variables) =>
-    apiClient.createTask(variables),
-  )
-
-  const updateTask = useMutation<Task, { id: number; updates: UpdateTaskRequest }>((variables) =>
-    apiClient.updateTask(variables.id, variables.updates),
-  )
-
-  return {
-    tasks,
-    loading,
-    error,
-    createTask,
-    updateTask,
-  }
+/**
+ * Fetch subjects with infinite pagination
+ */
+export function useSubjectsInfinite(params?: any) {
+  return _useSubjectsInfinite(apiClients.subjects, params)
 }
 
-export function useEvents(studyPlanId?: number | null) {
-  const [events, setEvents] = React.useState<CalendarEvent[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<Error | null>(null)
-
-  React.useEffect(() => {
-    let isMounted = true
-
-    const load = async () => {
-      try {
-        const response = await apiClient.getEvents(studyPlanId)
-        if (isMounted) {
-          setEvents(response.data)
-          setLoading(false)
-          setError(null)
-        }
-      } catch (err) {
-        if (isMounted) {
-          setEvents([])
-          setLoading(false)
-          setError(err instanceof Error ? err : new Error(String(err)))
-        }
-      }
-    }
-
-    load()
-
-    return () => {
-      isMounted = false
-    }
-  }, [studyPlanId])
-
-  const createEvent = useMutation<CalendarEvent, CreateEventRequest>((variables) =>
-    apiClient.createEvent(variables),
-  )
-
-  const updateEvent = useMutation<CalendarEvent, { id: number; updates: UpdateEventRequest }>((
-    variables,
-  ) => apiClient.updateEvent(variables.id, variables.updates))
-
-  return {
-    events,
-    loading,
-    error,
-    createEvent,
-    updateEvent,
-  }
+/**
+ * Create a new subject
+ */
+export function useCreateSubject() {
+  return _useCreateSubject(apiClients.subjects)
 }
 
-export function useFiles(studyPlanId?: number | null) {
-  return usePaginatedQuery(() => apiClient.getFiles(studyPlanId), [studyPlanId])
+/**
+ * Update an existing subject
+ */
+export function useUpdateSubject() {
+  return _useUpdateSubject(apiClients.subjects)
 }
 
-export function useLessons(studyPlanId?: number | null) {
-  return usePaginatedQuery(() => apiClient.getLessons(studyPlanId), [studyPlanId])
-}
-
-export function useLessonNotes(lessonId: number) {
-  return usePaginatedQuery(() => apiClient.getLessonNotes(lessonId), [lessonId])
+/**
+ * Delete a subject
+ */
+export function useDeleteSubject() {
+  return _useDeleteSubject(apiClients.subjects)
 }
 
 export function useFileComments(fileId: number) {

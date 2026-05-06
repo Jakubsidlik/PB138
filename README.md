@@ -1,4 +1,11 @@
-# PB138 - Studijní Plán (Learning Management App)
+import { useTasks, useCreateTask } from './hooks'
+
+function TaskList() {
+  const { data, isLoading } = useTasks({ subjectId: 42 })
+  const { mutate } = useCreateTask()
+
+  return ( /* ... */ )
+}# PB138 - Studijní Plán (Learning Management App)
 
 Webová aplikace, která umožňuje studentům lépe organizovat své studium. Aplikace poskytuje funkce pro vytváření studijních položek, vedení poznámek, správu úkolů a kalendář s nadcházejícími událostmi.
 

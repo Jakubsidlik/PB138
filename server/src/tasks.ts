@@ -199,7 +199,7 @@ tasksRouter.delete('/:id', async (req, res, next) => {
       data: { deletedAt: new Date() },
     })
 
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }

@@ -316,7 +316,7 @@ filesRouter.delete('/:id', async (req, res, next) => {
 
     await prisma.fileRecord.update({ where: { id: fileId }, data: { deletedAt: new Date() } })
 
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }
@@ -513,7 +513,7 @@ fileCommentsRouter.delete('/:id', async (req, res, next) => {
 
     await prisma.fileComment.delete({ where: { id: commentId } })
 
-    res.json({ success: true })
+    res.status(204).end()
   } catch (error) {
     next(error)
   }
