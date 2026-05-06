@@ -9,8 +9,8 @@ import { DesktopStudyPlan } from '../screen/desktop/DesktopStudyPlan'
 import { DesktopProfileScreen } from '../screen/desktop/DesktopProfile'
 import { calendarWeekDays } from './data'
 
-// Wrapper for home route
-export function HomeRouteScreen() {
+// Home route component
+export function HomeComponent() {
   const state = useDashboardState()
 
   return (
@@ -26,8 +26,8 @@ export function HomeRouteScreen() {
   )
 }
 
-// Wrapper for calendar route
-export function CalendarRouteScreen() {
+// Calendar route component
+export function CalendarComponent() {
   const state = useDashboardState()
 
   return (
@@ -49,8 +49,8 @@ export function CalendarRouteScreen() {
   )
 }
 
-// Wrapper for files route
-export function FilesRouteScreen() {
+// Files route component
+export function FilesComponent() {
   const state = useDashboardState()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -66,8 +66,8 @@ export function FilesRouteScreen() {
   )
 }
 
-// Wrapper for tasks route
-export function TasksRouteScreen() {
+// Tasks route component
+export function TasksComponent() {
   const state = useDashboardState()
 
   return (
@@ -81,8 +81,8 @@ export function TasksRouteScreen() {
   )
 }
 
-// Wrapper for study plan route
-export function StudyPlanRouteScreen() {
+// Study plan route component
+export function StudyComponent() {
   const state = useDashboardState()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -103,8 +103,8 @@ export function StudyPlanRouteScreen() {
   )
 }
 
-// Wrapper for profile route
-export function ProfileRouteScreen() {
+// Profile route component
+export function ProfileComponent() {
   const state = useDashboardState()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -113,7 +113,7 @@ export function ProfileRouteScreen() {
       profile={state.profile}
       authSession={state.authSession}
       onChangeProfile={state.onChangeProfile}
-      onUploadAvatar={state.onUploadProfileAvatar}
+      onUploadAvatar={state.onUploadAvatar}
       onRemoveAvatar={state.onRemoveProfileAvatar}
       onResetProfile={state.resetProfile}
       themeMode={state.themeMode}
@@ -126,3 +126,11 @@ export function ProfileRouteScreen() {
     />
   )
 }
+
+// Legacy exports for backward compatibility
+export const HomeRouteScreen = HomeComponent
+export const CalendarRouteScreen = CalendarComponent
+export const FilesRouteScreen = FilesComponent
+export const TasksRouteScreen = TasksComponent
+export const StudyPlanRouteScreen = StudyComponent
+export const ProfileRouteScreen = ProfileComponent

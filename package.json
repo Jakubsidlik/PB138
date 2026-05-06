@@ -15,6 +15,7 @@
     "client"
   ],
   "devDependencies": {
+    "@tanstack/router-vite-plugin": "*",
     "concurrently": "^8.2.2"
   },
   "dependencies": {

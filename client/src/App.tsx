@@ -3,11 +3,12 @@ import './App.css'
 import './App-subject-modal.css'
 
 import { RouterProvider } from '@tanstack/react-router'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { router } from './app/router'
+import { queryClient } from './app/queries'
 
 import { useUser } from '@clerk/clerk-react'
 import { useDashboardState } from './app/useDashboardState'
-import { AuthScreen } from './components/authentication/AuthScreen'
 
 function App() {
   const state = useDashboardState()
@@ -33,13 +34,10 @@ function App() {
     )
   }
 
-  // Zobrazí AuthScreen, pokud není přihlášen Clerk
-  if (!isSignedIn) {
-    return <AuthScreen />
-  }
-
   return (
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   )
 }
 

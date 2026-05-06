@@ -1,23 +1,21 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-<<<<<<< Updated upstream
-
-export default defineConfig({
-  plugins: [react()],
-=======
+import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    TanStackRouterVite(),
+    react()
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
->>>>>>> Stashed changes
   server: {
     port: 5173,
     proxy: {
