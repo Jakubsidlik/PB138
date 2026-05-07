@@ -1,3 +1,5 @@
+import { Card, CardContent } from '../ui/card'
+
 type TaskStatsProps = {
   totalLabel: string
   completedLabel: string
@@ -19,18 +21,24 @@ export function TaskStats({
 }: TaskStatsProps) {
   return (
     <div className={wrapperClassName}>
-      <div className={itemClassName}>
-        <span className="stat-label">{totalLabel}</span>
-        <span className="stat-value">{total}</span>
-      </div>
-      <div className={itemClassName}>
-        <span className="stat-label">{completedLabel}</span>
-        <span className="stat-value">{completed}</span>
-      </div>
-      <div className={itemClassName}>
-        <span className="stat-label">{remainingLabel}</span>
-        <span className="stat-value">{total - completed}</span>
-      </div>
+      <Card className={itemClassName}>
+        <CardContent className="pt-6">
+          <p className="stat-label text-sm text-muted-foreground">{totalLabel}</p>
+          <p className="stat-value text-2xl font-bold mt-2">{total}</p>
+        </CardContent>
+      </Card>
+      <Card className={itemClassName}>
+        <CardContent className="pt-6">
+          <p className="stat-label text-sm text-muted-foreground">{completedLabel}</p>
+          <p className="stat-value text-2xl font-bold mt-2">{completed}</p>
+        </CardContent>
+      </Card>
+      <Card className={itemClassName}>
+        <CardContent className="pt-6">
+          <p className="stat-label text-sm text-muted-foreground">{remainingLabel}</p>
+          <p className="stat-value text-2xl font-bold mt-2">{total - completed}</p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

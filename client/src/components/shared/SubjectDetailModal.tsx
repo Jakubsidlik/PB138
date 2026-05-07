@@ -1,6 +1,15 @@
 import React from 'react'
 import { Subject, ManagedFile, Lesson } from '../../app/types'
 import { Button } from '../ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../ui/dialog'
+import { Input } from '../ui/input'
+import { Textarea } from '../ui/textarea'
 
 type SubjectDetailModalProps = {
   subject: Subject | null
@@ -53,16 +62,13 @@ export function SubjectDetailModal({
   }
 
   return (
-    <div className="subject-detail-modal-overlay" onClick={onClose}>
-      <div className="subject-detail-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="subject-detail-modal-header">
-          <h2>{subject.name}</h2>
-          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="subject-detail-modal-close">
-            ✕
-          </Button>
-        </div>
+    <Dialog open={subject !== null} onOpenChange={onClose}>
+      <DialogContent showCloseButton>
+        <DialogHeader>
+          <DialogTitle>{subject.name}</DialogTitle>
+        </DialogHeader>
 
-        <div className="subject-detail-modal-body">
+        <div className="space-y-4">
           <div className="subject-detail-info">
             <p><strong>Kód:</strong> {subject.code}</p>
             <p><strong>Učitel:</strong> {subject.teacher}</p>
@@ -83,7 +89,7 @@ export function SubjectDetailModal({
               <p className="empty-state">Zatím žádné soubory</p>
             )}
             
-            <div className="subject-detail-input-group">
+            <div className="subject-detail-input-group mt-2">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -92,7 +98,7 @@ export function SubjectDetailModal({
               />
               <Button 
                 type="button" 
-                className="subject-detail-add-button"
+                variant="outline"
                 onClick={() => fileInputRef.current?.click()}
               >
                 + Přidat soubor
@@ -103,17 +109,16 @@ export function SubjectDetailModal({
           <div className="subject-detail-section">
             <h3>📝 Poznámky ({subjectLessons.length})</h3>
             
-            <div className="subject-detail-input-group">
-              <textarea
+            <div className="subject-detail-input-group space-y-2">
+              <Textarea
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
                 placeholder="Napište poznámku..."
-                className="subject-note-input"
                 rows={3}
               />
               <Button 
                 type="button" 
-                className="subject-detail-add-button"
+                variant="default"
                 onClick={handleAddNote}
                 disabled={!noteText.trim()}
               >
@@ -122,7 +127,7 @@ export function SubjectDetailModal({
             </div>
 
             {subjectLessons.length > 0 ? (
-              <ul className="subject-notes-list">
+              <ul className="subject-notes-list mt-2">
                 {subjectLessons.map((lesson) => (
                   <li key={lesson.id} className="subject-note-item">
                     <p className="note-text">{lesson.content || lesson.title}</p>
@@ -133,17 +138,17 @@ export function SubjectDetailModal({
                 ))}
               </ul>
             ) : (
-              <p className="empty-state">Zatím žádné poznámky</p>
+              <p className="empty-state mt-2">Zatím žádné poznámky</p>
             )}
           </div>
         </div>
 
-        <div className="subject-detail-modal-footer">
-          <Button type="button" className="subject-detail-modal-button" onClick={onClose}>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
             Zavřít
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

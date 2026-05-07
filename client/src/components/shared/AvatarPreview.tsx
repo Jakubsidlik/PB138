@@ -1,21 +1,23 @@
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar'
 import { initialsFromName } from './profileConstants'
 
 type AvatarPreviewProps = {
   avatarDataUrl: string | null
   fullName: string
-  imgClassName?: string
-  fallbackClassName?: string
+  className?: string
+  size?: 'sm' | 'default' | 'lg'
 }
 
 export function AvatarPreview({
   avatarDataUrl,
   fullName,
-  imgClassName = 'profile-photo-preview',
-  fallbackClassName = 'profile-photo-preview profile-photo-fallback',
+  className,
+  size = 'default',
 }: AvatarPreviewProps) {
-  if (avatarDataUrl) {
-    return <img src={avatarDataUrl} alt="Profilová fotka" className={imgClassName} />
-  }
-
-  return <div className={fallbackClassName}>{initialsFromName(fullName)}</div>
+  return (
+    <Avatar size={size} className={className}>
+      {avatarDataUrl && <AvatarImage src={avatarDataUrl} alt="Profilová fotka" />}
+      <AvatarFallback>{initialsFromName(fullName)}</AvatarFallback>
+    </Avatar>
+  )
 }

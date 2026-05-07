@@ -4,6 +4,7 @@ import {
   Task,
 } from '../../app/types'
 import { CircularProgress } from './CircularProgress'
+import { Checkbox } from '../ui/checkbox'
 
 type DashboardHomeContentProps = {
   profileName: string
@@ -98,14 +99,14 @@ export function DashboardHomeContent({
           <ul className="dashboard-task-list">
             {tasks.slice(0, 5).map((task) => (
               <li key={task.id} className={`dashboard-task-item ${task.done ? 'done' : ''}`}>
-                <label className="dashboard-task-label">
-                  <input
-                    type="checkbox"
+                <div className="dashboard-task-label flex items-center gap-2">
+                  <Checkbox
                     checked={task.done}
-                    onChange={() => toggleTask(task.id)}
+                    onCheckedChange={() => toggleTask(task.id)}
+                    aria-label={`Označit úkol ${task.title} jako hotový`}
                   />
-                  <span>{task.title}</span>
-                </label>
+                  <span className={task.done ? 'line-through opacity-60' : ''}>{task.title}</span>
+                </div>
               </li>
             ))}
           </ul>

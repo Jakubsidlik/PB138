@@ -1,4 +1,4 @@
-import { Button } from '../ui/button'
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 
 type EventFilterButtonsProps = {
   eventFilter: 'future' | 'past'
@@ -7,21 +7,13 @@ type EventFilterButtonsProps = {
 
 export function EventFilterButtons({ eventFilter, onFilterChange }: EventFilterButtonsProps) {
   return (
-    <div className="event-filter-buttons">
-      <Button
-        type="button"
-        onClick={() => onFilterChange('future')}
-        className={eventFilter === 'future' ? 'active' : ''}
-      >
+    <ToggleGroup type="single" value={eventFilter} onValueChange={(value) => onFilterChange(value as 'future' | 'past')} className="event-filter-buttons">
+      <ToggleGroupItem value="future" aria-label="Budoucí">
         Budoucí
-      </Button>
-      <Button
-        type="button"
-        onClick={() => onFilterChange('past')}
-        className={eventFilter === 'past' ? 'active' : ''}
-      >
+      </ToggleGroupItem>
+      <ToggleGroupItem value="past" aria-label="Minulé">
         Minulé
-      </Button>
-    </div>
+      </ToggleGroupItem>
+    </ToggleGroup>
   )
 }

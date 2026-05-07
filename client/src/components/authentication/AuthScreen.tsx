@@ -1,6 +1,8 @@
 import React from 'react'
 import { useSignIn, useSignUp } from '@clerk/clerk-react'
 import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
 
 export function AuthScreen() {
 const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn()
@@ -166,15 +168,15 @@ return (
                 <form onSubmit={handleSignInCodeSubmit}>
                     <h1>Ověření</h1>
                     <span>{pendingSignInCode === 'email_code' ? 'Zadej kód zaslaný na email' : 'Zadej kód z aplikace'}</span>
-                    <input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
+                    <Input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
                     {error && <span className="auth-error">{error}</span>}
                     <Button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</Button>
                 </form>
             ) : (
                 <form onSubmit={handleSignInSubmit}>
                     <h1>Přihlášení</h1>
-                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
-                    <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
+                    <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
+                    <Input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                     {error && <span className="auth-error">{error}</span>}
                     <Button type="submit">{isLoading ? 'Čekám...' : 'Přihlásit se'}</Button>
                 </form>
@@ -187,16 +189,16 @@ return (
                 <form onSubmit={handleVerificationSubmit}>
                     <h1>Ověření</h1>
                     <span>Zadej kód zaslaný na email</span>
-                    <input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
+                    <Input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
                     {error && <span className="auth-error">{error}</span>}
                     <Button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</Button>
                 </form>
             ) : (
                 <form onSubmit={handleSignUpSubmit}>
                     <h1>Registrace</h1>
-                    <input type="text" placeholder="Jméno a příjmení" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} />
-                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
-                    <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
+                    <Input type="text" placeholder="Jméno a příjmení" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} />
+                    <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
+                    <Input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                     {error && <span className="auth-error">{error}</span>}
                     <Button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</Button>
                 </form>
@@ -212,16 +214,16 @@ return (
             <form onSubmit={handleVerificationSubmit}>
                 <h1>Ověření</h1>
                 <span>Zadej kód zaslaný na email</span>
-                <input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
+                <Input type="text" placeholder="Ověřovací kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
                 {error && isSignUp && <span className="auth-error">{error}</span>}
                 <Button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</Button>
             </form>
         ) : (
             <form onSubmit={handleSignUpSubmit}>
                 <h1>Registrace</h1>
-                <input type="text" placeholder="Jméno a příjmení" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} />
-                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
-                <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
+                <Input type="text" placeholder="Jméno a příjmení" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} />
+                <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
+                <Input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                 {error && isSignUp && <span className="auth-error">{error}</span>}
                 <Button type="submit">{isLoading ? 'Čekám...' : 'Zaregistrovat se'}</Button>
             </form>
@@ -233,7 +235,7 @@ return (
             <form onSubmit={handleSignInCodeSubmit}>
                 <h1>Ověření</h1>
                 <span>{pendingSignInCode === 'email_code' ? 'Zadej kód zaslaný na email' : 'Zadej kód z aplikace'}</span>
-                <input type="text" placeholder="Kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
+                <Input type="text" placeholder="Kód" value={code} onChange={(e) => setCode(e.target.value)} required disabled={isLoading} />
                 {error && !isSignUp && <span className="auth-error">{error}</span>}
                 <Button type="submit">{isLoading ? 'Čekám...' : 'Ověřit'}</Button>
             </form>
@@ -241,8 +243,8 @@ return (
             <form onSubmit={handleSignInSubmit}>
                 <h1>Přihlášení</h1>
                 <span>vyplň své údaje</span>
-                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
-                <input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
+                <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
+                <Input type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                 {error && !isSignUp && <span className="auth-error">{error}</span>}
                 <Button type="submit">{isLoading ? 'Čekám...' : 'Přihlásit se'}</Button>
             </form>

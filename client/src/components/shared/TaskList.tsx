@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
-
 import { Button } from '../ui/button'
+import { Checkbox } from '../ui/checkbox'
 import { Task } from '../../app/types'
 
 type TaskListProps = {
@@ -33,10 +33,14 @@ export function TaskList({
       <ul>
         {tasks.map((task) => (
           <li key={task.id} className={itemClassName}>
-            <label>
-              <input type="checkbox" checked={task.done} onChange={() => onToggleTask(task.id)} />
-              <span>{task.title}</span>
-            </label>
+            <div className="flex items-center gap-2 flex-1">
+              <Checkbox 
+                checked={task.done} 
+                onCheckedChange={() => onToggleTask(task.id)}
+                aria-label={`Označit úkol ${task.title} jako hotový`}
+              />
+              <span className={task.done ? 'line-through opacity-60' : ''}>{task.title}</span>
+            </div>
             {renderDeleteButton ? (
               renderDeleteButton(task)
             ) : (
@@ -45,6 +49,8 @@ export function TaskList({
                 className={deleteButtonClassName}
                 aria-label={`Odstranit úkol ${task.title}`}
                 title="Odstranit úkol"
+                variant="ghost"
+                size="icon"
               >
                 ×
               </Button>
