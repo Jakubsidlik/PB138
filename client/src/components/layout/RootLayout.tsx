@@ -1,15 +1,13 @@
 import React from 'react'
 import { Outlet, useRouterState } from '@tanstack/react-router'
-import { useAuth } from '@clerk/clerk-react'
 import { useDashboardState } from '../../app/useDashboardState'
-import { Sidebar } from '../shared/Sidebar'
+import { AppSidebar, SidebarProvider, SidebarInset, SidebarTrigger } from '../shared/Sidebar'
 import { Topbar } from '../shared/Topbar'
 
 
 export function RootLayout() {
   const state = useDashboardState()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const { signOut } = useAuth()
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   })
@@ -33,34 +31,40 @@ export function RootLayout() {
   else if (isProfileScreen) navClass = 'nav-profile mobile-nav-profile'
 
   return (
-    <div
-      className={`dashboard-root theme-${state.themeMode} palette-${state.accentPalette} ${navClass}`}
-    >
-      <Sidebar onLogout={handleLogout} />
+    <div className={`dashboard-root theme-${state.themeMode} palette-${state.accentPalette} ${navClass}`}>
+      <SidebarProvider>
+        <AppSidebar onLogout={handleLogout} />
 
-      <main className="main-content">
-        <Topbar
-          isCalendarScreen={isCalendarScreen}
-          isFilesScreen={isFilesScreen}
-          isTasksScreen={isTasksScreen}
-          isStudyPlanScreen={isStudyPlanScreen}
-          isProfileScreen={isProfileScreen}
-          fileInputRef={fileInputRef}
-          profileName={state.profile.fullName}
-          profileAvatarDataUrl={state.profile.avatarDataUrl}
-          onOpenProfile={() => window.location.href = '/profile'}
-        />
+        <SidebarInset>
+          <header className="flex items-center gap-2 px-4 py-2 md:hidden">
+            <SidebarTrigger />
+          </header>
 
-        <Outlet />
+          <Topbar
+            isCalendarScreen={isCalendarScreen}
+            isFilesScreen={isFilesScreen}
+            isTasksScreen={isTasksScreen}
+            isStudyPlanScreen={isStudyPlanScreen}
+            isProfileScreen={isProfileScreen}
+            fileInputRef={fileInputRef}
+            profileName={state.profile.fullName}
+            profileAvatarDataUrl={state.profile.avatarDataUrl}
+            onOpenProfile={() => window.location.href = '/profile'}
+          />
 
-        <input
-          type="file"
-          multiple
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          onChange={(e) => state.onUploadFiles(e.target.files)}
-        />
-      </main>
+          <div className="flex-1 overflow-y-auto">
+            <Outlet />
+          </div>
+
+          <input
+            type="file"
+            multiple
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={(e) => state.onUploadFiles(e.target.files)}
+          />
+        </SidebarInset>
+      </SidebarProvider>
     </div>
   )
 }

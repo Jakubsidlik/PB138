@@ -17,9 +17,6 @@
   --accent-text: #242f49;
   --danger: #d32f2f;
 
-  min-height: max(884px, 100dvh);
-  display: grid;
-  grid-template-columns: 260px 1fr;
   background: var(--bg-main);
   color: var(--text-main);
 }

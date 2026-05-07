@@ -1,6 +1,22 @@
+@import "tailwindcss";
 @import "@fontsource-variable/geist";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
+
+@theme {
+  --color-border: hsl(214 31% 35%);
+  --color-input: hsl(214 31% 35%);
+  --color-ring: hsl(222 47% 11%);
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222 47% 11%);
+  --color-sidebar: hsl(48 100% 98%);
+  --color-sidebar-foreground: hsl(222 47% 20%);
+  --color-sidebar-border: hsl(30 10% 90%);
+  --color-sidebar-accent: hsl(222 47% 94%);
+  --color-sidebar-accent-foreground: hsl(222 47% 11%);
+  --color-sidebar-ring: hsl(222 47% 11%);
+  --color-sidebar-primary: hsl(222 47% 20%);
+  --color-sidebar-primary-foreground: hsl(0 0% 100%);
+}
 
 :root {
   --border: 214 31% 35%;
@@ -8,11 +24,15 @@
   --ring: 222 47% 11%;
   --background: 0 0% 100%;
   --foreground: 222 47% 11%;
+  --sidebar: 48 100% 98%;
+  --sidebar-foreground: 222 47% 20%;
+  --sidebar-border: 30 10% 90%;
+  --sidebar-accent: 222 47% 94%;
+  --sidebar-accent-foreground: 222 47% 11%;
+  --sidebar-ring: 222 47% 11%;
+  --sidebar-primary: 222 47% 20%;
+  --sidebar-primary-foreground: 0 0% 100%;
 }
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 * {
   box-sizing: border-box;

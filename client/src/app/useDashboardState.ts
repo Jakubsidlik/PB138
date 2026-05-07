@@ -378,11 +378,7 @@ export function useDashboardState() {
     // Show task immediately in UI
     const tempId = Date.now()
     const tempTask: Task = { id: tempId, title, done: false }
-    console.log('[addTask] Adding temp task:', tempTask, 'current tasks count:', tasks.length)
-    setTasks((prev) => {
-      console.log('[addTask] setTasks called, prev count:', prev.length, 'new count:', prev.length + 1)
-      return [...prev, tempTask]
-    })
+    setTasks((prev) => [...prev, tempTask])
 
     // Persist to server in background (don't block render)
     apiFetch('/api/tasks', {
@@ -390,10 +386,8 @@ export function useDashboardState() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, done: false }),
     }).then((res) => {
-      console.log('[addTask] Server response status:', res.status)
       if (res.ok) {
         return res.json().then((serverTask: Task) => {
-          console.log('[addTask] Server task:', serverTask)
           setTasks((prev) => prev.map((t) => (t.id === tempId ? serverTask : t)))
         })
       }

@@ -1,103 +1,119 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import ghostLogo from '../../assets/ghostLogo.jpg'
-import { Button } from '../ui/button'
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarSeparator,
+  SidebarTrigger,
+  SidebarProvider,
+  SidebarInset,
+} from '@/components/ui/sidebar'
+import {
+  Home,
+  Calendar,
+  CheckSquare,
+  FolderOpen,
+  BookOpen,
+  Settings,
+  LogOut,
+} from 'lucide-react'
 
-type SidebarProps = {
+type AppSidebarProps = {
   onLogout: () => void
 }
 
-export function Sidebar({
-  onLogout,
-}: SidebarProps) {
+const navItems = [
+  { to: '/', label: 'Hlavní stránka', icon: Home },
+  { to: '/calendar', label: 'Kalendář', icon: Calendar },
+  { to: '/tasks', label: 'Úkoly', icon: CheckSquare },
+  { to: '/files', label: 'Soubory', icon: FolderOpen },
+  { to: '/study', label: 'Studijní plán', icon: BookOpen },
+] as const
+
+function AppSidebar({ onLogout }: AppSidebarProps) {
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   })
 
-  const handleLogoClick = () => {
-    window.location.href = '/'
+  const isActive = (to: string) => {
+    if (to === '/') return pathname === '/'
+    return pathname === to || pathname.startsWith(to + '/')
   }
 
   return (
-    <aside className="sidebar">
-      <Button
-        type="button"
-        variant="ghost"
-        className="brand-button"
-        onClick={handleLogoClick}
-        aria-label="Přejít na hlavní stránku"
-      >
-        <div className="brand">
-          <img
-            src={ghostLogo}
-            alt="Lonely Student Logo"
-            className="brand-logo"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-            }}
-          />
-          <h1>Lonely Student</h1>
-        </div>
-      </Button>
+    <ShadcnSidebar>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              render={
+                <Link to="/">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground overflow-hidden">
+                    <img
+                      src={ghostLogo}
+                      alt="Lonely Student Logo"
+                      className="size-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-0.5 leading-none">
+                    <span className="font-semibold">Lonely Student</span>
+                    <span className="text-xs text-muted-foreground">Study Planner</span>
+                  </div>
+                </Link>
+              }
+            />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
-      <nav className="menu">
-        <div className="menu-main">
-          <Link
-            to="/"
-            className={`menu-item ${pathname === '/' ? 'active' : ''}`}
-          >
-            Hlavní stránka
-          </Link>
+      <SidebarSeparator />
 
-          <Link
-            to="/calendar"
-            className={`menu-item ${pathname === '/calendar' ? 'active' : ''}`}
-          >
-            Kalendář
-          </Link>
+      <SidebarContent className="px-2 py-2">
+        <SidebarMenu>
+          {navItems.map((item) => (
+            <SidebarMenuItem key={item.to}>
+              <SidebarMenuButton
+                isActive={isActive(item.to)}
+                tooltip={item.label}
+                render={<Link to={item.to} />}
+              >
+                <item.icon />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
 
-          <Link
-            to="/tasks"
-            className={`menu-item ${pathname === '/tasks' ? 'active' : ''}`}
-          >
-            Úkoly
-          </Link>
-
-          <Link
-            to="/files"
-            className={`menu-item ${pathname === '/files' ? 'active' : ''}`}
-          >
-            Soubory
-          </Link>
-
-          <Link
-            to="/study"
-            className={`menu-item ${pathname === '/study' ? 'active' : ''}`}
-          >
-            Studijní plán
-          </Link>
-        </div>
-
-        <div className="menu-bottom">
-          <Link
-            to="/profile"
-            className={`menu-item ${pathname === '/profile' ? 'active' : ''}`}
-          >
-            Nastavení
-          </Link>
-
-          <Button
-            type="button"
-            variant="ghost"
-            className="menu-item menu-logout"
-            onClick={onLogout}
-          >
-            Odhlásit se
-          </Button>
-        </div>
-      </nav>
-    </aside>
+      <SidebarFooter className="px-2 py-2">
+        <SidebarSeparator />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              isActive={isActive('/profile')}
+              tooltip="Nastavení"
+              render={<Link to="/profile" />}
+            >
+              <Settings />
+              <span>Nastavení</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={onLogout} tooltip="Odhlásit se">
+              <LogOut />
+              <span>Odhlásit se</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </ShadcnSidebar>
   )
 }
+
+export { AppSidebar, SidebarProvider, SidebarInset, SidebarTrigger }
