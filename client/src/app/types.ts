@@ -1,8 +1,8 @@
 // Auth & User types
-export type UserRole = 'student' | 'registered' | 'public'
+export type UserRole = 'student' | 'register_user' | 'public'
 export interface AuthSession {
   userId: number | string
-  role: 'REGISTERED' | 'ADMIN'
+  role: 'REGISTROVANÝ UŽIVATEL' | 'ADMIN'
   fullName: string
   email: string
 }
@@ -11,7 +11,7 @@ export interface User {
   id: number
   fullName: string
   email: string
-  role: 'REGISTERED' | 'ADMIN'
+  role: 'REGISTROVANÝ UŽIVATEL' | 'ADMIN'
   school?: string
   faculty?: string
   studyMajor?: string
@@ -183,7 +183,7 @@ export interface FileRecord {
   name: string
   size: string
   sizeBytes: number
-  category: 'pdf' | 'image' | 'document' | 'other' | 'folder'
+  category: 'pdf' | 'image' | 'document' | 'folder' | 'other'
   addedLabel: string
   isShared?: boolean
   userId?: number
@@ -374,10 +374,10 @@ export type UserProfile = {
 
 export type SubjectVisual = {
   icon: string
-  tone: 'blue' | 'emerald' | 'violet' | 'amber'
+  tone: 'blue' | 'green' | 'violet' | 'orange'
 }
 
-export type DesktopSubjectTone = 'blue' | 'emerald' | 'violet' | 'amber' | 'cyan'
+export type DesktopSubjectTone = 'blue' | 'green' | 'violet' | 'orange' | 'cyan'
 
 export type DesktopSubjectMeta = {
   icon: string
@@ -387,7 +387,7 @@ export type DesktopSubjectMeta = {
 
 export type PlannerCalendarKind = 'lesson' | 'event'
 
-export type PlannerCalendarColor = 'blue' | 'emerald' | 'violet' | 'amber' | 'cyan' | 'rose'
+export type PlannerCalendarColor = 'blue' | 'green' | 'violet' | 'orange' | 'cyan' | 'pink'
 
 export type PlannerCalendarItem = {
   id: number

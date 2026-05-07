@@ -56,7 +56,7 @@ const readAuthSessionFromStorage = (): AuthSession | null => {
     const session = parsed as Partial<AuthSession>
     if (
       (typeof session.userId !== 'number' && typeof session.userId !== 'string') ||
-      (session.role !== 'REGISTERED' && session.role !== 'ADMIN') ||
+      (session.role !== 'REGISTROVANÝ UŽIVATEL' && session.role !== 'ADMIN') ||
       typeof session.fullName !== 'string' ||
       typeof session.email !== 'string'
     ) {
@@ -308,7 +308,7 @@ export function useDashboardState() {
       return true
     }
 
-    window.alert('Tato akce vyzaduje prihlaseni.')
+    window.alert('Tato akce vyžaduje přihlášení.')
     return false
   }
 

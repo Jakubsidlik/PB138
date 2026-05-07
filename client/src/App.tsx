@@ -18,7 +18,7 @@ function App() {
     if (isSignedIn && user && !state.authSession) {
       state.setAuthSession({
         userId: user.id as any, // Clerk vrací textové ID
-        role: 'REGISTERED',
+        role: 'REGISTROVANÝ UŽIVATEL', // Role pro registrované uživatele
         fullName: user.fullName || 'Uživatel',
         email: user.primaryEmailAddress?.emailAddress || '',
       })
