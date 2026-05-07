@@ -4,6 +4,7 @@ import {
   Task,
 } from '../../app/types'
 import { CircularProgress } from './CircularProgress'
+import { Checkbox } from '../ui/checkbox'
 
 type DashboardHomeContentProps = {
   profileName: string
@@ -99,10 +100,9 @@ export function DashboardHomeContent({
             {tasks.slice(0, 5).map((task) => (
               <li key={task.id} className={`dashboard-task-item ${task.done ? 'done' : ''}`}>
                 <label className="dashboard-task-label">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={task.done}
-                    onChange={() => toggleTask(task.id)}
+                    onCheckedChange={() => toggleTask(task.id)}
                   />
                   <span>{task.title}</span>
                 </label>

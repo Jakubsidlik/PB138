@@ -1,6 +1,7 @@
 import { ReactNode } from 'react'
 
 import { Button } from '../ui/button'
+import { Checkbox } from '../ui/checkbox'
 import { Task } from '../../app/types'
 
 type TaskListProps = {
@@ -33,8 +34,11 @@ export function TaskList({
       <ul>
         {tasks.map((task) => (
           <li key={task.id} className={itemClassName}>
-            <label>
-              <input type="checkbox" checked={task.done} onChange={() => onToggleTask(task.id)} />
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={task.done}
+                onCheckedChange={() => onToggleTask(task.id)}
+              />
               <span>{task.title}</span>
             </label>
             {renderDeleteButton ? (

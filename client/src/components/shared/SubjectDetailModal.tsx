@@ -1,6 +1,15 @@
 import React from 'react'
 import { Subject, ManagedFile, Lesson } from '../../app/types'
 import { Button } from '../ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../ui/dialog"
+import { Textarea } from "../ui/textarea"
+import { ScrollArea } from "../ui/scroll-area"
 
 type SubjectDetailModalProps = {
   subject: Subject | null
@@ -46,104 +55,101 @@ export function SubjectDetailModal({
 
     onAddFile?.(subject.id, file)
     
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
   return (
-    <div className="subject-detail-modal-overlay" onClick={onClose}>
-      <div className="subject-detail-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="subject-detail-modal-header">
-          <h2>{subject.name}</h2>
-          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="subject-detail-modal-close">
-            ✕
-          </Button>
-        </div>
-
-        <div className="subject-detail-modal-body">
-          <div className="subject-detail-info">
+    <Dialog open={!!subject} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="text-2xl font-bold">{subject.name}</DialogTitle>
+          <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
             <p><strong>Kód:</strong> {subject.code}</p>
             <p><strong>Učitel:</strong> {subject.teacher}</p>
           </div>
+        </DialogHeader>
 
-          <div className="subject-detail-section">
-            <h3>📄 Soubory ({subjectFiles.length})</h3>
-            {subjectFiles.length > 0 ? (
-              <ul className="subject-files-list">
-                {subjectFiles.map((file) => (
-                  <li key={file.id} className="subject-file-item">
-                    <span className="file-name">{file.name}</span>
-                    <span className="file-size">{file.size}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="empty-state">Zatím žádné soubory</p>
-            )}
-            
-            <div className="subject-detail-input-group">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleAddFile}
-                style={{ display: 'none' }}
-              />
-              <Button 
-                type="button" 
-                className="subject-detail-add-button"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                + Přidat soubor
-              </Button>
-            </div>
-          </div>
-
-          <div className="subject-detail-section">
-            <h3>📝 Poznámky ({subjectLessons.length})</h3>
-            
-            <div className="subject-detail-input-group">
-              <textarea
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Napište poznámku..."
-                className="subject-note-input"
-                rows={3}
-              />
-              <Button 
-                type="button" 
-                className="subject-detail-add-button"
-                onClick={handleAddNote}
-                disabled={!noteText.trim()}
-              >
-                Přidat poznámku
-              </Button>
+        <ScrollArea className="flex-1 p-6">
+          <div className="space-y-8">
+            {/* Soubory */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">📄 Soubory ({subjectFiles.length})</h3>
+              {subjectFiles.length > 0 ? (
+                <ul className="space-y-2">
+                  {subjectFiles.map((file) => (
+                    <li key={file.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                      <span className="font-medium truncate">{file.name}</span>
+                      <span className="text-xs text-muted-foreground ml-4 shrink-0">{file.size}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Zatím žádné soubory</p>
+              )}
+              
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAddFile}
+                  style={{ display: 'none' }}
+                />
+                <Button 
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full sm:w-auto"
+                >
+                  + Přidat soubor
+                </Button>
+              </div>
             </div>
 
-            {subjectLessons.length > 0 ? (
-              <ul className="subject-notes-list">
-                {subjectLessons.map((lesson) => (
-                  <li key={lesson.id} className="subject-note-item">
-                    <p className="note-text">{lesson.content || lesson.title}</p>
-                    <span className="note-date">
-                      {new Date(lesson.createdAt!).toLocaleDateString('cs-CZ')} {new Date(lesson.createdAt!).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="empty-state">Zatím žádné poznámky</p>
-            )}
-          </div>
-        </div>
+            {/* Poznámky */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">📝 Poznámky ({subjectLessons.length})</h3>
+              
+              <div className="space-y-2">
+                <Textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder="Napište poznámku..."
+                  className="min-h-[100px]"
+                />
+                <Button 
+                  onClick={handleAddNote}
+                  disabled={!noteText.trim()}
+                  className="w-full sm:w-auto"
+                >
+                  Přidat poznámku
+                </Button>
+              </div>
 
-        <div className="subject-detail-modal-footer">
-          <Button type="button" className="subject-detail-modal-button" onClick={onClose}>
+              {subjectLessons.length > 0 ? (
+                <ul className="space-y-3">
+                  {subjectLessons.map((lesson) => (
+                    <li key={lesson.id} className="p-4 rounded-lg border bg-card">
+                      <p className="text-sm leading-relaxed">{lesson.content || lesson.title}</p>
+                      <div className="mt-2 text-[10px] text-muted-foreground text-right">
+                        {new Date(lesson.createdAt!).toLocaleDateString('cs-CZ')} {new Date(lesson.createdAt!).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Zatím žádné poznámky</p>
+              )}
+            </div>
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="p-6 pt-2 border-t">
+          <Button variant="ghost" onClick={onClose}>
             Zavřít
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

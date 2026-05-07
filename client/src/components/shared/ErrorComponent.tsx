@@ -1,5 +1,5 @@
-
 import { useRouter } from '@tanstack/react-router'
+import { Button } from '../ui/button'
 
 type ErrorComponentProps = {
   error: Error
@@ -56,7 +56,7 @@ export function ErrorComponent({ error }: ErrorComponentProps) {
         >
           {error?.message || 'Došlo k neznámé chybě. Prosím, zkuste znovu.'}
         </p>
-        <button
+        <Button
           onClick={handleRetry}
           style={{
             padding: '0.75rem 1.5rem',
@@ -77,7 +77,7 @@ export function ErrorComponent({ error }: ErrorComponentProps) {
           }}
         >
           Zkusit znovu
-        </button>
+        </Button>
       </div>
     </div>
   )

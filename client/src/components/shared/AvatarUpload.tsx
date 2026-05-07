@@ -1,4 +1,5 @@
 import React from 'react'
+import { Button } from '../ui/button'
 
 type AvatarUploadProps = {
   avatarDataUrl: string | null
@@ -141,7 +142,7 @@ export function AvatarUpload({
             </div>
           )}
 
-          <button
+          <Button
             type="button"
             className="avatar-action-button"
             onClick={() => fileInputRef.current?.click()}
@@ -149,7 +150,7 @@ export function AvatarUpload({
             aria-label="Nahrát profilovou fotku"
           >
             {isLoading ? '⏳' : '📷'}
-          </button>
+          </Button>
 
           <input
             ref={fileInputRef}
@@ -162,14 +163,14 @@ export function AvatarUpload({
         </div>
 
         {previewUrl && (
-          <button
+          <Button
             type="button"
             className="avatar-remove-button mobile"
             onClick={handleRemove}
             disabled={isLoading}
           >
             Odebrat fotku
-          </button>
+          </Button>
         )}
       </div>
     )
@@ -200,7 +201,7 @@ export function AvatarUpload({
             </div>
           )}
 
-          <button
+          <Button
             type="button"
             className="avatar-action-button"
             onClick={() => fileInputRef.current?.click()}
@@ -208,7 +209,7 @@ export function AvatarUpload({
             aria-label="Nahrát profilovou fotku"
           >
             {isLoading ? '⏳' : '📷'}
-          </button>
+          </Button>
 
           <input
             ref={fileInputRef}
@@ -228,23 +229,23 @@ export function AvatarUpload({
       </div>
 
       <div className="avatar-upload-actions">
-        <button
+        <Button
           type="button"
           className="primary"
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoading}
         >
           {isLoading ? 'Nahrávám...' : 'Nahrát nový avatar'}
-        </button>
+        </Button>
         {previewUrl && (
-          <button
+          <Button
             type="button"
             className="secondary"
             onClick={handleRemove}
             disabled={isLoading}
           >
             Odebrat
-          </button>
+          </Button>
         )}
       </div>
     </div>
