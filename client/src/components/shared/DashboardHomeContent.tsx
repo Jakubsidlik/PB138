@@ -103,6 +103,7 @@ export function DashboardHomeContent({
                   <Checkbox
                     checked={task.done}
                     onCheckedChange={() => toggleTask(task.id)}
+                    className="size-5 shrink-0"
                   />
                   <span>{task.title}</span>
                 </label>

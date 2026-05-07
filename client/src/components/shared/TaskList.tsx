@@ -34,10 +34,11 @@ export function TaskList({
       <ul>
         {tasks.map((task) => (
           <li key={task.id} className={itemClassName}>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label>
               <Checkbox
                 checked={task.done}
                 onCheckedChange={() => onToggleTask(task.id)}
+                className="size-5 shrink-0"
               />
               <span>{task.title}</span>
             </label>
