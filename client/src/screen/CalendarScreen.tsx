@@ -146,7 +146,9 @@ export function DesktopCalendarScreen({
                       onValueChange={(val: 'low'|'medium'|'high') => setNewEvent({...newEvent, priority: val})}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Vyberte prioritu" />
+                        <SelectValue placeholder="Vyberte prioritu">
+                          {newEvent.priority === 'high' ? 'Vysoká' : newEvent.priority === 'medium' ? 'Střední' : newEvent.priority === 'low' ? 'Nízká' : 'Vyberte prioritu'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="low">Nízká</SelectItem>
@@ -202,8 +204,9 @@ export function DesktopCalendarScreen({
                   <span className={numberClasses}>{cell.date.getDate()}</span>
                   <div className="flex flex-col gap-1 w-full overflow-hidden">
                     {dayEvents.slice(0, 2).map((dayEvent) => (
-                      <span key={dayEvent.id} className="text-[10px] sm:text-xs truncate w-full px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium" title={dayEvent.title}>
+                      <span key={dayEvent.id} className="text-[10px] sm:text-xs w-full px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium text-left whitespace-normal break-words" style={{ wordBreak: 'break-word' }} title={`${dayEvent.title}${dayEvent.priority ? ` - ${dayEvent.priority === 'high' ? 'vysoká' : dayEvent.priority === 'medium' ? 'střední' : 'nízká'}` : ''}`}>
                         {dayEvent.title}
+                        {dayEvent.priority && ` - ${dayEvent.priority === 'high' ? 'vysoká' : dayEvent.priority === 'medium' ? 'střední' : 'nízká'}`}
                       </span>
                     ))}
                     {dayEvents.length > 2 && (
