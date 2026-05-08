@@ -114,7 +114,7 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
               size="lg"
               onClick={onLogout}
               tooltip="Odhlásit se"
-              className="h-14 text-base [&_svg]:size-6 text-red-500 hover:bg-red-500 hover:text-background cursor-pointer"
+              className="h-14 text-base [&_svg]:size-6 text-red-500 hover:bg-red-500 hover:text-white hover:font-bold cursor-pointer"
             >
               <LogOut />
               <span>Odhlásit se</span>

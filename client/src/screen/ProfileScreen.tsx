@@ -41,6 +41,38 @@ export function DesktopProfileScreen({
   isSavingProfile,
 }: DesktopProfileScreenProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  
+  const [draftThemeMode, setDraftThemeMode] = React.useState(themeMode)
+  const [draftAccentPalette, setDraftAccentPalette] = React.useState(accentPalette)
+
+  React.useEffect(() => {
+    setDraftThemeMode(themeMode)
+  }, [themeMode])
+
+  React.useEffect(() => {
+    setDraftAccentPalette(accentPalette)
+  }, [accentPalette])
+
+  const hasUnsavedThemeChanges = draftThemeMode !== themeMode || draftAccentPalette !== accentPalette
+  const totalHasUnsavedChanges = hasUnsavedChanges || hasUnsavedThemeChanges
+
+  const handleSaveProfile = () => {
+    if (draftThemeMode !== themeMode) {
+      onThemeChange(draftThemeMode)
+    }
+    if (draftAccentPalette !== accentPalette) {
+      onPaletteChange(draftAccentPalette)
+    }
+    if (hasUnsavedChanges) {
+      onSaveProfile()
+    }
+  }
+
+  const handleResetProfile = () => {
+    setDraftThemeMode(themeMode)
+    setDraftAccentPalette(accentPalette)
+    onResetProfile()
+  }
 
   return (
     <section className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-10" id="desktop-profile">
@@ -108,10 +140,10 @@ export function DesktopProfileScreen({
           </CardHeader>
           <CardContent>
             <ProfileThemeSection
-              themeMode={themeMode}
-              onThemeChange={onThemeChange}
-              accentPalette={accentPalette}
-              onPaletteChange={onPaletteChange}
+              themeMode={draftThemeMode}
+              onThemeChange={setDraftThemeMode}
+              accentPalette={draftAccentPalette}
+              onPaletteChange={setDraftAccentPalette}
             />
           </CardContent>
         </Card>
@@ -119,10 +151,10 @@ export function DesktopProfileScreen({
 
       <div className="mt-4">
         <ProfileSaveActions
-          hasUnsavedChanges={hasUnsavedChanges}
+          hasUnsavedChanges={totalHasUnsavedChanges}
           isSavingProfile={isSavingProfile}
-          onResetProfile={onResetProfile}
-          onSaveProfile={onSaveProfile}
+          onResetProfile={handleResetProfile}
+          onSaveProfile={handleSaveProfile}
         />
       </div>
     </section>

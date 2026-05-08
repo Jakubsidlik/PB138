@@ -47,13 +47,17 @@ export function ThemeSelector({
         <div className="theme-selector-panel">
           <section className="theme-selector-section">
             <h4>Režim</h4>
-            <div className="theme-options">
+            <div className="theme-options flex gap-4 mt-2">
               {themeOptions.map((option) => (
                 <Button
                   key={option.value}
                   type="button"
                   variant={currentTheme === option.value ? 'default' : 'outline'}
-                  className={`theme-option ${currentTheme === option.value ? 'active' : ''}`}
+                  className={`theme-option transition-all ${
+                    currentTheme === option.value
+                      ? 'active ring-2 ring-primary ring-offset-2 ring-offset-background font-bold'
+                      : 'hover:bg-primary/20 hover:text-primary hover:border-primary'
+                  }`}
                   onClick={() => {
                     onThemeChange(option.value)
                   }}
@@ -64,24 +68,35 @@ export function ThemeSelector({
             </div>
           </section>
 
-          <section className="theme-selector-section">
+          <section className="theme-selector-section mt-4">
             <h4>Barva</h4>
-            <div className="palette-options">
-              {paletteOptions.map((option) => (
-                <Button
-                  key={option.value}
-                  type="button"
-                  variant={currentPalette === option.value ? 'default' : 'outline'}
-                  size="icon"
-                  className={`palette-option palette-${option.value} ${currentPalette === option.value ? 'active' : ''}`}
-                  onClick={() => {
-                    onPaletteChange(option.value)
-                  }}
-                  title={option.label}
-                >
-                  <span className="palette-dot" />
-                </Button>
-              ))}
+            <div className="palette-options flex gap-2 mt-2 flex-wrap">
+              {paletteOptions.map((option) => {
+                const colorMap: Record<string, string> = {
+                  blue: 'bg-blue-600',
+                  emerald: 'bg-emerald-600',
+                  rose: 'bg-rose-600',
+                  amber: 'bg-amber-600',
+                  mono: 'bg-zinc-600',
+                }
+                const dotColor = colorMap[option.value] || 'bg-primary'
+                
+                return (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={currentPalette === option.value ? 'default' : 'outline'}
+                    size="icon"
+                    className={`palette-option palette-${option.value} ${currentPalette === option.value ? 'active ring-2 ring-primary ring-offset-2' : ''}`}
+                    onClick={() => {
+                      onPaletteChange(option.value)
+                    }}
+                    title={option.label}
+                  >
+                    <span className={`w-4 h-4 rounded-full ${dotColor}`} />
+                  </Button>
+                )
+              })}
             </div>
           </section>
         </div>

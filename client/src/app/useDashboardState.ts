@@ -149,16 +149,34 @@ export function useDashboardState() {
   React.useEffect(() => {
     localStorage.setItem(THEME_STORAGE_KEY, themeMode)
     if (themeMode === 'dark') {
-      document.documentElement.classList.add('theme-dark')
+      document.documentElement.classList.add('theme-dark', 'dark')
       document.body.style.backgroundColor = '#161e2f'
     } else {
-      document.documentElement.classList.remove('theme-dark')
+      document.documentElement.classList.remove('theme-dark', 'dark')
       document.body.style.backgroundColor = '#fffdf6'
+    }
+    
+    // Force update the root element so we don't have to refresh the page
+    const rootEl = document.querySelector('.dashboard-root')
+    if (rootEl) {
+      rootEl.classList.remove('theme-light', 'theme-dark')
+      rootEl.classList.add(`theme-${themeMode}`)
     }
   }, [themeMode])
 
   React.useEffect(() => {
     localStorage.setItem(PALETTE_STORAGE_KEY, accentPalette)
+    
+    // Force update the root element so we don't have to refresh the page
+    const rootEl = document.querySelector('.dashboard-root')
+    if (rootEl) {
+      rootEl.classList.forEach((cls) => {
+        if (cls.startsWith('palette-')) {
+          rootEl.classList.remove(cls)
+        }
+      })
+      rootEl.classList.add(`palette-${accentPalette}`)
+    }
   }, [accentPalette])
 
   React.useEffect(() => {
