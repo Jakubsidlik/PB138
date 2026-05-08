@@ -27,7 +27,7 @@ export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask, dele
   }
 return (
     <section className="flex flex-col gap-6" id="desktop-tasks">
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 pl-2 md:pl-4">
         <h2 className="text-2xl font-bold tracking-tight">Moje úkoly</h2>
         <p className="text-muted-foreground">Přehled všech úkolů a jejich stavu</p>
     </div>

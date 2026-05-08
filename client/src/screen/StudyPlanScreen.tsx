@@ -94,7 +94,7 @@ export function DesktopStudyPlan({
 
   return (
     <section className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10" id="desktop-study-plan">
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 pl-2 md:pl-4">
         <h2 className="text-2xl font-bold tracking-tight">Studijní plán</h2>
         <p className="text-muted-foreground">Přehled předmětů a jejich probíhajících úkolů</p>
       </div>

@@ -527,12 +527,15 @@ export function useDashboardState() {
 
     const filesArray = incomingFiles instanceof FileList ? Array.from(incomingFiles) : incomingFiles
 
+    const now = new Date()
+    const formattedTime = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+
     const tempFiles = filesArray.map((file) => ({
       id: Date.now() + Math.floor(Math.random() * 100000),
       name: file.name,
       size: formatFileSize(file.size),
       sizeBytes: file.size,
-      addedLabel: 'Nahrávám na S3...',
+      addedLabel: formattedTime,
       category: getManagedFileCategory(file.name),
       shared: false,
       subjectId: options?.subjectId ?? null,
@@ -569,7 +572,7 @@ export function useDashboardState() {
           body: JSON.stringify({
             name: file.name,
             size: file.size,
-            addedLabel: 'Přidáno právě teď',
+            addedLabel: formattedTime,
             shared: false,
             fileKey,
             fileUrl,
@@ -775,6 +778,8 @@ export function useDashboardState() {
       return
     }
 
+    setManagedFiles(prev => prev.map(f => f.id === fileId ? { ...f, ...patch } : f))
+
     void apiFetch(`/api/files/${fileId}`, {
       method: 'PUT',
       headers: {
@@ -796,9 +801,7 @@ export function useDashboardState() {
       return
     }
 
-    if (!window.confirm(`Opravdu smazat soubor \"${file.name}\"?`)) {
-      return
-    }
+    setManagedFiles(prev => prev.filter(f => f.id !== fileId))
 
     void apiFetch(`/api/files/${fileId}`, { method: 'DELETE' }).then(() => {
       void refreshFiles()
@@ -813,6 +816,10 @@ export function useDashboardState() {
     if (!nextName || nextName === file.name) return
 
     updateFile(fileId, { name: nextName })
+  }
+
+  const changeFileSubject = (fileId: number, subjectId: number | null) => {
+    updateFile(fileId, { subjectId })
   }
 
   const toggleFileShared = async (fileId: number, email?: string) => {
@@ -1018,5 +1025,6 @@ export function useDashboardState() {
     renameFile,
     removeFile,
     toggleFileShared,
+    changeFileSubject,
   }
 }

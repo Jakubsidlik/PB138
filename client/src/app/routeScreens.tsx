@@ -75,11 +75,13 @@ export function FilesComponent() {
   return (
     <DesktopFilesScreen
       managedFiles={state.displayedRecentFiles}
+      subjects={state.subjects}
       fileInputRef={fileInputRef}
       onUploadFiles={state.onUploadFiles}
       onRenameFile={state.renameFile}
       onDeleteFile={state.removeFile}
       onToggleFileShared={state.toggleFileShared}
+      onChangeFileSubject={state.changeFileSubject}
     />
   )
 }
