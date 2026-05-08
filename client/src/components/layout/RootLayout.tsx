@@ -32,10 +32,10 @@ export function RootLayout() {
 
   return (
     <div className={`dashboard-root theme-${state.themeMode} palette-${state.accentPalette} ${navClass}`}>
-      <SidebarProvider>
+      <SidebarProvider className="h-svh">
         <AppSidebar onLogout={handleLogout} />
 
-        <SidebarInset>
+        <SidebarInset className="overflow-y-auto">
           <header className="flex items-center gap-2 px-4 py-2 md:hidden">
             <SidebarTrigger />
           </header>
@@ -52,7 +52,7 @@ export function RootLayout() {
             onOpenProfile={() => window.location.href = '/profile'}
           />
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1">
             <Outlet />
           </div>
 

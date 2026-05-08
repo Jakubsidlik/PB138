@@ -42,7 +42,7 @@ export function Topbar({
   }
 
   return (
-    <header className="topbar">
+    <header className="topbar min-h-16 shrink-0">
       <div className="topbar-mobile">
         {isProfileScreen ? (
           <>

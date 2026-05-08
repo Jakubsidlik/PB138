@@ -24,5 +24,3 @@ yarn-error.log*
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
-
-/milestones

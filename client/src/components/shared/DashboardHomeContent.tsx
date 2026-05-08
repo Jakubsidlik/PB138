@@ -57,7 +57,7 @@ export function DashboardHomeContent({
       </header>
 
       {/* Stat cards */}
-      <section className="dashboard-stat-cards">
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <Link to="/study" className="dashboard-stat-card stat-subjects">
           <div className="stat-icon">📚</div>
           <div className="stat-info">
@@ -89,7 +89,7 @@ export function DashboardHomeContent({
       </section>
 
       {/* Main content grid */}
-      <section className="dashboard-content-grid">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Tasks card */}
         <Card className="dashboard-tasks-card border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
