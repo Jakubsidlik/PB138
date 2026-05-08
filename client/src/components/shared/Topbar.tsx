@@ -2,6 +2,7 @@ import React from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { getDailyMotto } from '../../app/utils'
 import { Button } from '../ui/button'
+import { SidebarTrigger } from './Sidebar'
 
 type TopbarProps = {
   isCalendarScreen: boolean
@@ -41,91 +42,136 @@ export function Topbar({
     router.navigate({ to: '/' })
   }
 
+  const renderMobileHeader = () => {
+    if (isProfileScreen) {
+      return (
+        <>
+          <div className="flex items-center gap-1">
+            <SidebarTrigger />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="mobile-header-icon"
+              aria-label="Zpět"
+              onClick={handleBackClick}
+            >
+              ←
+            </Button>
+          </div>
+          <h2 className="mobile-subjects-title">Nastavení profilu</h2>
+          <div className="w-20" />
+        </>
+      )
+    }
+
+    if (isCalendarScreen) {
+      return (
+        <>
+          <div className="flex items-center gap-1">
+            <SidebarTrigger />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="mobile-header-icon"
+              aria-label="Zpět"
+              onClick={handleBackClick}
+            >
+              ←
+            </Button>
+          </div>
+          <h2 className="mobile-subjects-title">Kalendář</h2>
+          <div className="w-20" />
+        </>
+      )
+    }
+
+    if (isTasksScreen) {
+      return (
+        <>
+          <div className="flex items-center gap-1">
+            <SidebarTrigger />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="mobile-header-icon"
+              aria-label="Zpět"
+              onClick={handleBackClick}
+            >
+              ←
+            </Button>
+          </div>
+          <h2 className="mobile-subjects-title">Úkoly</h2>
+          <div className="w-20" />
+        </>
+      )
+    }
+
+    if (isStudyPlanScreen) {
+      return (
+        <>
+          <div className="flex items-center gap-1">
+            <SidebarTrigger />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="mobile-header-icon"
+              aria-label="Zpět"
+              onClick={handleBackClick}
+            >
+              ←
+            </Button>
+          </div>
+          <h2 className="mobile-subjects-title">Studijní plán</h2>
+          <div className="w-20" />
+        </>
+      )
+    }
+
+    if (isFilesScreen) {
+      return (
+        <>
+          <div className="flex items-center gap-1">
+            <SidebarTrigger />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="mobile-header-icon"
+              aria-label="Zpět"
+              onClick={handleBackClick}
+            >
+              ←
+            </Button>
+          </div>
+          <h2 className="mobile-subjects-title">Soubory</h2>
+          <div className="w-20" />
+        </>
+      )
+    }
+
+    return (
+      <>
+        <div className="flex items-center gap-3">
+          <SidebarTrigger />
+          <div className="mobile-greeting">
+            <div>
+              <h1>Lonely Student</h1>
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
+
   return (
     <header className="topbar min-h-16 shrink-0">
       <div className="topbar-mobile">
-        {isProfileScreen ? (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mobile-header-icon"
-              aria-label="Zpět"
-              onClick={handleBackClick}
-            >
-              ←
-            </Button>
-            <h2 className="mobile-subjects-title">Nastavení profilu</h2>
-            <div className="mobile-header-icon" aria-hidden="true" />
-          </>
-        ) : isCalendarScreen ? (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mobile-header-icon"
-              aria-label="Zpět"
-              onClick={handleBackClick}
-            >
-              ←
-            </Button>
-            <h2 className="mobile-subjects-title">Kalendář</h2>
-            <div className="mobile-header-icon" aria-hidden="true" />
-          </>
-        ) : isTasksScreen ? (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mobile-header-icon"
-              aria-label="Zpět"
-              onClick={handleBackClick}
-            >
-              ←
-            </Button>
-            <h2 className="mobile-subjects-title">Úkoly</h2>
-            <div className="mobile-header-icon" aria-hidden="true" />
-          </>
-        ) : isStudyPlanScreen ? (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mobile-header-icon"
-              aria-label="Zpět"
-              onClick={handleBackClick}
-            >
-              ←
-            </Button>
-            <h2 className="mobile-subjects-title">Studijní plán</h2>
-            <div className="mobile-header-icon" aria-hidden="true" />
-          </>
-        ) : (
-          <div className="mobile-greeting">
-            <div>
-              <h1>{isFilesScreen ? 'Soubory' : 'Lonely Student'}</h1>
-            </div>
-          </div>
-        )}
+        {renderMobileHeader()}
 
-        {isTasksScreen || isStudyPlanScreen || isCalendarScreen || isProfileScreen ? null : isFilesScreen ? (
-          <div className="mobile-files-actions">
-            <Button
-              type="button"
-              variant="default"
-              size="icon"
-              className="mobile-notification mobile-notification-primary"
-              aria-label="Přidat soubor"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              ＋
-            </Button>
-          </div>
-        ) : null}
       </div>
 
       <div className="topbar-desktop">

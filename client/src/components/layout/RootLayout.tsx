@@ -36,9 +36,6 @@ export function RootLayout() {
         <AppSidebar onLogout={handleLogout} />
 
         <SidebarInset className="overflow-y-auto">
-          <header className="flex items-center gap-2 px-4 py-2 md:hidden">
-            <SidebarTrigger />
-          </header>
 
           <Topbar
             isCalendarScreen={isCalendarScreen}
