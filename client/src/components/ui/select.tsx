@@ -59,11 +59,11 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  side = "bottom",
+  side = "right",
   sideOffset = 4,
-  align = "center",
+  align = "start",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<

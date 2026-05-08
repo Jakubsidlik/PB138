@@ -52,18 +52,19 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
+              className="h-16"
               render={
                 <Link to="/">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground overflow-hidden">
+                  <div className="flex aspect-square size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground overflow-hidden">
                     <img
                       src={ghostLogo}
                       alt="Lonely Student Logo"
                       className="size-full object-cover"
                     />
                   </div>
-                  <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">Lonely Student</span>
-                    <span className="text-xs text-muted-foreground">Study Planner</span>
+                  <div className="flex flex-col gap-1 leading-none">
+                    <span className="font-semibold text-base">Lonely Student</span>
+                    <span className="text-sm text-muted-foreground">Study Planner</span>
                   </div>
                 </Link>
               }
@@ -79,9 +80,11 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
           {navItems.map((item) => (
             <SidebarMenuItem key={item.to}>
               <SidebarMenuButton
+                size="lg"
                 isActive={isActive(item.to)}
                 tooltip={item.label}
                 render={<Link to={item.to} />}
+                className="h-14 text-base [&_svg]:size-6"
               >
                 <item.icon />
                 <span>{item.label}</span>
@@ -96,16 +99,23 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
+              size="lg"
               isActive={isActive('/profile')}
               tooltip="Nastavení"
               render={<Link to="/profile" />}
+              className="h-14 text-base [&_svg]:size-6"
             >
               <Settings />
               <span>Nastavení</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={onLogout} tooltip="Odhlásit se">
+            <SidebarMenuButton
+              size="lg"
+              onClick={onLogout}
+              tooltip="Odhlásit se"
+              className="h-14 text-base [&_svg]:size-6 text-red-500 hover:bg-red-500 hover:text-background cursor-pointer"
+            >
               <LogOut />
               <span>Odhlásit se</span>
             </SidebarMenuButton>

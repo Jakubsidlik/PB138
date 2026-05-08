@@ -1,4 +1,5 @@
 import { UserProfile } from '../../app/types'
+import { Input } from '../ui/input'
 
 type ProfileContactEmailProps = {
   profile: Partial<UserProfile>
@@ -7,18 +8,17 @@ type ProfileContactEmailProps = {
 
 export function ProfileContactEmail({ profile, onChangeProfile }: ProfileContactEmailProps) {
   return (
-    <div className="profile-grid">
-      <div className="profile-input-group">
-        <label htmlFor="contactEmail">Kontaktní e-mail (pro sdílení souborů)</label>
-        <input
+    <div className="grid gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="contactEmail" className="text-sm font-medium">Kontaktní e-mail (pro sdílení souborů)</label>
+        <Input
           type="email"
           id="contactEmail"
           value={profile.contactEmail || ''}
           onChange={(e) => onChangeProfile({ contactEmail: e.target.value })}
           placeholder="např. jan.novak@skola.cz"
-          className="profile-input"
         />
-        <span className="profile-hint">Tento e-mail uvidí ostatní studenti při sdílení dokumentů.</span>
+        <span className="text-[0.8rem] text-muted-foreground">Tento e-mail uvidí ostatní studenti při sdílení dokumentů.</span>
       </div>
     </div>
   )

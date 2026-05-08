@@ -19,17 +19,17 @@ export function TaskStats({
 }: TaskStatsProps) {
   return (
     <div className={wrapperClassName}>
-      <div className={itemClassName}>
-        <span className="stat-label">{totalLabel}</span>
-        <span className="stat-value">{total}</span>
+      <div className={itemClassName || "rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col justify-center items-center gap-2"}>
+        <span className="text-sm font-medium text-muted-foreground">{totalLabel}</span>
+        <span className="text-3xl font-bold">{total}</span>
       </div>
-      <div className={itemClassName}>
-        <span className="stat-label">{completedLabel}</span>
-        <span className="stat-value">{completed}</span>
+      <div className={itemClassName || "rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col justify-center items-center gap-2"}>
+        <span className="text-sm font-medium text-muted-foreground">{completedLabel}</span>
+        <span className="text-3xl font-bold">{completed}</span>
       </div>
-      <div className={itemClassName}>
-        <span className="stat-label">{remainingLabel}</span>
-        <span className="stat-value">{total - completed}</span>
+      <div className={itemClassName || "rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col justify-center items-center gap-2"}>
+        <span className="text-sm font-medium text-muted-foreground">{remainingLabel}</span>
+        <span className="text-3xl font-bold">{total - completed}</span>
       </div>
     </div>
   )

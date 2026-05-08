@@ -1,5 +1,7 @@
 import { UserProfile } from '../../app/types'
 import { studyYearOptions, studyTypeOptions } from './profileConstants'
+import { Input } from '../ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 
 type ProfileStudyInfoFormProps = {
   profile: Partial<UserProfile>
@@ -8,48 +10,58 @@ type ProfileStudyInfoFormProps = {
 
 export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyInfoFormProps) {
   return (
-    <>
-      <label>
-        <span>Škola</span>
-        <input
+    <div className="grid gap-4">
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">Škola</span>
+        <Input
           id="school"
           value={profile.school || ''}
           onChange={(e) => onChangeProfile({ school: e.target.value })}
           placeholder="např. Masarykova Univerzita"
         />
-      </label>
+      </div>
 
-      <label>
-        <span>Typ studia</span>
-        <select value={profile.studyType} onChange={(event) => onChangeProfile({ studyType: event.target.value })}>
-          {studyTypeOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">Typ studia</span>
+        <Select value={profile.studyType} onValueChange={(value) => onChangeProfile({ studyType: value })}>
+          <SelectTrigger>
+            <SelectValue placeholder="Vyberte typ studia" />
+          </SelectTrigger>
+          <SelectContent>
+            {studyTypeOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <label>
-        <span>Studijní zaměření</span>
-        <input
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">Studijní zaměření</span>
+        <Input
           id="studyMajor"
           value={profile.studyMajor || ''}
           onChange={(e) => onChangeProfile({ studyMajor: e.target.value })}
           placeholder="např. Aplikovaná informatika"
         />
-      </label>
+      </div>
 
-      <label>
-        <span>Ročník</span>
-        <select value={profile.studyYear} onChange={(event) => onChangeProfile({ studyYear: event.target.value })}>
-          {studyYearOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </label>
-    </>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">Ročník</span>
+        <Select value={profile.studyYear} onValueChange={(value) => onChangeProfile({ studyYear: value })}>
+          <SelectTrigger>
+            <SelectValue placeholder="Vyberte ročník" />
+          </SelectTrigger>
+          <SelectContent>
+            {studyYearOptions.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
   )
 }

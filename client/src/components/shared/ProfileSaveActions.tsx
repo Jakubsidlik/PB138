@@ -14,13 +14,12 @@ export function ProfileSaveActions({
   onSaveProfile,
 }: ProfileSaveActionsProps) {
   return (
-    <div className="profile-actions-row">
-      <Button type="button" className="secondary" onClick={onResetProfile}>
+    <div className="flex justify-end gap-3 mt-4">
+      <Button variant="outline" type="button" onClick={onResetProfile}>
         Zahodit změny
       </Button>
       <Button
         type="button"
-        className="primary"
         disabled={!hasUnsavedChanges || isSavingProfile}
         onClick={onSaveProfile}
       >

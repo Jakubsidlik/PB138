@@ -10,15 +10,14 @@ export function ProfileAuthInfo({ authSession }: ProfileAuthInfoProps) {
   }
 
   return (
-    <div className="profile-grid">
-      <p>
-        Přihlášen/a: <strong>{authSession.fullName}</strong>
+    <div className="flex flex-col gap-3 mt-2">
+      <p className="text-lg">
+        <span className="text-muted-foreground mr-2">Přihlášen/a:</span>
+        <strong className="font-semibold">{authSession.fullName}</strong>
       </p>
-      <p>
-        E-mail: <strong>{authSession.email}</strong>
-      </p>
-      <p>
-        Role: <strong>{authSession.role}</strong>
+      <p className="text-lg">
+        <span className="text-muted-foreground mr-2">E-mail:</span>
+        <strong className="font-semibold">{authSession.email}</strong>
       </p>
     </div>
   )

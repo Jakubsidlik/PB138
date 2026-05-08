@@ -92,7 +92,11 @@ export const getRelativeDaysLabel = (date: string) => {
     return 'Zítra'
   }
 
-  return `In ${diffDays} days`
+  if (diffDays >= 2 && diffDays <= 4) {
+    return `Za ${diffDays} dny`
+  }
+
+  return `Za ${diffDays} dní`
 }
 
 export const buildCalendarCells = (displayMonth: Date): CalendarCell[] => {

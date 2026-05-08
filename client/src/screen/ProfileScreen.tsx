@@ -1,5 +1,6 @@
 import React from 'react'
 import { Button } from '../components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { AuthSession, UserProfile, ThemeMode, AccentPalette } from '../app/types'
 import { AvatarPreview } from '../components/shared/AvatarPreview'
 import { HiddenFileInput } from '../components/shared/HiddenFileInput'
@@ -7,7 +8,6 @@ import { ProfileAuthInfo } from '../components/shared/ProfileAuthInfo'
 import { ProfileStudyInfoForm } from '../components/shared/ProfileStudyInfoForm'
 import { ProfileThemeSection } from '../components/shared/ProfileThemeSection'
 import { ProfileSaveActions } from '../components/shared/ProfileSaveActions'
-import { ProfileContactEmail } from '../components/shared/ProfileContactEmail'
 
 type DesktopProfileScreenProps = {
   profile: UserProfile
@@ -43,76 +43,88 @@ export function DesktopProfileScreen({
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   return (
-    <section className="desktop-profile-screen" id="desktop-profile">
-      <div className="desktop-profile-head">
-        <h2>Nastavení profilu</h2>
-        <p>Spravuj profilový obrázek, osobní údaje a studijní informace</p>
+    <section className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-10" id="desktop-profile">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight">Nastavení profilu</h2>
+        <p className="text-muted-foreground">Spravuj profilový obrázek, osobní údaje a studijní informace</p>
       </div>
 
-    <section className="profile-card">
-        <h3>Profilová fotka</h3>
-        <div className="profile-photo-row">
-          <div className="profile-photo-preview-wrap">
-            <AvatarPreview avatarDataUrl={profile.avatarDataUrl} fullName={profile.fullName} />
-            <Button type="button" className="profile-photo-edit" onClick={() => fileInputRef.current?.click()}>
-              📷
-            </Button>
-          </div>
-
-          <div className="profile-photo-actions">
-            <p>Nahraj JPG nebo PNG (max 5MB) nebo odeber současný avatar.</p>
-            <div>
-              <Button type="button" className="primary" onClick={() => fileInputRef.current?.click()}>
-                Nahrát novou fotku
-              </Button>
-              <Button type="button" onClick={onRemoveAvatar}>
-                Odebrat
-              </Button>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="rounded-xl border shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Profilová fotka</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row gap-8 items-center sm:items-start">
+            <div className="relative shrink-0">
+              <AvatarPreview avatarDataUrl={profile.avatarDataUrl} fullName={profile.fullName} />
             </div>
-            <HiddenFileInput
-              inputRef={fileInputRef}
-              accept="image/png,image/jpeg,image/gif,image/webp"
-              onChange={onUploadAvatar}
+
+            <div className="flex flex-col gap-4 text-center sm:text-left w-full sm:mt-4">
+              <p className="text-sm text-muted-foreground">Nahraj JPG nebo PNG (max 5MB) nebo odeber současný avatar.</p>
+              <div className="flex flex-wrap gap-3 justify-center sm:justify-start mt-2">
+                <Button 
+                  type="button" 
+                  className="bg-[#242f49] text-white hover:bg-[#161e2f] shadow-md hover:shadow-lg transition-all"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Nahrát novou fotku
+                </Button>
+                <Button type="button" variant="outline" onClick={onRemoveAvatar}>
+                  Odebrat
+                </Button>
+              </div>
+              <HiddenFileInput
+                inputRef={fileInputRef}
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                onChange={onUploadAvatar}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl border shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Registrovaný uživatel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProfileAuthInfo authSession={authSession} />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl border shadow-sm md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Studijní informace</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <ProfileStudyInfoForm profile={profile} onChangeProfile={onChangeProfile} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl border shadow-sm md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Vzhled</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProfileThemeSection
+              themeMode={themeMode}
+              onThemeChange={onThemeChange}
+              accentPalette={accentPalette}
+              onPaletteChange={onPaletteChange}
             />
-          </div>
-        </div>
-      </section>
+          </CardContent>
+        </Card>
+      </div>
 
-      <section className="profile-card">
-        <h3>Registrovaný uživatel</h3>
-        <ProfileAuthInfo authSession={authSession} />
-      </section>
-
-      <section className="profile-card">
-        <h3>Kontaktní e-mail</h3>
-        <ProfileContactEmail profile={profile} onChangeProfile={onChangeProfile} />
-      </section>
-
-      <section className="profile-card">
-        <h3>Studijní informace</h3>
-        <div className="profile-grid">
-          <ProfileStudyInfoForm profile={profile} onChangeProfile={onChangeProfile} />
-        </div>
-      </section>
-
-      <section className="profile-card">
-        <h3>Vzhled</h3>
-        <ProfileThemeSection
-          themeMode={themeMode}
-          onThemeChange={onThemeChange}
-          accentPalette={accentPalette}
-          onPaletteChange={onPaletteChange}
+      <div className="mt-4">
+        <ProfileSaveActions
+          hasUnsavedChanges={hasUnsavedChanges}
+          isSavingProfile={isSavingProfile}
+          onResetProfile={onResetProfile}
+          onSaveProfile={onSaveProfile}
         />
-      </section>
-
-      <ProfileSaveActions
-        hasUnsavedChanges={hasUnsavedChanges}
-        isSavingProfile={isSavingProfile}
-        onResetProfile={onResetProfile}
-        onSaveProfile={onSaveProfile}
-      />
+      </div>
     </section>
   )
 }
-
-

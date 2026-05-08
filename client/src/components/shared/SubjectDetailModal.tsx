@@ -1,6 +1,8 @@
 import React from 'react'
 import { Subject, ManagedFile, Lesson } from '../../app/types'
 import { Button } from '../ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
+import { Textarea } from '../ui/textarea'
 
 type SubjectDetailModalProps = {
   subject: Subject | null
@@ -53,14 +55,11 @@ export function SubjectDetailModal({
   }
 
   return (
-    <div className="subject-detail-modal-overlay" onClick={onClose}>
-      <div className="subject-detail-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="subject-detail-modal-header">
-          <h2>{subject.name}</h2>
-          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="subject-detail-modal-close">
-            ✕
-          </Button>
-        </div>
+    <Dialog open={!!subject} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold">{subject.name}</DialogTitle>
+        </DialogHeader>
 
         <div className="subject-detail-modal-body">
           <div className="subject-detail-info">
@@ -103,13 +102,13 @@ export function SubjectDetailModal({
           <div className="subject-detail-section">
             <h3>📝 Poznámky ({subjectLessons.length})</h3>
             
-            <div className="subject-detail-input-group">
-              <textarea
+            <div className="subject-detail-input-group mt-4 flex gap-2">
+              <Textarea
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
                 placeholder="Napište poznámku..."
-                className="subject-note-input"
                 rows={3}
+                className="resize-none"
               />
               <Button 
                 type="button" 
@@ -137,13 +136,7 @@ export function SubjectDetailModal({
             )}
           </div>
         </div>
-
-        <div className="subject-detail-modal-footer">
-          <Button type="button" className="subject-detail-modal-button" onClick={onClose}>
-            Zavřít
-          </Button>
-        </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

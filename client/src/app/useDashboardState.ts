@@ -148,6 +148,13 @@ export function useDashboardState() {
 
   React.useEffect(() => {
     localStorage.setItem(THEME_STORAGE_KEY, themeMode)
+    if (themeMode === 'dark') {
+      document.documentElement.classList.add('theme-dark')
+      document.body.style.backgroundColor = '#161e2f'
+    } else {
+      document.documentElement.classList.remove('theme-dark')
+      document.body.style.backgroundColor = '#fffdf6'
+    }
   }, [themeMode])
 
   React.useEffect(() => {
@@ -369,15 +376,15 @@ export function useDashboardState() {
     }
   }
 
-  const addTask = () => {
+  const addTask = (title: string) => {
     if (!ensureAuthenticated()) return
 
-    const title = window.prompt('Název nového úkolu')?.trim()
-    if (!title) return
+    const trimmedTitle = title.trim()
+    if (!trimmedTitle) return
 
     // Show task immediately in UI
     const tempId = Date.now()
-    const tempTask: Task = { id: tempId, title, done: false }
+    const tempTask: Task = { id: tempId, title: trimmedTitle, done: false }
     setTasks((prev) => [...prev, tempTask])
 
     // Persist to server in background (don't block render)
@@ -430,24 +437,13 @@ export function useDashboardState() {
     }
   }
 
-  const addDesktopEvent = () => {
+  const addDesktopEvent = (eventData: { title: string, time: string, location: string, priority: 'low' | 'medium' | 'high' }) => {
     if (!ensureAuthenticated()) return
 
-    const title = window.prompt('Název události')?.trim()
+    const title = eventData.title.trim()
     if (!title) return
 
-    const time = window.prompt('Čas (např. 09:00 - 10:30)')
-    const location = window.prompt('Místo')
-    
-    let priority: 'low' | 'medium' | 'high' = 'medium'
-    const priorityInput = window.prompt('Priorita (nízká/střední/vysoká)')?.toLowerCase().trim()
-    if (priorityInput === 'nízká' || priorityInput === 'low') {
-      priority = 'low'
-    } else if (priorityInput === 'střední' || priorityInput === 'medium') {
-      priority = 'medium'
-    } else if (priorityInput === 'vysoká' || priorityInput === 'high') {
-      priority = 'high'
-    }
+    const { time, location, priority } = eventData
 
     const tempId = Date.now()
     const defaultMeta = getDefaultMetaForTitle(title)
@@ -456,7 +452,7 @@ export function useDashboardState() {
       title,
       date: selectedDateIso,
       time: time?.trim() || defaultMeta.time,
-      location: location?.trim() || defaultMeta.location,
+      location: location?.trim() || '',
       subjectId: null,
       priority,
     }
@@ -468,7 +464,7 @@ export function useDashboardState() {
       [tempId]: {
         ...defaultMeta,
         time: time?.trim() || defaultMeta.time,
-        location: location?.trim() || defaultMeta.location,
+        location: location?.trim() || '',
       },
     }))
 
@@ -673,25 +669,14 @@ export function useDashboardState() {
     await signOut()
   }
 
-  const createSubject = () => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+  const createSubject = (subjectData: { name: string, teacher: string, code: string }) => {
+    if (!ensureAuthenticated()) return
 
-    const name = window.prompt('Název předmětu')?.trim()
-    if (!name) {
-      return
-    }
+    const name = subjectData.name.trim()
+    const teacher = subjectData.teacher.trim()
+    const code = subjectData.code.trim().toUpperCase()
 
-    const teacher = window.prompt('Vyučující')?.trim()
-    if (!teacher) {
-      return
-    }
-
-    const code = window.prompt('Kód předmětu (např. PB138)')?.trim().toUpperCase()
-    if (!code) {
-      return
-    }
+    if (!name || !teacher || !code) return
 
     void apiFetch('/api/subjects', {
       method: 'POST',
@@ -704,30 +689,17 @@ export function useDashboardState() {
     })
   }
 
-  const updateSubject = (subjectId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+  const updateSubject = (subjectId: number, subjectData: { name: string, teacher: string, code: string }) => {
+    if (!ensureAuthenticated()) return
 
     const subject = subjects.find((item) => item.id === subjectId)
-    if (!subject) {
-      return
-    }
+    if (!subject) return
 
-    const name = window.prompt('Název předmětu', subject.name)?.trim()
-    if (!name) {
-      return
-    }
+    const name = subjectData.name.trim()
+    const teacher = subjectData.teacher.trim()
+    const code = subjectData.code.trim().toUpperCase()
 
-    const teacher = window.prompt('Vyučující', subject.teacher)?.trim()
-    if (!teacher) {
-      return
-    }
-
-    const code = window.prompt('Kód předmětu', subject.code)?.trim().toUpperCase()
-    if (!code) {
-      return
-    }
+    if (!name || !teacher || !code) return
 
     void apiFetch(`/api/subjects/${subjectId}`, {
       method: 'PUT',
@@ -815,16 +787,12 @@ export function useDashboardState() {
     })
   }
 
-  const renameFile = (fileId: number) => {
+  const renameFile = (fileId: number, newName: string) => {
     const file = managedFiles.find((item) => item.id === fileId)
-    if (!file) {
-      return
-    }
+    if (!file) return
 
-    const nextName = window.prompt('Nový název souboru', file.name)?.trim()
-    if (!nextName || nextName === file.name) {
-      return
-    }
+    const nextName = newName.trim()
+    if (!nextName || nextName === file.name) return
 
     updateFile(fileId, { name: nextName })
   }
@@ -856,34 +824,7 @@ export function useDashboardState() {
     }
   }
 
-  const manageFile = (fileId: number) => {
-    const file = managedFiles.find((item) => item.id === fileId)
-    if (!file) {
-      return
-    }
 
-    const action = window
-      .prompt(
-        `Správa souboru: ${file.name}\nZadej akci: rename | share | delete`,
-        'rename',
-      )
-      ?.trim()
-      .toLowerCase()
-
-    if (action === 'rename') {
-      renameFile(fileId)
-      return
-    }
-
-    if (action === 'share') {
-      toggleFileShared(fileId)
-      return
-    }
-
-    if (action === 'delete') {
-      removeFile(fileId)
-    }
-  }
 
   const tasksDone = tasks.filter((task) => task.done).length
   const isCalendarScreen = activeMobileNav === 'calendar'
@@ -1056,7 +997,7 @@ export function useDashboardState() {
     updateSubject,
     toggleSubjectArchived,
     deleteSubject,
-    manageFile,
+    renameFile,
     removeFile,
     toggleFileShared,
   }

@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useEffect } from 'react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useDashboardState } from './useDashboardState'
 import { getDeadlineMeta, getRelativeDaysLabel, getDefaultMetaForTitle } from './utils'
 import { DashboardHomeContent } from '../components/shared/DashboardHomeContent'
@@ -12,6 +13,11 @@ import { calendarWeekDays } from './data'
 // Home route component
 export function HomeComponent() {
   const state = useDashboardState()
+  const navigate = useNavigate()
+
+  const handleEventClick = (dateIso: string) => {
+    navigate({ to: '/calendar', search: { date: dateIso } })
+  }
 
   return (
     <DashboardHomeContent
@@ -24,6 +30,7 @@ export function HomeComponent() {
       toggleTask={state.toggleTask}
       subjectsCount={state.subjects.length}
       filesCount={state.managedFiles.length}
+      onEventClick={handleEventClick}
     />
   )
 }
@@ -31,6 +38,15 @@ export function HomeComponent() {
 // Calendar route component
 export function CalendarComponent() {
   const state = useDashboardState()
+  const search: any = useSearch({ strict: false })
+
+  useEffect(() => {
+    if (search.date && search.date !== state.selectedDateIso) {
+      state.setSelectedDateIso(search.date)
+      const newDate = new Date(search.date)
+      state.setDisplayMonth(new Date(newDate.getFullYear(), newDate.getMonth(), 1))
+    }
+  }, [search.date])
 
   return (
     <DesktopCalendarScreen
@@ -61,7 +77,7 @@ export function FilesComponent() {
       managedFiles={state.displayedRecentFiles}
       fileInputRef={fileInputRef}
       onUploadFiles={state.onUploadFiles}
-      onManageFile={state.manageFile}
+      onRenameFile={state.renameFile}
       onDeleteFile={state.removeFile}
       onToggleFileShared={state.toggleFileShared}
     />

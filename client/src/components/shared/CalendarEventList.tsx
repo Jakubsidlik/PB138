@@ -1,5 +1,6 @@
 import { Button } from '../ui/button'
 import { CalendarEvent, EventMeta } from '../../app/types'
+import { formatCzechDate } from './calendarUtils'
 
 type CalendarEventListProps = {
   events: CalendarEvent[]
@@ -13,6 +14,7 @@ type CalendarEventListProps = {
   timeClassName?: string
   removeButtonClassName: string
   showTimeBadge?: boolean
+  showDate?: boolean
   onRemoveEvent: (eventId: number) => void
 }
 
@@ -28,6 +30,7 @@ export function CalendarEventList({
   timeClassName,
   removeButtonClassName,
   showTimeBadge,
+  showDate,
   onRemoveEvent,
 }: CalendarEventListProps) {
   if (events.length === 0) {
@@ -47,11 +50,14 @@ export function CalendarEventList({
                 {event.title}
                 {event.priority && (
                   <span className={`event-priority-badge ${event.priority}`}>
-                    {event.priority === 'high' ? '!' : event.priority === 'medium' ? '◆' : '○'}
+                    {event.priority === 'high' ? 'vysoká' : event.priority === 'medium' ? 'střední' : 'nízká'}
                   </span>
                 )}
               </h4>
-              <p>{meta.time}</p>
+              <p>
+                {meta.time}
+                {showDate && event.date ? `, ${formatCzechDate(event.date)}` : ''}
+              </p>
               <p>{meta.location}</p>
             </div>
             {showTimeBadge ? <div className={timeClassName}>{meta.time.split(' - ')[0]}</div> : null}
