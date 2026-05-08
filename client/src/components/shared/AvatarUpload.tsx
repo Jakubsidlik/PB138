@@ -1,4 +1,5 @@
 import React from 'react'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 
 type AvatarUploadProps = {
   avatarDataUrl: string | null
@@ -136,9 +137,11 @@ export function AvatarUpload({
               />
             </div>
           ) : (
-            <div className="avatar-fallback">
-              {initialsFromName(fullName)}
-            </div>
+            <Avatar className="size-full">
+              <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
+                {initialsFromName(fullName)}
+              </AvatarFallback>
+            </Avatar>
           )}
 
           <button
@@ -195,9 +198,11 @@ export function AvatarUpload({
               />
             </div>
           ) : (
-            <div className="avatar-fallback">
-              {initialsFromName(fullName)}
-            </div>
+            <Avatar className="size-full">
+              <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
+                {initialsFromName(fullName)}
+              </AvatarFallback>
+            </Avatar>
           )}
 
           <button

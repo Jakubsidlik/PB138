@@ -205,7 +205,7 @@ export function AuthScreen() {
                       <Input
                         id="login-email"
                         type="email"
-                        placeholder="tomas.novak@email.cz"
+                        placeholder="tvuj.email@seznam.cz"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -248,7 +248,7 @@ export function AuthScreen() {
                       <Input
                         id="register-name"
                         type="text"
-                        placeholder="Jan Novák"
+                        placeholder="Křestní jméno a příjmení"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
@@ -261,7 +261,7 @@ export function AuthScreen() {
                       <Input
                         id="register-email"
                         type="email"
-                        placeholder="jan.novak@email.cz"
+                        placeholder="tvuj.email@seznam.cz"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required

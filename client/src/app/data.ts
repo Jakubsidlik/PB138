@@ -60,8 +60,8 @@ export const desktopSubjectMetaByCode: Record<string, DesktopSubjectMeta> = {
 export const calendarWeekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export const userProfileSeed: UserProfile = {
-  fullName: 'Jan Novák',
-  email: 'jan.novak@example.com',
+  fullName: '',
+  email: '',
   school: 'Masarykova Univerzita',
   faculty: 'Fakulta informatiky',
   studyMajor: 'Aplikovaná informatika',

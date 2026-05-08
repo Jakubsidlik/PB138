@@ -291,11 +291,12 @@ export function useDashboardState() {
       return
     }
 
-    // Inicializuj fullName z authSession pokud je prázdný
-    if (!profile.fullName && authSession.fullName) {
+    // Inicializuj fullName a email z authSession pokud jsou prázdné
+    if (authSession && (!profile.fullName || !profile.email)) {
       setProfile((prevProfile) => ({
         ...prevProfile,
-        fullName: authSession.fullName,
+        fullName: prevProfile.fullName || authSession.fullName || '',
+        email: prevProfile.email || authSession.email || '',
       }))
       return
     }

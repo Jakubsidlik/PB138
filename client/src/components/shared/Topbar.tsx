@@ -3,6 +3,7 @@ import { useRouter } from '@tanstack/react-router'
 import { getDailyMotto } from '../../app/utils'
 import { Button } from '../ui/button'
 import { SidebarTrigger } from './Sidebar'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 
 type TopbarProps = {
   isCalendarScreen: boolean
@@ -187,13 +188,12 @@ export function Topbar({
           <div>
             <p className="name">{profileName}</p>
           </div>
-          <div className="avatar">
-            {profileAvatarDataUrl ? (
-              <img src={profileAvatarDataUrl} alt="Profil" className="topbar-avatar-image" />
-            ) : (
-              initials
-            )}
-          </div>
+          <Avatar size="lg" className="border border-border">
+            <AvatarImage src={profileAvatarDataUrl || ''} alt={profileName} />
+            <AvatarFallback className="bg-pink-100 text-pink-600 font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </Button>
       </div>
     </header>
