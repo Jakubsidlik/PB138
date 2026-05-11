@@ -1,7 +1,7 @@
 import { createRootRoute, Outlet, useRouterState } from '@tanstack/react-router'
 import { RootLayout } from '../components/layout/RootLayout'
-import { QuerySuspense } from '../components/shared/QuerySuspense'
-import { ErrorComponent } from '../components/shared/ErrorComponent'
+import { QuerySuspense } from '../components/shared/ui/QuerySuspense'
+import { ErrorComponent } from '../components/shared/ui/ErrorComponent'
 
 function RootComponent() {
   const pathname = useRouterState({

@@ -1,8 +1,8 @@
 import { ReactNode } from 'react'
 
-import { Button } from '../ui/button'
-import { Checkbox } from '../ui/checkbox'
-import { Task } from '../../app/types'
+import { Button } from '../../ui/button'
+import { Checkbox } from '../../ui/checkbox'
+import { Task } from '../../../app/types'
 
 type TaskListProps = {
   tasks: Task[]

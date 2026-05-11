@@ -1,6 +1,6 @@
 import React from 'react'
-import { ThemeMode, AccentPalette } from '../../app/types'
-import { Button } from '../ui/button'
+import { ThemeMode, AccentPalette } from '../../../app/types'
+import { Button } from '../../ui/button'
 
 type ThemeSelectorProps = {
   currentTheme: ThemeMode

@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import ghostLogo from '../../assets/ghostLogo.jpg'
+import ghostLogo from '../../../assets/ghostLogo.jpg'
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,

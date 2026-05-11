@@ -1,8 +1,8 @@
 import React from 'react'
 import { Outlet, useRouterState } from '@tanstack/react-router'
 import { useDashboardState } from '../../app/useDashboardState'
-import { AppSidebar, SidebarProvider, SidebarInset, SidebarTrigger } from '../shared/Sidebar'
-import { Topbar } from '../shared/Topbar'
+import { AppSidebar, SidebarProvider, SidebarInset, SidebarTrigger } from '../shared/layout/Sidebar'
+import { Topbar } from '../shared/layout/Topbar'
 
 
 export function RootLayout() {

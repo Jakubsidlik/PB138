@@ -1,8 +1,8 @@
 import React from 'react'
-import { Subject, ManagedFile, Lesson } from '../../app/types'
-import { Button } from '../ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
-import { Textarea } from '../ui/textarea'
+import { Subject, ManagedFile, Lesson } from '../../../app/types'
+import { Button } from '../../ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog'
+import { Textarea } from '../../ui/textarea'
 
 type SubjectDetailModalProps = {
   subject: Subject | null

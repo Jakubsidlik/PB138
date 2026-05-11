@@ -10,6 +10,7 @@ export const envSchema = z.object({
   S3_ACCESS_KEY: z.string().optional().default(''), // Default fallback pro vývoj bez S3
   S3_SECRET_KEY: z.string().optional().default(''),
   S3_BUCKET_NAME: z.string().optional().default('pb138-bucket'),
+  RESEND_API_KEY: z.string().optional(),
 })
 
 export const env = envSchema.parse(process.env)

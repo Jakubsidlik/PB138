@@ -1,5 +1,5 @@
-import { UserProfile } from '../../app/types'
-import { Input } from '../ui/input'
+import { UserProfile } from '../../../app/types'
+import { Input } from '../../ui/input'
 
 type ProfileContactEmailProps = {
   profile: Partial<UserProfile>

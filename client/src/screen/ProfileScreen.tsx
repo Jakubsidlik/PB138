@@ -2,12 +2,12 @@ import React from 'react'
 import { Button } from '../components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { AuthSession, UserProfile, ThemeMode, AccentPalette } from '../app/types'
-import { AvatarPreview } from '../components/shared/AvatarPreview'
-import { HiddenFileInput } from '../components/shared/HiddenFileInput'
-import { ProfileAuthInfo } from '../components/shared/ProfileAuthInfo'
-import { ProfileStudyInfoForm } from '../components/shared/ProfileStudyInfoForm'
-import { ProfileThemeSection } from '../components/shared/ProfileThemeSection'
-import { ProfileSaveActions } from '../components/shared/ProfileSaveActions'
+import { AvatarPreview } from '../components/shared/profile/AvatarPreview'
+import { HiddenFileInput } from '../components/shared/files/HiddenFileInput'
+import { ProfileAuthInfo } from '../components/shared/profile/ProfileAuthInfo'
+import { ProfileStudyInfoForm } from '../components/shared/profile/ProfileStudyInfoForm'
+import { ProfileThemeSection } from '../components/shared/profile/ProfileThemeSection'
+import { ProfileSaveActions } from '../components/shared/profile/ProfileSaveActions'
 
 type DesktopProfileScreenProps = {
   profile: UserProfile

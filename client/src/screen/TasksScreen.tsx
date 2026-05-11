@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Task } from '../app/types'
 import { Button } from '../components/ui/button'
-import { TaskList } from '../components/shared/TaskList'
-import { TaskStats } from '../components/shared/TaskStats'
+import { TaskList } from '../components/shared/tasks/TaskList'
+import { TaskStats } from '../components/shared/dashboard/TaskStats'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 
@@ -26,7 +26,7 @@ export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask, dele
     setIsDialogOpen(false)
   }
 return (
-    <section className="flex flex-col gap-6" id="desktop-tasks">
+    <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-tasks">
     <div className="flex flex-col gap-1 pl-2 md:pl-4">
         <h2 className="text-2xl font-bold tracking-tight">Moje úkoly</h2>
         <p className="text-muted-foreground">Přehled všech úkolů a jejich stavu</p>
@@ -43,9 +43,7 @@ return (
 
     <div className="flex justify-end my-2">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-                <Button>+ Přidat úkol</Button>
-            </DialogTrigger>
+            <DialogTrigger render={<Button />}>+ Přidat úkol</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <form onSubmit={handleAddTask}>
                     <DialogHeader>

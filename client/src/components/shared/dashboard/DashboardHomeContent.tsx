@@ -2,11 +2,11 @@ import { Link } from '@tanstack/react-router'
 import {
   CalendarEvent,
   Task,
-} from '../../app/types'
-import { CircularProgress } from './CircularProgress'
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/card'
-import { Checkbox } from '../ui/checkbox'
-import { Button } from '../ui/button'
+} from '../../../app/types'
+import { CircularProgress } from '../ui/CircularProgress'
+import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card'
+import { Checkbox } from '../../ui/checkbox'
+import { Button } from '../../ui/button'
 
 type DashboardHomeContentProps = {
   profileName: string
@@ -121,17 +121,13 @@ export function DashboardHomeContent({
             )}
             <div className="mt-auto pt-4">
               {tasks.length > 5 && (
-                <Button variant="link" asChild className="p-0 h-auto font-medium">
-                  <Link to="/tasks">
+                <Button variant="link" render={<Link to="/tasks" />} className="p-0 h-auto font-medium">
                     Zobrazit všechny úkoly →
-                  </Link>
                 </Button>
               )}
               {tasks.length > 0 && tasks.length <= 5 && (
-                <Button variant="link" asChild className="p-0 h-auto font-medium">
-                  <Link to="/tasks">
+                <Button variant="link" render={<Link to="/tasks" />} className="p-0 h-auto font-medium">
                     Správa úkolů →
-                  </Link>
                 </Button>
               )}
             </div>
@@ -186,10 +182,8 @@ export function DashboardHomeContent({
               <p className="text-base text-muted-foreground my-auto">Žádné nadcházející události.</p>
             )}
             <div className="mt-auto pt-4">
-              <Button variant="link" asChild className="p-0 h-auto font-medium">
-                <Link to="/calendar">
+              <Button variant="link" render={<Link to="/calendar" />} className="p-0 h-auto font-medium">
                   Otevřít kalendář →
-                </Link>
               </Button>
             </div>
           </CardContent>

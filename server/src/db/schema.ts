@@ -94,6 +94,7 @@ export const subjects = pgTable('Subject', {
   teacher: text('teacher').notNull(),
   code: text('code').notNull(),
   isShared: boolean('isShared').notNull().default(false),
+  isArchived: boolean('isArchived').notNull().default(false),
   deletedAt: timestamp('deletedAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),

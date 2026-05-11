@@ -1,5 +1,5 @@
-import { Button } from '../ui/button'
-import { CalendarEvent, EventMeta } from '../../app/types'
+import { Button } from '../../ui/button'
+import { CalendarEvent, EventMeta } from '../../../app/types'
 import { formatCzechDate } from './calendarUtils'
 
 type CalendarEventListProps = {

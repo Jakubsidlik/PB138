@@ -20,6 +20,7 @@ export function HiddenFileInput({
       accept={accept}
       multiple={multiple}
       className="hidden-file-input"
+      style={{ display: 'none' }}
       onChange={(event) => {
         onChange(event.target.files)
         event.currentTarget.value = ''

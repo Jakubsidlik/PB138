@@ -3,9 +3,12 @@ import { Button } from '../components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 import { DesktopSubjectMeta, DesktopSubjectTone, Subject, ManagedFile, Lesson } from '../app/types'
-import { SubjectDetailModal } from '../components/shared/SubjectDetailModal'
-import { SubjectActionButtons } from '../components/shared/SubjectActionButtons'
-import { SubjectGrid } from '../components/shared/SubjectGrid'
+import { SubjectDetailModal } from '../components/shared/dashboard/SubjectDetailModal'
+import { SubjectActionButtons } from '../components/shared/dashboard/SubjectActionButtons'
+import { SubjectGrid } from '../components/shared/dashboard/SubjectGrid'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription, CardAction } from '../components/ui/card'
+import { Badge } from '../components/ui/badge'
+import { Separator } from '../components/ui/separator'
 
 type DesktopSubject = Subject & {
   meta: DesktopSubjectMeta
@@ -93,7 +96,7 @@ export function DesktopStudyPlan({
   }
 
   return (
-    <section className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10" id="desktop-study-plan">
+    <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-study-plan">
       <div className="flex flex-col gap-1 pl-2 md:pl-4">
         <h2 className="text-2xl font-bold tracking-tight">Studijní plán</h2>
         <p className="text-muted-foreground">Přehled předmětů a jejich probíhajících úkolů</p>
@@ -129,57 +132,78 @@ export function DesktopStudyPlan({
         renderSubjectCard={(subject) => {
           const tones = getToneClasses(subject.meta.tone)
           return (
-            <article
+            <Card
               key={subject.id}
-              className="relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all hover:border-primary/50 cursor-pointer flex flex-col group h-full"
+              className="relative overflow-hidden hover:shadow-md transition-all hover:border-primary/50 cursor-pointer flex flex-col group h-full"
               onClick={() => setSelectedSubjectId(subject.id)}
             >
-              <span className={`absolute top-0 left-0 right-0 h-1.5 ${tones.strip}`} />
-              <div className="flex flex-col p-6 h-full">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl ${tones.icon}`}>
+              <span className={`absolute top-0 left-0 right-0 h-1 ${tones.strip}`} />
+              
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between w-full">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${tones.icon}`}>
                     {subject.meta.icon}
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-1 bg-muted rounded-md text-muted-foreground uppercase tracking-wider">{subject.code}</span>
+                  <CardAction>
+                    <Badge variant="secondary" className="font-bold tracking-wider">
+                      {subject.code}
+                    </Badge>
+                  </CardAction>
                 </div>
+              </CardHeader>
 
+              <CardContent className="flex-1 flex flex-col pt-0">
                 <div className="mb-4">
-                  <h3 className="font-semibold text-lg leading-tight mb-1 group-hover:text-primary transition-colors">{subject.name}</h3>
-                  <p className="text-sm text-muted-foreground">{subject.teacher}</p>
+                  <CardTitle className="group-hover:text-primary transition-colors mb-1 line-clamp-1">
+                    {subject.name}
+                  </CardTitle>
+                  <CardDescription className="line-clamp-1">
+                    {subject.teacher}
+                  </CardDescription>
                 </div>
 
-                <div className="flex flex-col gap-2 text-sm text-muted-foreground mt-auto pb-5 border-b">
-                  <span className="flex items-center gap-2"><span>📄</span> {subject.files} souborů</span>
-                  <span className="flex items-center gap-2"><span>📝</span> {subject.notes} poznámek</span>
+                <div className="flex flex-col gap-2.5 text-sm text-muted-foreground mt-auto pb-4">
+                  <span className="flex items-center gap-2">
+                    <span className="opacity-70">📄</span> {subject.files} souborů
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="opacity-70">📝</span> {subject.notes} poznámek
+                  </span>
                   {subject.deadlineCount > 0 ? (
-                    <span className="flex items-center gap-2 text-destructive font-medium"><span>⚠️</span> {subject.deadlineCount} termíny</span>
+                    <span className="flex items-center gap-2 text-destructive font-medium">
+                      <span>⚠️</span> {subject.deadlineCount} termíny
+                    </span>
                   ) : (
-                    <span className="flex items-center gap-2 text-emerald-500 font-medium"><span>✅</span> Hotovo</span>
+                    <span className="flex items-center gap-2 text-emerald-500 font-medium">
+                      <span>✅</span> Hotovo
+                    </span>
                   )}
                 </div>
+              </CardContent>
 
-                <div className="mt-4 flex justify-between items-center text-muted-foreground group-hover:text-foreground transition-colors" onClick={(e) => e.stopPropagation()}>
-                  <SubjectActionButtons
-                    subjectId={subject.id}
-                    isArchived={subject.archived}
-                    className="flex gap-4 w-full"
-                    onEditSubject={() => setEditingSubjectId(subject.id)}
-                    onToggleArchiveSubject={onToggleArchiveSubject}
-                    onDeleteSubject={onDeleteSubject}
-                  />
-                </div>
-              </div>
-            </article>
+              <Separator />
+              
+              <CardFooter className="py-2 px-4 bg-muted/30">
+                <SubjectActionButtons
+                  subjectId={subject.id}
+                  isArchived={subject.archived}
+                  className="w-full"
+                  onEditSubject={() => setEditingSubjectId(subject.id)}
+                  onToggleArchiveSubject={onToggleArchiveSubject}
+                  onDeleteSubject={onDeleteSubject}
+                />
+              </CardFooter>
+            </Card>
           )
         }}
       />
 
       <Dialog open={isAddSubjectOpen} onOpenChange={setIsAddSubjectOpen}>
-        <DialogTrigger asChild>
-          <Button type="button" variant="outline" className="w-full mb-8 h-32 border-2 border-dashed bg-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-all flex flex-col items-center justify-center gap-2 rounded-xl text-lg">
-            <span className="text-3xl font-light">＋</span>
-            <span>Zapsat další předmět</span>
-          </Button>
+        <DialogTrigger
+          render={<Button type="button" variant="outline" className="w-full mb-8 h-32 border-2 border-dashed bg-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-all flex flex-col items-center justify-center gap-2 rounded-xl text-lg" />}
+        >
+          <span className="text-3xl font-light">＋</span>
+          <span>Zapsat další předmět</span>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <form onSubmit={handleCreateSubject}>

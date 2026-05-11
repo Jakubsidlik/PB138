@@ -6,10 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Checkbox } from '../components/ui/checkbox'
 import { CalendarCell, CalendarEvent, EventMeta } from '../app/types'
 import { formatDateIso } from '../app/utils'
-import { CalendarEventList } from '../components/shared/CalendarEventList'
-import { MonthSwitcher } from '../components/shared/MonthSwitcher'
-import { EventFilterButtons } from '../components/shared/EventFilterButtons'
-import { filterEventsByTime, formatCzechDate } from '../components/shared/calendarUtils'
+import { CalendarEventList } from '../components/shared/calendar/CalendarEventList'
+import { MonthSwitcher } from '../components/shared/calendar/MonthSwitcher'
+import { EventFilterButtons } from '../components/shared/calendar/EventFilterButtons'
+import { filterEventsByTime, formatCzechDate } from '../components/shared/calendar/calendarUtils'
 
 type DesktopCalendarScreenProps = {
   monthLabel: string
@@ -68,7 +68,7 @@ export function DesktopCalendarScreen({
     setIsAddEventOpen(false)
   }
   return (
-    <section className="flex flex-col gap-6" id="desktop-calendar">
+    <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-calendar">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1 pl-2 md:pl-4">
           <h2 className="text-2xl font-bold tracking-tight">Kalendář</h2>
@@ -77,10 +77,8 @@ export function DesktopCalendarScreen({
         <div className="flex flex-wrap items-center gap-3">
           <MonthSwitcher monthLabel={monthLabel} setDisplayMonth={setDisplayMonth} />
           <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
-            <DialogTrigger asChild>
-              <Button type="button">
-                + Přidat událost
-              </Button>
+            <DialogTrigger render={<Button type="button" />}>
+              + Přidat událost
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <form onSubmit={handleAddEvent}>

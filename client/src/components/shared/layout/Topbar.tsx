@@ -1,9 +1,9 @@
 import React from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { getDailyMotto } from '../../app/utils'
-import { Button } from '../ui/button'
+import { getDailyMotto } from '../../../app/utils'
+import { Button } from '../../ui/button'
 import { SidebarTrigger } from './Sidebar'
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar'
 
 type TopbarProps = {
   isCalendarScreen: boolean

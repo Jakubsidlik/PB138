@@ -1,4 +1,4 @@
-import { AuthSession } from '../../app/types'
+import { AuthSession } from '../../../app/types'
 
 type ProfileAuthInfoProps = {
   authSession: AuthSession | null

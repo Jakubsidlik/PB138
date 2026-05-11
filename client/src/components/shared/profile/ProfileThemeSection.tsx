@@ -1,5 +1,5 @@
-import { ThemeMode, AccentPalette } from '../../app/types'
-import { ThemeSelector } from './ThemeSelector'
+import { ThemeMode, AccentPalette } from '../../../app/types'
+import { ThemeSelector } from '../ui/ThemeSelector'
 
 type ProfileThemeSectionProps = {
   themeMode: ThemeMode

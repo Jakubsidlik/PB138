@@ -1,6 +1,6 @@
-import { CalendarEvent } from '../../app/types'
-import { formatDateIso } from '../../app/utils'
-
+import { CalendarEvent } from '../../../app/types'
+import { formatDateIso } from '../../../app/utils'
+  
 /**
  * Filters all calendar events by future/past relative to today.
  */

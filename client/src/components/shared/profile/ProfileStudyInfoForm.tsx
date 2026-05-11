@@ -1,7 +1,7 @@
-import { UserProfile } from '../../app/types'
+import { UserProfile } from '../../../app/types'
 import { studyYearOptions, studyTypeOptions } from './profileConstants'
-import { Input } from '../ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { Input } from '../../ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 
 type ProfileStudyInfoFormProps = {
   profile: Partial<UserProfile>

@@ -2,9 +2,9 @@ import React from 'react'
 import { Button } from '../components/ui/button'
 import { ManagedFile, Subject } from '../app/types'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../components/ui/dropdown-menu'
-import { getFileIcon } from '../components/shared/fileUtils'
-import { HiddenFileInput } from '../components/shared/HiddenFileInput'
-import { ShareFileModal } from '../components/shared/ShareFileModal'
+import { getFileIcon } from '../components/shared/files/fileUtils'
+import { HiddenFileInput } from '../components/shared/files/HiddenFileInput'
+import { ShareFileModal } from '../components/shared/files/ShareFileModal'
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
@@ -46,7 +46,7 @@ export function DesktopFilesScreen({
   const rows = managedFiles
 
   return (
-    <section className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10" id="desktop-files">
+    <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-files">
       <div className="flex flex-col gap-1 pl-2 md:pl-4">
         <h2 className="text-2xl font-bold tracking-tight">Moje soubory</h2>
         <p className="text-muted-foreground">Správa studijních materiálů a sdílení souborů.</p>
@@ -169,16 +169,20 @@ export function DesktopFilesScreen({
         </section>
       </div>
 
-      {shareModalFileId && (
-        <ShareFileModal
-          isOpen={!!shareModalFileId}
-          onClose={() => setShareModalFileId(null)}
-          onShare={async (email) => {
-            await onToggleFileShared(shareModalFileId, email)
-          }}
-          fileName={managedFiles.find(f => f.id === shareModalFileId)?.name || 'Soubor'}
-        />
-      )}
+      {shareModalFileId && (() => {
+        const targetFile = managedFiles.find(f => f.id === shareModalFileId)
+        return (
+          <ShareFileModal
+            isOpen={!!shareModalFileId}
+            onClose={() => setShareModalFileId(null)}
+            onShare={async (email) => {
+              await onToggleFileShared(shareModalFileId, email)
+            }}
+            fileName={targetFile?.name || 'Soubor'}
+            fileUrl={targetFile?.fileUrl}
+          />
+        )
+      })()}
 
       <Dialog open={!!renamingFileId} onOpenChange={(open) => !open && setRenamingFileId(null)}>
         <DialogContent className="sm:max-w-[425px]">

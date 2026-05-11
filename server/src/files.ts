@@ -435,6 +435,36 @@ filesRouter.post('/:id/share', async (req, res, next) => {
       permission: share.permission,
       createdAt: share.createdAt.toISOString(),
     })
+
+    // Odeslání e-mailu (pokud je k dispozici Resend API klíč)
+    try {
+      if (env.RESEND_API_KEY) {
+        const { Resend } = await import('resend')
+        const resend = new Resend(env.RESEND_API_KEY)
+        
+        await resend.emails.send({
+          from: 'Planner <onboarding@resend.dev>',
+          to: targetUserEmail,
+          subject: `Sdílený soubor: ${file.name}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #3b82f6;">Nový soubor nasdílen!</h2>
+              <p>Ahoj,</p>
+              <p>Uživatel <strong>${actor.fullName || actor.email}</strong> s tebou nasdílel soubor <strong>${file.name}</strong> v aplikaci Planner.</p>
+              <div style="margin: 30px 0;">
+                <a href="http://localhost:5173/files" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Otevřít v aplikaci</a>
+              </div>
+              <p style="color: #666; font-size: 14px;">Tento e-mail byl automaticky vygenerován aplikací Planner.</p>
+            </div>
+          `
+        })
+        console.log(`Email sent to ${targetUserEmail} via Resend`)
+      } else {
+        console.log(`[MOCK EMAIL] To: ${targetUserEmail} | Subject: Sdílený soubor: ${file.name} | Content: Soubor nasdílen uživatelem ${actor.fullName}`)
+      }
+    } catch (emailError) {
+      console.error('Nepodařilo se odeslat upozorňovací e-mail:', emailError)
+    }
   } catch (error) {
     next(error)
   }

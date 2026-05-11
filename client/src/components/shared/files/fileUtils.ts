@@ -1,4 +1,4 @@
-import { ManagedFile } from '../../app/types'
+import { ManagedFile } from '../../../app/types'
 
 export function getFileIcon(category: ManagedFile['category']): { icon: string; tone: string } {
   if (category === 'pdf') {

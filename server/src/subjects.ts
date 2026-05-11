@@ -17,6 +17,7 @@ const subjectSelect = {
   teacher: subjects.teacher,
   code: subjects.code,
   isShared: subjects.isShared,
+  isArchived: subjects.isArchived,
   deletedAt: subjects.deletedAt,
   createdAt: subjects.createdAt,
   updatedAt: subjects.updatedAt,
@@ -70,7 +71,7 @@ subjectsRouter.get('/', async (req, res, next) => {
       teacher: subject.teacher,
       code: subject.code,
       isShared: subject.isShared,
-      archived: Boolean(subject.deletedAt),
+      archived: subject.isArchived,
       deletedAt: subject.deletedAt ? subject.deletedAt.toISOString() : null,
       files: await countRows(fileRecords, subject.id),
       tasks: await countRows(tasks, subject.id),
@@ -152,7 +153,7 @@ subjectsRouter.post('/', async (req, res, next) => {
       teacher: created.teacher,
       code: created.code,
       isShared: created.isShared,
-      archived: false,
+      archived: created.isArchived,
       deletedAt: null,
     })
   } catch (error) {
@@ -197,7 +198,7 @@ subjectsRouter.put('/:id', async (req, res, next) => {
         code,
         studyPlanId: studyPlanId !== undefined ? asBigInt(studyPlanId) : undefined,
         isShared,
-        deletedAt: archived !== undefined ? (archived ? new Date() : null) : undefined,
+        isArchived: archived !== undefined ? archived : undefined,
       })
       .where(eq(subjects.id, subjectId))
       .returning(subjectSelect)
@@ -210,7 +211,7 @@ subjectsRouter.put('/:id', async (req, res, next) => {
       teacher: updated.teacher,
       code: updated.code,
       isShared: updated.isShared,
-      archived: Boolean(updated.deletedAt),
+      archived: updated.isArchived,
       deletedAt: updated.deletedAt ? updated.deletedAt.toISOString() : null,
     })
   } catch (error) {
