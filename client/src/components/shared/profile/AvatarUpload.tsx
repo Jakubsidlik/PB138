@@ -1,5 +1,5 @@
 import React from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar'
+import { Avatar, AvatarFallback } from '../../ui/avatar'
 
 type AvatarUploadProps = {
   avatarDataUrl: string | null

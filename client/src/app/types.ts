@@ -1,5 +1,5 @@
 // Auth & User types
-export type UserRole = 'student' | 'register_user' | 'public'
+export type UserRole = 'student' | 'registered' | 'public'
 export interface AuthSession {
   userId: number | string
   role: 'REGISTROVANÝ UŽIVATEL' | 'ADMIN'
@@ -374,10 +374,10 @@ export type UserProfile = {
 
 export type SubjectVisual = {
   icon: string
-  tone: 'blue' | 'green' | 'violet' | 'orange'
+  tone: 'blue' | 'green' | 'violet' | 'orange' | 'emerald'
 }
 
-export type DesktopSubjectTone = 'blue' | 'green' | 'violet' | 'orange' | 'cyan'
+export type DesktopSubjectTone = 'blue' | 'green' | 'violet' | 'orange' | 'cyan' | 'emerald'
 
 export type DesktopSubjectMeta = {
   icon: string

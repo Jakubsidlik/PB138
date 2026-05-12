@@ -141,7 +141,7 @@ export function DesktopCalendarScreen({
                     <label className="text-sm font-medium">Priorita</label>
                     <Select 
                       value={newEvent.priority} 
-                      onValueChange={(val: 'low'|'medium'|'high') => setNewEvent({...newEvent, priority: val})}
+                      onValueChange={(val) => setNewEvent({...newEvent, priority: val ?? 'low'})}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Vyberte prioritu">

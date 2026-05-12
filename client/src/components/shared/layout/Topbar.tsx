@@ -1,4 +1,3 @@
-import React from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { getDailyMotto } from '../../../app/utils'
 import { Button } from '../../ui/button'
@@ -11,7 +10,6 @@ type TopbarProps = {
   isTasksScreen: boolean
   isStudyPlanScreen: boolean
   isProfileScreen: boolean
-  fileInputRef: React.RefObject<HTMLInputElement>
   profileName: string
   profileAvatarDataUrl: string | null
   onOpenProfile: () => void
@@ -23,7 +21,6 @@ export function Topbar({
   isTasksScreen,
   isStudyPlanScreen,
   isProfileScreen,
-  fileInputRef,
   profileName,
   profileAvatarDataUrl,
   onOpenProfile,

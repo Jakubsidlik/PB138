@@ -386,7 +386,7 @@ filesRouter.post('/:id/share', async (req, res, next) => {
       return
     }
 
-    const [file] = await db.select({ id: fileRecords.id, userId: fileRecords.userId, isShared: fileRecords.isShared }).from(fileRecords).where(eq(fileRecords.id, fileId)).limit(1)
+    const [file] = await db.select({ id: fileRecords.id, userId: fileRecords.userId, isShared: fileRecords.isShared, name: fileRecords.name }).from(fileRecords).where(eq(fileRecords.id, fileId)).limit(1)
     if (!file) {
       res.status(404).json({ error: 'Soubor nebyl nalezen.' })
       return

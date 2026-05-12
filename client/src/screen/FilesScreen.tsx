@@ -179,7 +179,6 @@ export function DesktopFilesScreen({
               await onToggleFileShared(shareModalFileId, email)
             }}
             fileName={targetFile?.name || 'Soubor'}
-            fileUrl={targetFile?.fileUrl}
           />
         )
       })()}

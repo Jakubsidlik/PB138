@@ -23,7 +23,7 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">Typ studia</span>
-        <Select value={profile.studyType} onValueChange={(value) => onChangeProfile({ studyType: value })}>
+        <Select value={profile.studyType ?? undefined} onValueChange={(value) => onChangeProfile({ studyType: value ?? '' })}>
           <SelectTrigger>
             <SelectValue placeholder="Vyberte typ studia" />
           </SelectTrigger>
@@ -49,7 +49,7 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">Ročník</span>
-        <Select value={profile.studyYear} onValueChange={(value) => onChangeProfile({ studyYear: value })}>
+        <Select value={profile.studyYear ?? undefined} onValueChange={(value) => onChangeProfile({ studyYear: value ?? '' })}>
           <SelectTrigger>
             <SelectValue placeholder="Vyberte ročník" />
           </SelectTrigger>
