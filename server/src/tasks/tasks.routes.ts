@@ -1,10 +1,10 @@
 import express from 'express'
-import { taskRepository } from './repositories/task.repository.js'
-import { bulkTasksSchema, taskSchema, updateTaskSchema } from './schemas.js'
-import { asBigInt } from './utils.js'
-import { requireRegisteredActor } from './auth.js'
-import { asyncHandler, AppError } from './middleware/error-handler.js'
-import { validate } from './middleware/validate.js'
+import { tasksService } from './tasks.services.js'
+import { bulkTasksSchema, taskSchema, updateTaskSchema } from '../schemas.js'
+import { asBigInt, parseCursorPagination, parseOptionalDate } from '../utils.js'
+import { requireRegisteredActor } from '../auth.js'
+import { asyncHandler, AppError } from '../middleware/error-handler.js'
+import { validate } from '../middleware/validate.js'
 
 export const tasksRouter: express.Router = express.Router()
 
@@ -12,7 +12,22 @@ tasksRouter.get('/', asyncHandler(async (req, res) => {
   const actor = await requireRegisteredActor(req, res)
   if (!actor) return
 
-  const result = await taskRepository.findAll(actor.id, req)
+  const pagination = parseCursorPagination(req, { defaultLimit: 30, maxLimit: 200 })
+  
+  const filters = {
+    pagination,
+    subjectId: asBigInt(req.query.subjectId),
+    studyPlanId: asBigInt(req.query.studyPlanId),
+    includeDeleted: req.query.includeDeleted === 'true',
+    done: req.query.done as string | null,
+    favorite: req.query.favorite as string | null,
+    tag: typeof req.query.tag === 'string' ? req.query.tag.trim() : '',
+    search: typeof req.query.search === 'string' ? req.query.search.trim() : '',
+    deadlineFrom: parseOptionalDate(req.query.deadlineFrom),
+    deadlineTo: parseOptionalDate(req.query.deadlineTo),
+  }
+
+  const result = await tasksService.getTasks(actor.id, filters)
   res.json(result)
 }))
 
@@ -28,7 +43,7 @@ tasksRouter.post('/', validate(taskSchema), asyncHandler(async (req, res) => {
     }
   }
 
-  const created = await taskRepository.create(actor.id, req.body)
+  const created = await tasksService.createTask(actor.id, req.body)
   res.status(201).json(created)
 }))
 
@@ -39,9 +54,6 @@ tasksRouter.patch('/:id', validate(updateTaskSchema), asyncHandler(async (req, r
   const taskId = asBigInt(req.params.id)
   if (!taskId) throw new AppError('Neplatne ID ukolu.', 400)
 
-  const existing = await taskRepository.findByIdForUser(taskId, actor.id)
-  if (!existing) throw new AppError('Ukol nebyl nalezen.', 404)
-
   const { deadline } = req.body
   if (deadline !== undefined && deadline !== null) {
     const d = new Date(deadline)
@@ -50,7 +62,7 @@ tasksRouter.patch('/:id', validate(updateTaskSchema), asyncHandler(async (req, r
     }
   }
 
-  const updated = await taskRepository.update(taskId, req.body)
+  const updated = await tasksService.updateTask(taskId, actor.id, req.body)
   res.json(updated)
 }))
 
@@ -61,9 +73,7 @@ tasksRouter.delete('/:id', asyncHandler(async (req, res) => {
   const taskId = asBigInt(req.params.id)
   if (!taskId) throw new AppError('Neplatne ID ukolu.', 400)
 
-  const result = await taskRepository.softDelete(taskId, actor.id)
-  if (!result) throw new AppError('Ukol nebyl nalezen.', 404)
-
+  const result = await tasksService.deleteTask(taskId, actor.id)
   res.json(result)
 }))
 
@@ -71,6 +81,6 @@ tasksRouter.put('/', validate(bulkTasksSchema), asyncHandler(async (req, res) =>
   const actor = await requireRegisteredActor(req, res)
   if (!actor) return
 
-  const finalTasks = await taskRepository.bulkSync(actor.id, req.body.tasks)
-  res.json({ success: true, tasks: finalTasks })
+  const result = await tasksService.bulkSync(actor.id, req.body.tasks)
+  res.json({ success: true, tasks: result })
 }))

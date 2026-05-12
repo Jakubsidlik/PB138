@@ -1,8 +1,8 @@
 import { and, asc, eq, gte, gt, ilike, inArray, isNull, lte } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { tasks, subjects } from '../db/schema.js'
-import { asBigInt, parseCursorPagination, parseOptionalDate, parseTaskPriority, mapTask, toPaginatedPayload } from '../utils.js'
-import type { Request } from 'express'
+import { asBigInt, parseTaskPriority, mapTask, toPaginatedPayload } from '../utils.js'
+import { CursorPagination } from '../types.js'
 
 const taskSelect = {
   id: tasks.id,
@@ -20,25 +20,27 @@ const taskSelect = {
 }
 
 export class TaskRepository {
-  async findAll(actorId: number, req: Request) {
-    const pagination = parseCursorPagination(req, { defaultLimit: 30, maxLimit: 200 })
-    const subjectId = asBigInt(req.query.subjectId)
-    const studyPlanId = asBigInt(req.query.studyPlanId)
-    const includeDeleted = req.query.includeDeleted === 'true'
-    const doneFilter = req.query.done
-    const favoriteFilter = req.query.favorite
-    const tagFilter = typeof req.query.tag === 'string' ? req.query.tag.trim() : ''
-    const search = typeof req.query.search === 'string' ? req.query.search.trim() : ''
-    const deadlineFrom = parseOptionalDate(req.query.deadlineFrom)
-    const deadlineTo = parseOptionalDate(req.query.deadlineTo)
+  async findAll(actorId: number, filters: {
+    pagination: CursorPagination
+    subjectId?: bigint | null
+    studyPlanId?: bigint | null
+    includeDeleted?: boolean
+    done?: string | null
+    favorite?: string | null
+    tag?: string
+    search?: string
+    deadlineFrom?: Date | null | undefined
+    deadlineTo?: Date | null | undefined
+  }) {
+    const { pagination, subjectId, studyPlanId, includeDeleted, done, favorite, tag, search, deadlineFrom, deadlineTo } = filters
 
     const whereParts = [
       eq(tasks.userId, BigInt(actorId)),
       subjectId ? eq(tasks.subjectId, subjectId) : undefined,
       studyPlanId ? eq(tasks.studyPlanId, studyPlanId) : undefined,
-      doneFilter === 'true' ? eq(tasks.done, true) : doneFilter === 'false' ? eq(tasks.done, false) : undefined,
-      favoriteFilter === 'true' ? eq(tasks.favorite, true) : favoriteFilter === 'false' ? eq(tasks.favorite, false) : undefined,
-      tagFilter ? eq(tasks.tag, tagFilter) : undefined,
+      done === 'true' ? eq(tasks.done, true) : done === 'false' ? eq(tasks.done, false) : undefined,
+      favorite === 'true' ? eq(tasks.favorite, true) : favorite === 'false' ? eq(tasks.favorite, false) : undefined,
+      tag ? eq(tasks.tag, tag) : undefined,
       search ? ilike(tasks.title, `%${search}%`) : undefined,
       deadlineFrom || deadlineTo
         ? and(
@@ -79,7 +81,7 @@ export class TaskRepository {
     priority?: string
     deadline?: string | null
   }) {
-    const parsedDeadline = parseOptionalDate(data.deadline)
+    const parsedDeadline = data.deadline ? new Date(data.deadline) : null
     const parsedTag = data.tag !== undefined ? data.tag || null : data.priority !== undefined ? parseTaskPriority(data.priority) ?? null : null
 
     const [created] = await db.insert(tasks).values({
@@ -90,7 +92,7 @@ export class TaskRepository {
       studyPlanId: asBigInt(data.studyPlanId),
       favorite: data.favorite,
       tag: parsedTag,
-      deadline: parsedDeadline ?? null,
+      deadline: parsedDeadline,
     }).returning(taskSelect)
 
     return mapTask(created)
@@ -114,7 +116,7 @@ export class TaskRepository {
     priority?: string
     deadline?: string | null
   }) {
-    const parsedDeadline = parseOptionalDate(data.deadline)
+    const parsedDeadline = data.deadline ? new Date(data.deadline) : undefined
     const parsedTag = data.tag !== undefined ? data.tag || null : data.priority !== undefined ? parseTaskPriority(data.priority) ?? null : undefined
 
     const [updated] = await db

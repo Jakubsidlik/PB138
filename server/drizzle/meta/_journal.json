@@ -15,6 +15,13 @@
       "when": 1778089323368,
       "tag": "0001_needy_sumo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778587077846,
+      "tag": "0002_amused_talkback",
+      "breakpoints": true
     }
   ]
 }
