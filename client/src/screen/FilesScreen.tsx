@@ -16,6 +16,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogMedia,
 } from '../components/ui/alert-dialog'
 import { Input } from '../components/ui/input'
 import { Share, Trash2 } from 'lucide-react'
