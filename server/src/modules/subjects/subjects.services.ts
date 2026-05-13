@@ -1,8 +1,8 @@
 import { subjectsRepository } from './subjects.repository.js'
-import { AppError } from '../middleware/error-handler.js'
-import { asNumberId, toPaginatedPayload, asBigInt } from '../utils.js'
-import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators } from '../db/schema.js'
-import { db } from '../db/client.js'
+import { AppError } from '../../middleware/error-handler.js'
+import { asNumberId, toPaginatedPayload, asBigInt } from '../../utils.js'
+import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators } from '../../db/schema.js'
+import { db } from '../../db/client.js'
 import { and, eq } from 'drizzle-orm'
 
 export class SubjectsService {

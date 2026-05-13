@@ -1,9 +1,9 @@
 import express from 'express'
 import { lessonsService } from './lessons.services.js'
-import { lessonNoteSchema, lessonSchema, textAnnotationSchema, updateLessonNoteSchema, updateLessonSchema } from '../schemas.js'
-import { asBigInt, parseAnnotationTargetType } from '../utils.js'
-import { getActorFromRequest, requireRegisteredActor, canActorReadAnnotationTarget } from '../auth.js'
-import { asyncHandler, AppError } from '../middleware/error-handler.js'
+import { lessonNoteSchema, lessonSchema, textAnnotationSchema, updateLessonNoteSchema, updateLessonSchema } from '../../schemas.js'
+import { asBigInt, parseAnnotationTargetType } from '../../utils.js'
+import { getActorFromRequest, requireRegisteredActor, canActorReadAnnotationTarget } from '../../auth.js'
+import { asyncHandler, AppError } from '../../middleware/error-handler.js'
 
 export const lessonsRouter: express.Router = express.Router()
 export const lessonNotesRouter: express.Router = express.Router()

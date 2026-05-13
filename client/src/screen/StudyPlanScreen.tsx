@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '../components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
-import { DesktopSubjectMeta, Subject, ManagedFile, Lesson } from '../app/types'
+import { DesktopSubjectMeta, Subject, ManagedFile, Lesson, StudyPlan } from '../app/types'
 import { SubjectDetailModal } from '../components/shared/dashboard/SubjectDetailModal'
 import { SubjectActionButtons } from '../components/shared/dashboard/SubjectActionButtons'
 import { SubjectGrid } from '../components/shared/dashboard/SubjectGrid'
@@ -29,6 +29,10 @@ type DesktopStudyPlanProps = {
   onUploadFiles: (files: FileList | File[] | null, options?: { subjectId?: number; lessonId?: number }) => Promise<void>
   lessons: Lesson[]
   onAddNote: (subjectId: number, note: string) => Promise<void>
+  studyPlans: StudyPlan[]
+  activeStudyPlanId: number | null
+  setActiveStudyPlanId: (id: number | null) => void
+  onCreateStudyPlan: (data: { name: string, description?: string }) => void
 }
 
 export function DesktopStudyPlan({
@@ -43,11 +47,17 @@ export function DesktopStudyPlan({
   onUploadFiles,
   lessons,
   onAddNote,
+  studyPlans,
+  activeStudyPlanId,
+  setActiveStudyPlanId,
+  onCreateStudyPlan,
 }: DesktopStudyPlanProps) {
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
 
   const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false)
+  const [isAddPlanOpen, setIsAddPlanOpen] = useState(false)
+  const [newPlan, setNewPlan] = useState({ name: '', description: '' })
   const [newSubject, setNewSubject] = useState({ name: '', teacher: '', code: '' })
 
   const [editingSubjectId, setEditingSubjectId] = useState<number | null>(null)
@@ -67,6 +77,14 @@ export function DesktopStudyPlan({
     onCreateSubject(newSubject)
     setNewSubject({ name: '', teacher: '', code: '' })
     setIsAddSubjectOpen(false)
+  }
+
+  const handleCreatePlan = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newPlan.name.trim()) return
+    onCreateStudyPlan(newPlan)
+    setNewPlan({ name: '', description: '' })
+    setIsAddPlanOpen(false)
   }
 
   const handleEditSubject = (e: React.FormEvent) => {
@@ -95,11 +113,88 @@ export function DesktopStudyPlan({
     }
   }
 
+  if (!activeStudyPlanId) {
+    return (
+      <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-study-plan">
+        <div className="flex flex-col gap-1 pl-2 md:pl-4">
+          <h2 className="text-2xl font-bold tracking-tight">Moje Studijní Plány</h2>
+          <p className="text-muted-foreground">Vyberte si studijní plán nebo vytvořte nový</p>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {studyPlans.map((plan) => (
+            <Card
+              key={plan.id}
+              className="relative overflow-hidden hover:shadow-md transition-all hover:border-primary/50 cursor-pointer flex flex-col group h-full"
+              onClick={() => setActiveStudyPlanId(plan.id)}
+            >
+              <span className="absolute top-0 left-0 right-0 h-1 bg-primary" />
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between w-full">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-primary/10 text-primary">
+                    📁
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col pt-0">
+                <div className="mb-4">
+                  <CardTitle className="group-hover:text-primary transition-colors mb-1 line-clamp-1">
+                    {plan.name}
+                  </CardTitle>
+                  <CardDescription className="line-clamp-2 text-sm text-muted-foreground">
+                    {plan.description || 'Bez popisu'}
+                  </CardDescription>
+                </div>
+                <div className="text-xs text-muted-foreground mt-auto">
+                  <span>📚 {plan.subjectsCount || 0} předmětů</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          
+          <Dialog open={isAddPlanOpen} onOpenChange={setIsAddPlanOpen}>
+            <DialogTrigger
+              render={<Card className="relative overflow-hidden hover:shadow-md transition-all hover:border-primary/50 cursor-pointer flex flex-col group h-32 border-2 border-dashed bg-transparent hover:bg-muted/50 items-center justify-center text-muted-foreground hover:text-foreground" />}
+            >
+              <span className="text-3xl font-light">＋</span>
+              <span>Nový studijní plán</span>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <form onSubmit={handleCreatePlan}>
+                <DialogHeader>
+                  <DialogTitle>Nový studijní plán</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium">Název plánu</label>
+                    <Input value={newPlan.name} onChange={e => setNewPlan({...newPlan, name: e.target.value})} autoFocus />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium">Popis</label>
+                    <Input value={newPlan.description} onChange={e => setNewPlan({...newPlan, description: e.target.value})} />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={!newPlan.name.trim()}>Vytvořit</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </section>
+    )
+  }
+
+  const activePlan = studyPlans.find(p => p.id === activeStudyPlanId)
+
   return (
     <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-study-plan">
       <div className="flex flex-col gap-1 pl-2 md:pl-4">
-        <h2 className="text-2xl font-bold tracking-tight">Studijní plán</h2>
-        <p className="text-muted-foreground">Přehled předmětů a jejich probíhajících úkolů</p>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+          <button onClick={() => setActiveStudyPlanId(null)} className="hover:text-foreground transition-colors">← Zpět na plány</button>
+        </div>
+        <h2 className="text-2xl font-bold tracking-tight">{activePlan?.name || 'Studijní plán'}</h2>
+        <p className="text-muted-foreground">Přehled předmětů v tomto plánu</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">

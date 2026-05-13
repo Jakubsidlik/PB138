@@ -1,8 +1,8 @@
 import express from 'express'
 import { usersService } from './users.services.js'
-import { profileSchema, updateProfileSchema } from '../schemas.js'
-import { requireRegisteredActor, requireAdmin } from '../auth.js'
-import { asyncHandler, AppError } from '../middleware/error-handler.js'
+import { profileSchema, updateProfileSchema } from '../../schemas.js'
+import { requireRegisteredActor, requireAdmin } from '../../auth.js'
+import { asyncHandler, AppError } from '../../middleware/error-handler.js'
 
 export const usersRouter: express.Router = express.Router()
 

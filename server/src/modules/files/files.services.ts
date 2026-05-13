@@ -1,11 +1,12 @@
 import { filesRepository } from './files.repository.js'
-import { AppError } from '../middleware/error-handler.js'
-import { mapFileRecord, parseFileSizeToBytes, toPaginatedPayload } from '../utils.js'
-import { env } from '../env.js'
+import { AppError } from '../../middleware/error-handler.js'
+import { mapFileRecord, parseFileSizeToBytes, toPaginatedPayload } from '../../utils.js'
+import { usersRepository } from '../users/users.repository.js'
+import { env } from '../../env.js'
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { v4 as uuidv4 } from 'uuid'
-import { fileComments } from '../db/schema.js'
+import { fileComments } from '../../db/schema.js'
 import { Resend } from 'resend'
 
 const s3Client = new S3Client({
@@ -155,9 +156,15 @@ export class FilesService {
       throw new AppError('Nemate opravneni sdilet tento soubor.', 403)
     }
 
-    const targetUser = await filesRepository.findUserByEmail(data.targetUserEmail)
+    let targetUser = await filesRepository.findUserByEmail(data.targetUserEmail)
     if (!targetUser) {
-      throw new AppError(`Uzivatel s emailem ${data.targetUserEmail} nebyl nalezen.`, 404)
+      const fallbackName = data.targetUserEmail.split('@')[0] || 'Uživatel'
+      const createdUser = await usersRepository.create({
+        email: data.targetUserEmail,
+        fullName: fallbackName,
+        role: 'REGISTERED',
+      })
+      targetUser = { id: createdUser.id }
     }
 
     if (targetUser.id === BigInt(actor.id)) {

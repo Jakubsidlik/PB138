@@ -1,7 +1,7 @@
 import { eventRepository } from './events.repository.js'
-import { CursorPagination } from '../types.js'
-import { AppError } from '../middleware/error-handler.js'
-import { buildRecurringDates, parseEventRecurrence } from '../utils.js'
+import { CursorPagination } from '../../types.js'
+import { AppError } from '../../middleware/error-handler.js'
+import { buildRecurringDates, parseEventRecurrence } from '../../utils.js'
 
 export class EventsService {
   async getEvents(actor: { id: number, role: string }, filters: {

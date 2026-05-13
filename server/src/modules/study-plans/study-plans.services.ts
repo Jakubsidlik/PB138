@@ -1,7 +1,7 @@
 import { studyPlanRepository } from './study-plans.repository.js'
-import { AppError } from '../middleware/error-handler.js'
-import { toDateOnlyIso, parseOptionalDate } from '../utils.js'
-import { subjects, tasks, lessons } from '../db/schema.js'
+import { AppError } from '../../middleware/error-handler.js'
+import { toDateOnlyIso, parseOptionalDate } from '../../utils.js'
+import { subjects, tasks, lessons } from '../../db/schema.js'
 
 export class StudyPlansService {
   async getStudyPlans(actor: { id: number, role: string }, filters: { includeInactive?: boolean }) {

@@ -1,8 +1,8 @@
 import { and, asc, eq, gte, gt, ilike, inArray, isNull, lte } from 'drizzle-orm'
-import { db } from '../db/client.js'
-import { tasks, subjects } from '../db/schema.js'
-import { asBigInt, parseTaskPriority, mapTask, toPaginatedPayload } from '../utils.js'
-import { CursorPagination } from '../types.js'
+import { db } from '../../db/client.js'
+import { tasks, subjects } from '../../db/schema.js'
+import { asBigInt, parseTaskPriority, mapTask, toPaginatedPayload } from '../../utils.js'
+import { CursorPagination } from '../../types.js'
 
 const taskSelect = {
   id: tasks.id,

@@ -19,6 +19,7 @@ import {
   Lesson,
   ManagedFile,
   MobileNavItem,
+  StudyPlan,
   Task,
   ThemeMode,
   UserProfile,
@@ -99,6 +100,8 @@ export function useDashboardState() {
   const [fileTab, setFileTab] = React.useState<FileTab>('all')
   const [fileTypeFilter, setFileTypeFilter] = React.useState<'all' | 'folder' | 'pdf' | 'image'>('all')
   const [managedFiles, setManagedFiles] = React.useState<ManagedFile[]>([])
+  const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([])
+  const [activeStudyPlanId, setActiveStudyPlanId] = React.useState<number | null>(null)
   const [subjectSearch, setSubjectSearch] = React.useState('')
   const [subjectFilter, setSubjectFilter] = React.useState<SubjectFilter>('all')
   const [isDragActive, setIsDragActive] = React.useState(false)
@@ -207,6 +210,7 @@ export function useDashboardState() {
     let loadedSubjects: typeof subjectsSeed = []
     let loadedFiles: ManagedFile[] = []
       let loadedLessons: Lesson[] = []
+      let loadedStudyPlans: StudyPlan[] = []
       let loadedProfile = localProfile
 
       try {
@@ -216,6 +220,7 @@ export function useDashboardState() {
           subjectsRes,
           filesRes,
           lessonsRes,
+          studyPlansRes,
           profileRes
         ] = await Promise.allSettled([
           apiFetch('/api/tasks'),
@@ -223,6 +228,7 @@ export function useDashboardState() {
           apiFetch('/api/subjects'),
           apiFetch('/api/files'),
           apiFetch('/api/lessons'),
+          apiFetch('/api/study-plans'),
           apiFetch('/api/profile')
         ])
 
@@ -237,6 +243,10 @@ export function useDashboardState() {
         if (subjectsRes.status === 'fulfilled' && subjectsRes.value.ok) {
           const serverSubjects = await subjectsRes.value.json()
           if (Array.isArray(serverSubjects)) loadedSubjects = serverSubjects as typeof subjectsSeed
+        }
+        if (studyPlansRes.status === 'fulfilled' && studyPlansRes.value.ok) {
+          const serverStudyPlans = await studyPlansRes.value.json()
+          if (Array.isArray(serverStudyPlans)) loadedStudyPlans = serverStudyPlans as StudyPlan[]
         }
         if (filesRes.status === 'fulfilled' && filesRes.value.ok) {
           const serverFiles = await filesRes.value.json()
@@ -266,6 +276,7 @@ export function useDashboardState() {
       setSubjects(loadedSubjects)
       setManagedFiles(loadedFiles)
       setLessons(loadedLessons)
+      setStudyPlans(loadedStudyPlans)
       setProfile(loadedProfile)
       setSavedProfile(loadedProfile)
       setEventMetaById(nextMetaById)
@@ -347,6 +358,18 @@ export function useDashboardState() {
     const payload: unknown = await response.json()
     if (Array.isArray(payload)) {
       setSubjects(payload as typeof subjectsSeed)
+    }
+  }
+
+  const refreshStudyPlans = async () => {
+    const response = await apiFetch('/api/study-plans')
+    if (!response.ok) {
+      return
+    }
+
+    const payload: unknown = await response.json()
+    if (Array.isArray(payload)) {
+      setStudyPlans(payload as StudyPlan[])
     }
   }
 
@@ -705,9 +728,26 @@ export function useDashboardState() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, teacher, code }),
+      body: JSON.stringify({ name, teacher, code, studyPlanId: activeStudyPlanId }),
     }).then(() => {
       void refreshSubjects()
+    })
+  }
+
+  const createStudyPlan = (studyPlanData: { name: string, description?: string }) => {
+    if (!ensureAuthenticated()) return
+
+    const name = studyPlanData.name.trim()
+    if (!name) return
+
+    void apiFetch('/api/study-plans', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, description: studyPlanData.description }),
+    }).then(() => {
+      void refreshStudyPlans()
     })
   }
 
@@ -928,6 +968,11 @@ export function useDashboardState() {
           return false
         }
 
+        const matchesStudyPlan = activeStudyPlanId ? subject.studyPlanId === activeStudyPlanId : true
+        if (!matchesStudyPlan) {
+          return false
+        }
+
         if (subjectFilter === 'active') {
           return !subject.archived
         }
@@ -938,7 +983,7 @@ export function useDashboardState() {
 
         return true
       }),
-    [subjects, subjectSearch, subjectFilter],
+    [subjects, subjectSearch, subjectFilter, activeStudyPlanId],
   )
 
   const desktopSubjects = React.useMemo(
@@ -1027,5 +1072,9 @@ export function useDashboardState() {
     removeFile,
     toggleFileShared,
     changeFileSubject,
+    studyPlans,
+    activeStudyPlanId,
+    setActiveStudyPlanId,
+    createStudyPlan,
   }
 }

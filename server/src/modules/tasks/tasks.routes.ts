@@ -1,10 +1,10 @@
 import express from 'express'
 import { tasksService } from './tasks.services.js'
-import { bulkTasksSchema, taskSchema, updateTaskSchema } from '../schemas.js'
-import { asBigInt, parseCursorPagination, parseOptionalDate } from '../utils.js'
-import { requireRegisteredActor } from '../auth.js'
-import { asyncHandler, AppError } from '../middleware/error-handler.js'
-import { validate } from '../middleware/validate.js'
+import { bulkTasksSchema, taskSchema, updateTaskSchema } from '../../schemas.js'
+import { asBigInt, parseCursorPagination, parseOptionalDate } from '../../utils.js'
+import { requireRegisteredActor } from '../../auth.js'
+import { asyncHandler, AppError } from '../../middleware/error-handler.js'
+import { validate } from '../../middleware/validate.js'
 
 export const tasksRouter: express.Router = express.Router()
 

@@ -1,7 +1,7 @@
 import { usersRepository } from './users.repository.js'
-import { AppError } from '../middleware/error-handler.js'
-import { toDateOnlyIso, parseOptionalDate } from '../utils.js'
-import { UserRole } from '../db/schema.js'
+import { AppError } from '../../middleware/error-handler.js'
+import { toDateOnlyIso, parseOptionalDate } from '../../utils.js'
+import { UserRole } from '../../db/schema.js'
 
 export class UsersService {
   async getAllUsers() {

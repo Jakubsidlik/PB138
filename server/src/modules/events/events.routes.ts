@@ -1,9 +1,9 @@
 import express from 'express'
 import { eventsService } from './events.services.js'
-import { bulkEventsSchema, eventSchema, updateEventSchema } from '../schemas.js'
-import { asBigInt, parseCursorPagination } from '../utils.js'
-import { getActorFromRequest, requireRegisteredActor } from '../auth.js'
-import { asyncHandler, AppError } from '../middleware/error-handler.js'
+import { bulkEventsSchema, eventSchema, updateEventSchema } from '../../schemas.js'
+import { asBigInt, parseCursorPagination } from '../../utils.js'
+import { getActorFromRequest, requireRegisteredActor } from '../../auth.js'
+import { asyncHandler, AppError } from '../../middleware/error-handler.js'
 
 export const eventsRouter: express.Router = express.Router()
 

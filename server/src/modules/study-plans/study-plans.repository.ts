@@ -1,7 +1,7 @@
 import { and, asc, eq, exists, inArray, isNull, or, sql } from 'drizzle-orm'
-import { db } from '../db/client.js'
-import { users, studyPlans, studyPlanCollaborators, subjects, tasks, lessons } from '../db/schema.js'
-import { asBigInt } from '../utils.js'
+import { db } from '../../db/client.js'
+import { users, studyPlans, studyPlanCollaborators, subjects, tasks, lessons } from '../../db/schema.js'
+import { asBigInt } from '../../utils.js'
 
 const studyPlanSelect = {
   id: studyPlans.id,

@@ -1,6 +1,6 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
-import { db } from '../db/client.js'
-import { users } from '../db/schema.js'
+import { db } from '../../db/client.js'
+import { users } from '../../db/schema.js'
 
 const userSelect = {
   id: users.id,
