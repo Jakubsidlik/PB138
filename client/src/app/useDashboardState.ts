@@ -1,4 +1,5 @@
 import React from 'react'
+import { toast } from 'sonner'
 import {
   desktopSubjectMetaByCode,
   EVENTS_STORAGE_KEY,
@@ -346,7 +347,7 @@ export function useDashboardState(fetchAll = false) {
       return true
     }
 
-    window.alert('Tato akce vyžaduje přihlášení.')
+    toast.error('Tato akce vyžaduje přihlášení.')
     return false
   }
 

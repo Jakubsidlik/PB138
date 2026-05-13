@@ -1,5 +1,6 @@
 import React from 'react'
 import { Avatar, AvatarFallback } from '../../ui/avatar'
+import { toast } from 'sonner'
 
 type AvatarUploadProps = {
   avatarDataUrl: string | null
@@ -47,13 +48,13 @@ export function AvatarUpload({
     // Validace - jenom PNG a JPG
     const allowedTypes = ['image/png', 'image/jpeg']
     if (!allowedTypes.includes(file.type)) {
-      alert('Prosím vyberte obrázek ve formátu PNG nebo JPG')
+      toast.error('Prosím vyberte obrázek ve formátu PNG nebo JPG')
       return
     }
 
     // Validace velikosti (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Soubor je příliš velký. Maximum je 5MB.')
+      toast.error('Soubor je příliš velký. Maximum je 5MB.')
       return
     }
 

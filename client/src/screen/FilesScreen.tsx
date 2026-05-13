@@ -7,8 +7,18 @@ import { HiddenFileInput } from '../components/shared/files/HiddenFileInput'
 import { ShareFileModal } from '../components/shared/files/ShareFileModal'
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog'
 import { Input } from '../components/ui/input'
-import { Share } from 'lucide-react'
+import { Share, Trash2 } from 'lucide-react'
 
 type DesktopFilesScreenProps = {
   managedFiles: ManagedFile[]
@@ -207,25 +217,33 @@ export function DesktopFilesScreen({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!deletingFileId} onOpenChange={(open) => !open && setDeletingFileId(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Smazat soubor</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>Opravdu chcete smazat tento soubor?</p>
-          </div>
-          <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => setDeletingFileId(null)}>Ne</Button>
-            <Button type="button" variant="destructive" onClick={() => {
-              if (deletingFileId) {
-                onDeleteFile(deletingFileId);
-                setDeletingFileId(null);
-              }
-            }}>Ano</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AlertDialog open={!!deletingFileId} onOpenChange={(open) => !open && setDeletingFileId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <Trash2 className="size-6" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Smazat soubor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opravdu chcete smazat tento soubor? Tato akce je nevratná a soubor bude trvale odstraněn.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction 
+              variant="destructive"
+              onClick={() => {
+                if (deletingFileId) {
+                  onDeleteFile(deletingFileId);
+                  setDeletingFileId(null);
+                }
+              }}
+            >
+              Smazat soubor
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { apiClient as api } from '../app/api'
+import { useEffect, useState } from 'react'
+import { apiClient } from '../app/api'
 import { User, FileRecord } from '../app/types'
 import { Shield, Trash2, UserMinus, ImageOff, RefreshCw, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@clerk/clerk-react'
@@ -12,7 +12,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogMedia,
 } from '../components/ui/alert-dialog'
+import { Button } from '../components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 
 export function AdminDashboardScreen() {
   const [users, setUsers] = useState<User[]>([])
@@ -21,6 +24,8 @@ export function AdminDashboardScreen() {
   const [loadingFiles, setLoadingFiles] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fileToDelete, setFileToDelete] = useState<number | null>(null)
+  const [userToDelete, setUserToDelete] = useState<number | null>(null)
+  const [avatarToDelete, setAvatarToDelete] = useState<number | null>(null)
   const { getToken, isLoaded } = useAuth()
 
   useEffect(() => {
@@ -29,7 +34,7 @@ export function AdminDashboardScreen() {
     const updateToken = async () => {
       try {
         const token = await getToken()
-        api.setToken(token)
+        apiClient.setToken(token)
         loadUsers()
         loadFiles()
       } catch (err) {
@@ -44,7 +49,7 @@ export function AdminDashboardScreen() {
     setLoadingUsers(true)
     setError(null)
     try {
-      const data = await api.getUsers()
+      const data = await apiClient.getUsers()
       setUsers(data)
     } catch (error: any) {
       console.error('Failed to load users:', error)
@@ -57,7 +62,7 @@ export function AdminDashboardScreen() {
   const loadFiles = async () => {
     setLoadingFiles(true)
     try {
-      const data = await api.getAdminFiles()
+      const data = await apiClient.getAdminFiles()
       console.log('Admin files data:', data)
       if ('data' in data) {
         setFiles(data.data)
@@ -73,34 +78,34 @@ export function AdminDashboardScreen() {
     }
   }
 
-  const handleDeleteAvatar = async (userId: number) => {
-    if (!confirm('Opravdu chcete smazat profilovou fotku tohoto uživatele?')) return
+  const confirmDeleteAvatar = async () => {
+    if (!avatarToDelete) return
     try {
-      await api.adminUpdateUser(userId, { avatarDataUrl: null })
-      setUsers(users.map(u => u.id === userId ? { ...u, avatarDataUrl: null } : u))
+      await apiClient.adminUpdateUser(avatarToDelete, { avatarDataUrl: null })
+      setUsers(users.map(u => u.id === avatarToDelete ? { ...u, avatarDataUrl: null } : u))
     } catch (error) {
       console.error('Failed to delete avatar:', error)
+    } finally {
+      setAvatarToDelete(null)
     }
   }
 
-  const handleDeleteUser = async (userId: number) => {
-    if (!confirm('Opravdu chcete smazat tohoto uživatele? Tato akce je nevratná.')) return
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return
     try {
-      await api.adminDeleteUser(userId)
-      setUsers(users.filter(u => u.id !== userId))
+      await apiClient.adminDeleteUser(userToDelete)
+      setUsers(users.filter(u => u.id !== userToDelete))
     } catch (error) {
       console.error('Failed to delete user:', error)
+    } finally {
+      setUserToDelete(null)
     }
-  }
-
-  const handleDeleteFile = async (fileId: number) => {
-    setFileToDelete(fileId)
   }
 
   const confirmDeleteFile = async () => {
     if (!fileToDelete) return
     try {
-      await api.deleteFile(fileToDelete)
+      await apiClient.deleteFile(fileToDelete)
       setFiles(files.filter(f => f.id !== fileToDelete))
     } catch (error) {
       console.error('Failed to delete file:', error)
@@ -117,12 +122,12 @@ export function AdminDashboardScreen() {
             <Shield className="size-8 text-primary" />
             <h1 className="text-3xl font-bold">Administrátorský panel</h1>
           </div>
-          <button 
+          <Button 
+            variant="secondary"
             onClick={() => window.location.href = '/'} 
-            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors"
           >
             Zpět na web
-          </button>
+          </Button>
         </div>
 
         {error && (
@@ -133,15 +138,20 @@ export function AdminDashboardScreen() {
         )}
 
         {/* Users Section */}
-        <div className="bg-card rounded-lg border shadow-sm overflow-hidden">
-          <div className="p-4 flex justify-between items-center border-b">
-            <h2 className="text-xl font-semibold">Správa uživatelů</h2>
-            <button onClick={loadUsers} className="p-2 hover:bg-muted rounded-full transition-colors">
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/20">
+            <CardTitle className="text-xl font-semibold">Správa uživatelů</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={loadUsers} 
+              className="rounded-full"
+            >
               <RefreshCw className={`size-4 ${loadingUsers ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
+            </Button>
+          </CardHeader>
           
-          <div className="overflow-x-auto">
+          <CardContent className="p-0">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
                 <tr>
@@ -157,23 +167,27 @@ export function AdminDashboardScreen() {
                     <td className="px-4 py-3 font-mono text-xs">{user.id}</td>
                     <td className="px-4 py-3 font-medium">{user.fullName}</td>
                     <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
-                    <td className="px-4 py-3 text-right flex justify-end gap-2">
+                    <td className="px-4 py-3 text-right flex justify-end gap-1">
                       {user.avatarDataUrl && (
-                        <button 
-                          onClick={() => handleDeleteAvatar(user.id)}
-                          className="text-amber-500 hover:text-amber-600 transition-colors"
+                        <Button 
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setAvatarToDelete(user.id)}
+                          className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
                           title="Smazat profilovou fotku"
                         >
                           <ImageOff className="size-4" />
-                        </button>
+                        </Button>
                       )}
-                      <button 
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="text-destructive hover:text-destructive/80 transition-colors"
+                      <Button 
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setUserToDelete(user.id)}
+                        className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                         title="Smazat uživatele"
                       >
                         <UserMinus className="size-4" />
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -186,19 +200,24 @@ export function AdminDashboardScreen() {
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Files Section */}
-        <div className="bg-card rounded-lg border shadow-sm overflow-hidden">
-          <div className="p-4 flex justify-between items-center border-b">
-            <h2 className="text-xl font-semibold">Správa souborů</h2>
-            <button onClick={loadFiles} className="p-2 hover:bg-muted rounded-full transition-colors">
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/20">
+            <CardTitle className="text-xl font-semibold">Správa souborů</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={loadFiles} 
+              className="rounded-full"
+            >
               <RefreshCw className={`size-4 ${loadingFiles ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
+            </Button>
+          </CardHeader>
+          
+          <CardContent className="p-0">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
                 <tr>
@@ -224,13 +243,15 @@ export function AdminDashboardScreen() {
                     <td className="px-4 py-3 text-muted-foreground">{file.size}</td>
                     <td className="px-4 py-3 text-muted-foreground">{file.userId}</td>
                     <td className="px-4 py-3 text-right">
-                      <button 
-                        onClick={() => handleDeleteFile(file.id)}
-                        className="text-destructive hover:text-destructive/80 transition-colors"
+                      <Button 
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setFileToDelete(file.id)}
+                        className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                         title="Smazat soubor"
                       >
                         <Trash2 className="size-4" />
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -243,27 +264,82 @@ export function AdminDashboardScreen() {
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Alert Dialog for File Deletion */}
       <AlertDialog open={fileToDelete !== null} onOpenChange={() => setFileToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <Trash2 className="size-6" />
+            </AlertDialogMedia>
             <AlertDialogTitle>Opravdu chcete smazat tento soubor?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tato akce je nevratná a soubor bude trvale smazán.
+              Tato akce je nevratná a soubor bude trvale smazán ze systému.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Zrušit</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteFile} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Smazat
+            <AlertDialogAction 
+              variant="destructive"
+              onClick={confirmDeleteFile}
+            >
+              Smazat soubor
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Alert Dialog for User Deletion */}
+      <AlertDialog open={userToDelete !== null} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <UserMinus className="size-6" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Opravdu chcete smazat tohoto uživatele?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce je nevratná. Dojde k trvalému smazání uživatelského účtu a všech přidružených dat.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction 
+              variant="destructive"
+              onClick={confirmDeleteUser}
+            >
+              Smazat uživatele
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Alert Dialog for Avatar Deletion */}
+      <AlertDialog open={avatarToDelete !== null} onOpenChange={() => setAvatarToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-amber-500/10 text-amber-500">
+              <ImageOff className="size-6" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Smazat profilovou fotku?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce odstraní aktuální profilovou fotku uživatele. Uživatel si ji bude moci nahrát znovu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteAvatar}
+              className="bg-amber-500 text-white hover:bg-amber-600"
+            >
+              Smazat fotku
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   )
 }

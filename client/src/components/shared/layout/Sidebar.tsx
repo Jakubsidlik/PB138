@@ -24,7 +24,20 @@ import {
   Settings,
   LogOut,
   Shield,
+  AlertCircle,
 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogMedia,
+} from '@/components/ui/alert-dialog'
+import { useState } from 'react'
 
 type AppSidebarProps = {
   onLogout: () => void
@@ -41,6 +54,8 @@ const navItems = [
 function AppSidebar({ onLogout }: AppSidebarProps) {
   const { profile, authSession } = useDashboardState(false)
   const { user } = useUser()
+  const [showPermissionAlert, setShowPermissionAlert] = useState(false)
+  const userEmail = user?.primaryEmailAddress?.emailAddress
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   })
@@ -108,11 +123,10 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
               isActive={isActive('/admin')}
               tooltip="Admin"
               onClick={() => {
-                const userEmail = user?.primaryEmailAddress?.emailAddress
                 if (authSession?.role === 'ADMIN' || userEmail?.toLowerCase() === 'admin.lonelystudent@proton.me') {
                   window.location.href = '/admin'
                 } else {
-                  alert(`K této akci nemáte oprávnění. Váš email: ${userEmail}, Vaše role: ${authSession?.role}`)
+                  setShowPermissionAlert(true)
                 }
               }}
               className="h-14 text-base [&_svg]:size-6"
@@ -146,6 +160,31 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      <AlertDialog open={showPermissionAlert} onOpenChange={setShowPermissionAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <AlertCircle className="size-6" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Přístup odepřen</AlertDialogTitle>
+            <AlertDialogDescription>
+              K této akci nemáte dostatečná oprávnění. 
+              <br /><br />
+              <span className="text-xs text-muted-foreground">
+                Email: {userEmail || 'Neznámý'}
+                <br />
+                Role: {authSession?.role || 'Nedefinováno'}
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowPermissionAlert(false)}>
+              Rozumím
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ShadcnSidebar>
   )
 }

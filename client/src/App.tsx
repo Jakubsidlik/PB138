@@ -8,6 +8,7 @@ import { queryClient } from './app/queries'
 
 import { useUser } from '@clerk/clerk-react'
 import { useDashboardState } from './app/useDashboardState'
+import { Toaster } from './components/ui/sonner'
 
 function App() {
   const state = useDashboardState()
@@ -36,6 +37,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
+      <Toaster theme={state.themeMode} />
     </QueryClientProvider>
   )
 }
