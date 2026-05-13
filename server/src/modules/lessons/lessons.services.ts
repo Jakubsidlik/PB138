@@ -11,7 +11,7 @@ export class LessonsService {
   }) {
     const rows = await lessonsRepository.findAll(actor, filters)
     
-    const mappedLessons = await Promise.all(rows.map(async (row) => ({
+    const mappedLessons = rows.map((row) => ({
       id: Number(row.id),
       subjectId: asNumberId(row.subjectId),
       studyPlanId: asNumberId(row.studyPlanId),
@@ -19,12 +19,12 @@ export class LessonsService {
       content: row.content,
       isShared: row.isShared,
       orderIndex: row.orderIndex,
-      notesCount: await lessonsRepository.countByLesson(lessonNotes, row.id),
-      filesCount: await lessonsRepository.countByLesson(fileRecords, row.id),
+      notesCount: 0,
+      filesCount: 0,
       deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
-    })))
+    }))
 
     return mappedLessons
   }

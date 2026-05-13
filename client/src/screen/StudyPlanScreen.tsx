@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog'
 import { Input } from '../components/ui/input'
 import { DesktopSubjectMeta, Subject, ManagedFile, Lesson, StudyPlan } from '../app/types'
 import { SubjectDetailModal } from '../components/shared/dashboard/SubjectDetailModal'
@@ -21,8 +31,8 @@ type DesktopStudyPlanProps = {
   desktopSubjects: DesktopSubject[]
   subjectFilter: SubjectFilter
   setSubjectFilter: React.Dispatch<React.SetStateAction<SubjectFilter>>
-  onCreateSubject: (data: {name: string, teacher: string, code: string}) => void
-  onEditSubject: (subjectId: number, data: {name: string, teacher: string, code: string}) => void
+  onCreateSubject: (data: { name: string, teacher: string, code: string }) => void
+  onEditSubject: (subjectId: number, data: { name: string, teacher: string, code: string }) => void
   onToggleArchiveSubject: (subjectId: number) => void
   onDeleteSubject: (subjectId: number) => void
   managedFiles: ManagedFile[]
@@ -68,6 +78,8 @@ export function DesktopStudyPlan({
   const [planFilter, setPlanFilter] = useState<'all' | 'active' | 'archived'>('active')
 
   const [editingSubjectId, setEditingSubjectId] = useState<number | null>(null)
+  const [subjectToDelete, setSubjectToDelete] = useState<number | null>(null)
+  const [planToDelete, setPlanToDelete] = useState<number | null>(null)
   const [editSubjectData, setEditSubjectData] = useState({ name: '', teacher: '', code: '' })
 
   const editingSubject = desktopSubjects.find(s => s.id === editingSubjectId)
@@ -196,9 +208,9 @@ export function DesktopStudyPlan({
                   <span>📚 {plan.subjectsCount || 0} předmětů</span>
                 </div>
               </CardContent>
-              
+
               <Separator />
-              
+
               <CardFooter className="py-2 px-4 bg-muted/30">
                 <SubjectActionButtons
                   subjectId={plan.id}
@@ -206,12 +218,12 @@ export function DesktopStudyPlan({
                   className="w-full"
                   onEditSubject={(id) => setEditingPlanId(id)}
                   onToggleArchiveSubject={onToggleArchiveStudyPlan}
-                  onDeleteSubject={onDeleteStudyPlan}
+                  onDeleteSubject={() => setPlanToDelete(plan.id)}
                 />
               </CardFooter>
             </Card>
           ))}
-          
+
           <Dialog open={isAddPlanOpen} onOpenChange={setIsAddPlanOpen}>
             <DialogTrigger
               render={<Card className="relative overflow-hidden hover:shadow-md transition-all hover:border-primary/50 cursor-pointer flex flex-col group h-32 border-2 border-dashed bg-transparent hover:bg-muted/50 items-center justify-center text-muted-foreground hover:text-foreground" />}
@@ -227,11 +239,11 @@ export function DesktopStudyPlan({
                 <div className="grid gap-4 py-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Název plánu</label>
-                    <Input value={newPlan.name} onChange={e => setNewPlan({...newPlan, name: e.target.value})} autoFocus />
+                    <Input value={newPlan.name} onChange={e => setNewPlan({ ...newPlan, name: e.target.value })} autoFocus />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Popis</label>
-                    <Input value={newPlan.description} onChange={e => setNewPlan({...newPlan, description: e.target.value})} />
+                    <Input value={newPlan.description} onChange={e => setNewPlan({ ...newPlan, description: e.target.value })} />
                   </div>
                 </div>
                 <DialogFooter>
@@ -256,11 +268,11 @@ export function DesktopStudyPlan({
                 <div className="grid gap-4 py-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Název plánu</label>
-                    <Input value={editPlanData.name} onChange={e => setEditPlanData({...editPlanData, name: e.target.value})} autoFocus />
+                    <Input value={editPlanData.name} onChange={e => setEditPlanData({ ...editPlanData, name: e.target.value })} autoFocus />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Popis</label>
-                    <Input value={editPlanData.description} onChange={e => setEditPlanData({...editPlanData, description: e.target.value})} />
+                    <Input value={editPlanData.description} onChange={e => setEditPlanData({ ...editPlanData, description: e.target.value })} />
                   </div>
                 </div>
                 <DialogFooter>
@@ -322,7 +334,7 @@ export function DesktopStudyPlan({
               onClick={() => setSelectedSubjectId(subject.id)}
             >
               <span className={`absolute top-0 left-0 right-0 h-1 ${tones.strip}`} />
-              
+
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between w-full">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${tones.icon}`}>
@@ -353,20 +365,11 @@ export function DesktopStudyPlan({
                   <span className="flex items-center gap-2">
                     <span className="opacity-70">📝</span> {subject.notes} poznámek
                   </span>
-                  {subject.deadlineCount > 0 ? (
-                    <span className="flex items-center gap-2 text-destructive font-medium">
-                      <span>⚠️</span> {subject.deadlineCount} termíny
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2 text-emerald-500 font-medium">
-                      <span>✅</span> Hotovo
-                    </span>
-                  )}
                 </div>
               </CardContent>
 
               <Separator />
-              
+
               <CardFooter className="py-2 px-4 bg-muted/30">
                 <SubjectActionButtons
                   subjectId={subject.id}
@@ -374,7 +377,7 @@ export function DesktopStudyPlan({
                   className="w-full"
                   onEditSubject={() => setEditingSubjectId(subject.id)}
                   onToggleArchiveSubject={onToggleArchiveSubject}
-                  onDeleteSubject={onDeleteSubject}
+                  onDeleteSubject={() => setSubjectToDelete(subject.id)}
                 />
               </CardFooter>
             </Card>
@@ -397,15 +400,15 @@ export function DesktopStudyPlan({
             <div className="grid gap-4 py-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium">Název předmětu</label>
-                <Input value={newSubject.name} onChange={e => setNewSubject({...newSubject, name: e.target.value})} autoFocus />
+                <Input value={newSubject.name} onChange={e => setNewSubject({ ...newSubject, name: e.target.value })} autoFocus />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium">Vyučující</label>
-                <Input value={newSubject.teacher} onChange={e => setNewSubject({...newSubject, teacher: e.target.value})} />
+                <Input value={newSubject.teacher} onChange={e => setNewSubject({ ...newSubject, teacher: e.target.value })} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium">Kód předmětu (např. PB138)</label>
-                <Input value={newSubject.code} onChange={e => setNewSubject({...newSubject, code: e.target.value})} />
+                <Input value={newSubject.code} onChange={e => setNewSubject({ ...newSubject, code: e.target.value })} />
               </div>
             </div>
             <DialogFooter>
@@ -424,15 +427,15 @@ export function DesktopStudyPlan({
             <div className="grid gap-4 py-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium">Název předmětu</label>
-                <Input value={editSubjectData.name} onChange={e => setEditSubjectData({...editSubjectData, name: e.target.value})} autoFocus />
+                <Input value={editSubjectData.name} onChange={e => setEditSubjectData({ ...editSubjectData, name: e.target.value })} autoFocus />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium">Vyučující</label>
-                <Input value={editSubjectData.teacher} onChange={e => setEditSubjectData({...editSubjectData, teacher: e.target.value})} />
+                <Input value={editSubjectData.teacher} onChange={e => setEditSubjectData({ ...editSubjectData, teacher: e.target.value })} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium">Kód předmětu</label>
-                <Input value={editSubjectData.code} onChange={e => setEditSubjectData({...editSubjectData, code: e.target.value})} />
+                <Input value={editSubjectData.code} onChange={e => setEditSubjectData({ ...editSubjectData, code: e.target.value })} />
               </div>
             </div>
             <DialogFooter>
@@ -442,7 +445,7 @@ export function DesktopStudyPlan({
         </DialogContent>
       </Dialog>
 
-      <SubjectDetailModal 
+      <SubjectDetailModal
         subject={selectedSubject}
         files={managedFiles}
         lessons={lessons}
@@ -450,6 +453,48 @@ export function DesktopStudyPlan({
         onAddNote={handleAddNote}
         onAddFile={handleAddFile}
       />
+
+      {/* Alert Dialog for Subject Deletion */}
+      <AlertDialog open={subjectToDelete !== null} onOpenChange={() => setSubjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Opravdu chcete smazat tento předmět?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce je nevratná a předmět bude trvale smazán.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (subjectToDelete) onDeleteSubject(subjectToDelete)
+              setSubjectToDelete(null)
+            }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Alert Dialog for Study Plan Deletion */}
+      <AlertDialog open={planToDelete !== null} onOpenChange={() => setPlanToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Opravdu chcete smazat tento studijní plán?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce je nevratná a studijní plán bude trvale smazán.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (planToDelete) onDeleteStudyPlan(planToDelete)
+              setPlanToDelete(null)
+            }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

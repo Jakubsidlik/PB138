@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import { users } from '../../db/schema.js'
 
@@ -23,7 +23,13 @@ const userSelect = {
 export class UsersRepository {
   async findAll() {
     return db
-      .select(userSelect)
+      .select({
+        id: users.id,
+        fullName: users.fullName,
+        email: users.email,
+        role: users.role,
+        hasAvatar: sql<boolean>`CASE WHEN ${users.avatarDataUrl} IS NOT NULL THEN true ELSE false END`.as('hasAvatar'),
+      })
       .from(users)
       .where(isNull(users.deletedAt))
       .orderBy(asc(users.id))

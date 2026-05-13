@@ -12,7 +12,7 @@ import { calendarWeekDays } from './data'
 
 // Home route component
 export function HomeComponent() {
-  const state = useDashboardState()
+  const state = useDashboardState(true)
   const navigate = useNavigate()
 
   const handleEventClick = (dateIso: string) => {
@@ -37,7 +37,7 @@ export function HomeComponent() {
 
 // Calendar route component
 export function CalendarComponent() {
-  const state = useDashboardState()
+  const state = useDashboardState(true)
   const search: any = useSearch({ strict: false })
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export function CalendarComponent() {
 
 // Files route component
 export function FilesComponent() {
-  const state = useDashboardState()
+  const state = useDashboardState(true)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   return (
@@ -88,7 +88,7 @@ export function FilesComponent() {
 
 // Tasks route component
 export function TasksComponent() {
-  const state = useDashboardState()
+  const state = useDashboardState(true)
 
   return (
     <DesktopTasksScreen
@@ -103,7 +103,7 @@ export function TasksComponent() {
 
 // Study plan route component
 export function StudyComponent() {
-  const state = useDashboardState()
+  const state = useDashboardState(true)
 
   return (
     <DesktopStudyPlan
@@ -131,7 +131,7 @@ export function StudyComponent() {
 
 // Profile route component
 export function ProfileComponent() {
-  const state = useDashboardState()
+  const state = useDashboardState(true)
 
   return (
     <DesktopProfileScreen

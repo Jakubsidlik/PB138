@@ -1,5 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import ghostLogo from '../../../assets/ghostLogo.jpg'
+import { useDashboardState } from '../../../app/useDashboardState'
+import { useUser } from '@clerk/clerk-react'
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
@@ -21,6 +23,7 @@ import {
   BookOpen,
   Settings,
   LogOut,
+  Shield,
 } from 'lucide-react'
 
 type AppSidebarProps = {
@@ -36,6 +39,8 @@ const navItems = [
 ] as const
 
 function AppSidebar({ onLogout }: AppSidebarProps) {
+  const { profile, authSession } = useDashboardState(false)
+  const { user } = useUser()
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   })
@@ -97,6 +102,25 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
       <SidebarFooter className="px-2 py-2">
         <SidebarSeparator />
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              isActive={isActive('/admin')}
+              tooltip="Admin"
+              onClick={() => {
+                const userEmail = user?.primaryEmailAddress?.emailAddress
+                if (authSession?.role === 'ADMIN' || userEmail?.toLowerCase() === 'admin.lonelystudent@proton.me') {
+                  window.location.href = '/admin'
+                } else {
+                  alert(`K této akci nemáte oprávnění. Váš email: ${userEmail}, Vaše role: ${authSession?.role}`)
+                }
+              }}
+              className="h-14 text-base [&_svg]:size-6"
+            >
+              <Shield />
+              <span>Admin</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"

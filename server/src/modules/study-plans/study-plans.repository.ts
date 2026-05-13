@@ -104,7 +104,14 @@ export class StudyPlanRepository {
   }
 
   async countByStudyPlan(table: any, studyPlanId: bigint) {
-    const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(table).where(eq(table.studyPlanId, studyPlanId))
+    const whereClause = [eq(table.studyPlanId, studyPlanId)]
+    if (table.deletedAt) {
+      whereClause.push(isNull(table.deletedAt))
+    }
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(table)
+      .where(and(...whereClause))
     return row?.count ?? 0
   }
 

@@ -86,7 +86,7 @@ const toEventMeta = (event: CalendarEvent, fallbackTitle: string): EventMeta => 
   }
 }
 
-export function useDashboardState() {
+export function useDashboardState(fetchAll = false) {
   const [tasks, setTasks] = React.useState<Task[]>(() => readTasksFromStorage() ?? [])
   const [events, setEvents] = React.useState<CalendarEvent[]>(() => readEventsFromStorage() ?? [])
   const [subjects, setSubjects] = React.useState<typeof subjectsSeed>([])
@@ -193,7 +193,7 @@ export function useDashboardState() {
   }, [authSession])
 
   React.useEffect(() => {
-    if (!isLoaded || isHydrated) return
+    if (!isLoaded || isHydrated || !fetchAll) return
 
     const hydrateData = async () => {
       if (!authSession && !isSignedIn) {
@@ -836,10 +836,6 @@ export function useDashboardState() {
 
     const subject = subjects.find((item) => item.id === subjectId)
     if (!subject) {
-      return
-    }
-
-    if (!window.confirm(`Opravdu smazat předmět "${subject.name}"?`)) {
       return
     }
 

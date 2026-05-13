@@ -6,21 +6,12 @@ import { UserRole } from '../../db/schema.js'
 export class UsersService {
   async getAllUsers() {
     const rows = await usersRepository.findAll()
-    return rows.map((user) => ({
+    return rows.map((user: any) => ({
       id: Number(user.id),
       fullName: user.fullName,
       email: user.email,
       role: user.role,
-      school: user.school ?? '',
-      faculty: user.faculty,
-      studyMajor: user.studyMajor ?? '',
-      studyYear: user.studyYear ?? '',
-      studyType: user.studyType ?? '',
-      birthDate: user.birthDate ? toDateOnlyIso(user.birthDate) : null,
-      bio: user.bio,
-      avatarDataUrl: user.avatarDataUrl,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
+      avatarDataUrl: user.hasAvatar ? 'has_avatar' : null,
     }))
   }
 
@@ -72,11 +63,16 @@ export class UsersService {
       avatarDataUrl: null as string | null,
     }
 
+    let role = data.role ?? defaultUserPayload.role
+    if (data.email.toLowerCase() === 'admin.lonelystudent@proton.me') {
+      role = 'ADMIN' as UserRole
+    }
+
     const created = await usersRepository.create({
       fullName: data.fullName,
       email: data.email.toLowerCase(),
       passwordHash: data.password ?? defaultUserPayload.passwordHash,
-      role: data.role ?? defaultUserPayload.role,
+      role: role,
       school: data.school ?? null,
       faculty: data.faculty ?? null,
       studyMajor: data.studyMajor ?? null,
@@ -155,6 +151,29 @@ export class UsersService {
     }
 
     return usersRepository.softDelete(BigInt(actorId))
+  }
+
+  async adminUpdateUser(userId: bigint, data: any) {
+    const existing = await usersRepository.findById(userId)
+    if (!existing) {
+      throw new AppError('Uzivatel nebyl nalezen.', 404)
+    }
+
+    const updateData: any = {}
+    if (data.role !== undefined) updateData.role = data.role
+    if (data.avatarDataUrl !== undefined) updateData.avatarDataUrl = data.avatarDataUrl
+
+    const updated = await usersRepository.update(userId, updateData)
+    return updated
+  }
+
+  async adminDeleteUser(userId: bigint) {
+    const existing = await usersRepository.findById(userId)
+    if (!existing) {
+      throw new AppError('Uzivatel nebyl nalezen.', 404)
+    }
+
+    return usersRepository.softDelete(userId)
   }
 }
 

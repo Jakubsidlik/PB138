@@ -3,6 +3,7 @@ import { usersService } from './users.services.js'
 import { profileSchema, updateProfileSchema } from '../../schemas.js'
 import { requireRegisteredActor, requireAdmin } from '../../auth.js'
 import { asyncHandler, AppError } from '../../middleware/error-handler.js'
+import { asBigInt } from '../../utils.js'
 
 export const usersRouter: express.Router = express.Router()
 
@@ -53,5 +54,27 @@ usersRouter.delete('/profile', asyncHandler(async (req, res) => {
   if (!actor) return
 
   const result = await usersService.deleteProfile(actor.id)
+  res.json(result)
+}))
+
+usersRouter.put('/users/:id', asyncHandler(async (req, res) => {
+  const admin = await requireAdmin(req, res)
+  if (!admin) return
+
+  const userId = asBigInt(req.params.id)
+  if (!userId) throw new AppError('Neplatne ID uzivatele.', 400)
+
+  const result = await usersService.adminUpdateUser(userId, req.body)
+  res.json(result)
+}))
+
+usersRouter.delete('/users/:id', asyncHandler(async (req, res) => {
+  const admin = await requireAdmin(req, res)
+  if (!admin) return
+
+  const userId = asBigInt(req.params.id)
+  if (!userId) throw new AppError('Neplatne ID uzivatele.', 400)
+
+  const result = await usersService.adminDeleteUser(userId)
   res.json(result)
 }))

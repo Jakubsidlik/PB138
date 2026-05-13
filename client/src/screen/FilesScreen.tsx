@@ -8,6 +8,7 @@ import { ShareFileModal } from '../components/shared/files/ShareFileModal'
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
+import { Share } from 'lucide-react'
 
 type DesktopFilesScreenProps = {
   managedFiles: ManagedFile[]
@@ -119,7 +120,7 @@ export function DesktopFilesScreen({
                             onClick={() => setShareModalFileId(file.id)}
                             title="Sdílet soubor s konkrétním uživatelem"
                           >
-                            {file.shared ? '👥' : '🔒'}
+                            <Share className="size-4" />
                           </Button>
                           <Button
                             type="button"

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedStudyRouteImport } from './routes/_authenticated/study'
@@ -22,6 +23,11 @@ import { Route as AuthenticatedTasksTaskIdRouteImport } from './routes/_authenti
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -67,6 +73,7 @@ const AuthenticatedTasksTaskIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/files': typeof AuthenticatedFilesRoute
@@ -76,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/tasks/': typeof AuthenticatedTasksIndexRoute
 }
 export interface FileRoutesByTo {
+  '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/files': typeof AuthenticatedFilesRoute
@@ -88,6 +96,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/files': typeof AuthenticatedFilesRoute
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/login'
     | '/calendar'
     | '/files'
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/tasks/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/admin'
     | '/login'
     | '/calendar'
     | '/files'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/admin'
     | '/login'
     | '/_authenticated/calendar'
     | '/_authenticated/files'
@@ -133,6 +145,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
 }
 
@@ -143,6 +156,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -230,6 +250,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport

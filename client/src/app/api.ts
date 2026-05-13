@@ -39,9 +39,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 class ApiClient {
   private userId: number | null = null
+  private token: string | null = null
 
   setUserId(userId: number | null) {
     this.userId = userId
+  }
+
+  setToken(token: string | null) {
+    this.token = token
   }
 
   private async request<T>(
@@ -56,6 +61,10 @@ class ApiClient {
 
     if (this.userId !== null) {
       headers['x-user-id'] = String(this.userId)
+    }
+
+    if (this.token !== null) {
+      headers['Authorization'] = `Bearer ${this.token}`
     }
 
     const options: RequestInit = {
@@ -103,6 +112,14 @@ class ApiClient {
   // User endpoints
   async getUsers() {
     return this.request<User[]>('GET', '/api/users')
+  }
+
+  async adminUpdateUser(id: number, data: any) {
+    return this.request<User>('PUT', `/api/users/${id}`, data)
+  }
+
+  async adminDeleteUser(id: number) {
+    return this.request<{ success: boolean }>('DELETE', `/api/users/${id}`)
   }
 
   async getProfile() {
