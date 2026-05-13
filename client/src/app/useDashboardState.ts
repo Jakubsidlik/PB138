@@ -181,6 +181,14 @@ export function useDashboardState(fetchAll = false) {
       })
       rootEl.classList.add(`palette-${accentPalette}`)
     }
+    
+    // Also apply to body so that portals (modals, popovers) inherit the variables
+    document.body.classList.forEach((cls) => {
+      if (cls.startsWith('palette-')) {
+        document.body.classList.remove(cls)
+      }
+    })
+    document.body.classList.add(`palette-${accentPalette}`)
   }, [accentPalette])
 
   React.useEffect(() => {
@@ -446,6 +454,25 @@ export function useDashboardState(fetchAll = false) {
     }).catch((e) => {
       console.error('Failed to create task:', e)
     })
+  }
+
+  const updateTask = async (taskId: number, title: string) => {
+    if (!ensureAuthenticated()) return
+
+    const trimmedTitle = title.trim()
+    if (!trimmedTitle) return
+
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, title: trimmedTitle } : t)))
+
+    try {
+      await apiFetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: trimmedTitle }),
+      })
+    } catch (e) {
+      console.error('Failed to update task:', e)
+    }
   }
 
   const deleteTask = async (taskId: number) => {
@@ -1078,6 +1105,7 @@ export function useDashboardState(fetchAll = false) {
     desktopSubjects,
     toggleTask,
     addTask,
+    updateTask,
     deleteTask,
     removeEvent,
     addDesktopEvent,

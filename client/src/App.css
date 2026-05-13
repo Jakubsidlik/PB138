@@ -1,10 +1,12 @@
 .dashboard-root {
-  --bg-main: #f5f5f5;
-  --bg-sidebar: #fafafa;
-  --bg-topbar: #fafafa;
-  --bg-card: #ffffff;
-  --bg-subtle: #f8f8f8;
-  --bg-soft: #f3f4f6;
+  --bg-main: color-mix(in srgb, #f5f5f5 92%, var(--accent, #111827));
+  --bg-sidebar: color-mix(in srgb, #fafafa 90%, var(--accent, #111827));
+  --bg-topbar: color-mix(in srgb, #fafafa 90%, var(--accent, #111827));
+  --bg-card: color-mix(in srgb, #ffffff 97%, var(--accent));
+  --color-card: color-mix(in srgb, #ffffff 97%, var(--accent));
+  --color-background: color-mix(in srgb, #f5f5f5 92%, var(--accent, #111827));
+  --bg-subtle: color-mix(in srgb, #f8f8f8 90%, var(--accent, #111827));
+  --bg-soft: color-mix(in srgb, #f3f4f6 88%, var(--accent, #111827));
   --bg-input: #ffffff;
   --text-main: #111827;
   --text-muted: #6b7280;
@@ -21,12 +23,14 @@
 }
 
 .dashboard-root.theme-dark {
-  --bg-main: #111315;
-  --bg-sidebar: #16181b;
-  --bg-topbar: #16181b;
-  --bg-card: #1a1d21;
-  --bg-subtle: #20242a;
-  --bg-soft: #262b33;
+  --bg-main: color-mix(in srgb, #111315 91%, var(--accent, #ffffff));
+  --bg-sidebar: color-mix(in srgb, #16181b 89%, var(--accent, #ffffff));
+  --bg-topbar: color-mix(in srgb, #16181b 89%, var(--accent, #ffffff));
+  --bg-card: color-mix(in srgb, #1a1d21 95%, var(--accent));
+  --color-card: color-mix(in srgb, #1a1d21 95%, var(--accent));
+  --color-background: color-mix(in srgb, #111315 91%, var(--accent, #ffffff));
+  --bg-subtle: color-mix(in srgb, #20242a 88%, var(--accent, #ffffff));
+  --bg-soft: color-mix(in srgb, #262b33 85%, var(--accent, #ffffff));
   --bg-input: #20242a;
   --text-main: #f3f4f6;
   --text-muted: #a2acb7;
@@ -36,6 +40,14 @@
   --accent-soft-strong: #576176;
   --accent-text: #fffdf6;
   --danger: #e53935;
+}
+
+.bg-card, .card, .bg-popover, [role="dialog"], [data-slot="dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="popover-content"] {
+  background-color: color-mix(in srgb, var(--color-background, #ffffff) 85%, var(--accent, #0057ff)) !important;
+}
+
+.theme-dark .bg-card, .theme-dark .card, .theme-dark .bg-popover, .theme-dark [role="dialog"], .theme-dark [data-slot="dialog-content"], .theme-dark [data-slot="select-content"], .theme-dark [data-slot="dropdown-menu-content"], .theme-dark [data-slot="popover-content"] {
+  background-color: color-mix(in srgb, var(--color-background, #1a1d21) 85%, var(--accent, #0057ff)) !important;
 }
 
 
@@ -55,9 +67,9 @@
   cursor: pointer;
 }
 
-.dashboard-root.palette-blue,
-.dashboard-root.palette-violet,
-.dashboard-root.palette-cyan {
+body.palette-blue, .dashboard-root.palette-blue,
+body.palette-violet, .dashboard-root.palette-violet,
+body.palette-cyan, .dashboard-root.palette-cyan {
   --accent: #0057ff;
   --accent-soft: #dbe8ff;
   --accent-soft-strong: #adc8ff;
@@ -65,7 +77,7 @@
   --text-contrast: #ffffff;
 }
 
-.dashboard-root.palette-emerald {
+body.palette-emerald, .dashboard-root.palette-emerald {
   --accent: #007f5f;
   --accent-soft: #d6f5ea;
   --accent-soft-strong: #9fe8ce;
@@ -73,8 +85,8 @@
   --text-contrast: #ffffff;
 }
 
-.dashboard-root.palette-rose,
-.dashboard-root.palette-red {
+body.palette-rose, .dashboard-root.palette-rose,
+body.palette-red, .dashboard-root.palette-red {
   --accent: #c81e5b;
   --accent-soft: #ffd9e7;
   --accent-soft-strong: #f7a6c4;
@@ -82,8 +94,8 @@
   --text-contrast: #ffffff;
 }
 
-.dashboard-root.palette-amber,
-.dashboard-root.palette-orange {
+body.palette-amber, .dashboard-root.palette-amber,
+body.palette-orange, .dashboard-root.palette-orange {
   --accent: #b45309;
   --accent-soft: #fde6cf;
   --accent-soft-strong: #f8c38b;
@@ -91,7 +103,7 @@
   --text-contrast: #ffffff;
 }
 
-.dashboard-root.palette-mono {
+body.palette-mono, .dashboard-root.palette-mono {
   --accent: #52525b;
   --accent-soft: #e5e7eb;
   --accent-soft-strong: #cfd4da;
@@ -553,9 +565,8 @@
 
 
 .dashboard-home {
-  padding: 1rem 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  width: 100%;
 }
 
 .dashboard-home-header {

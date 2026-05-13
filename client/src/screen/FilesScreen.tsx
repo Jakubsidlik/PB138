@@ -57,7 +57,7 @@ export function DesktopFilesScreen({
   const rows = managedFiles
 
   return (
-    <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-files">
+    <section className="flex flex-col gap-6 w-full px-8 pt-6 pb-10" id="desktop-files">
       <div className="flex flex-col gap-1 pl-2 md:pl-4">
         <h2 className="text-2xl font-bold tracking-tight">Moje soubory</h2>
         <p className="text-muted-foreground">Správa studijních materiálů a sdílení souborů.</p>

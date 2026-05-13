@@ -68,7 +68,7 @@ export function DesktopCalendarScreen({
     setIsAddEventOpen(false)
   }
   return (
-    <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-calendar">
+    <section className="flex flex-col gap-6 w-full px-8 pt-6 pb-10" id="desktop-calendar">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1 pl-2 md:pl-4">
           <h2 className="text-2xl font-bold tracking-tight">Kalendář</h2>

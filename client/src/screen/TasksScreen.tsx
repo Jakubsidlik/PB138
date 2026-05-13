@@ -11,10 +11,11 @@ type DesktopTasksScreenProps = {
     tasksDone: number
     toggleTask: (taskId: number) => void
     addTask: (title: string) => void
+    updateTask: (taskId: number, title: string) => void
     deleteTask: (taskId: number) => void
 }
 
-export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask, deleteTask }: DesktopTasksScreenProps) {
+export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask, updateTask, deleteTask }: DesktopTasksScreenProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
 
@@ -26,7 +27,7 @@ export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask, dele
     setIsDialogOpen(false)
   }
 return (
-    <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-tasks">
+    <section className="flex flex-col gap-6 w-full px-8 pt-6 pb-10" id="desktop-tasks">
     <div className="flex flex-col gap-1 pl-2 md:pl-4">
         <h2 className="text-2xl font-bold tracking-tight">Moje úkoly</h2>
         <p className="text-muted-foreground">Přehled všech úkolů a jejich stavu</p>
@@ -43,7 +44,7 @@ return (
 
     <div className="flex justify-end my-2">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger render={<Button />}>+ Přidat úkol</DialogTrigger>
+            <DialogTrigger render={<Button size="lg" className="h-10 px-5 text-sm font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--text-contrast)] shadow-sm" />}>+ Přidat úkol</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <form onSubmit={handleAddTask}>
                     <DialogHeader>
@@ -68,6 +69,7 @@ return (
     <TaskList
       tasks={tasks}
       onToggleTask={toggleTask}
+      onUpdateTask={updateTask}
       onDeleteTask={deleteTask}
       emptyMessage="Zatím nejsou evidovány žádné úkoly. Paráda! 🏖️"
       listClassName="flex flex-col gap-3"

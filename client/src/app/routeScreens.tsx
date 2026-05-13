@@ -96,6 +96,7 @@ export function TasksComponent() {
       tasksDone={state.tasksDone}
       toggleTask={state.toggleTask}
       addTask={state.addTask}
+      updateTask={state.updateTask}
       deleteTask={state.deleteTask}
     />
   )

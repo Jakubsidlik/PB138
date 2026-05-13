@@ -116,7 +116,7 @@ export function AdminDashboardScreen() {
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="max-w-6xl mx-auto flex flex-col gap-8">
+      <div className="w-full px-8 py-6 flex flex-col gap-8">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Shield className="size-8 text-primary" />

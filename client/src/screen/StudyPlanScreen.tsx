@@ -145,7 +145,7 @@ export function DesktopStudyPlan({
 
   if (!activeStudyPlanId) {
     return (
-      <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-study-plan">
+      <section className="flex flex-col gap-6 w-full px-8 pt-6 pb-10" id="desktop-study-plan">
         <div className="flex flex-col gap-1 pl-2 md:pl-4">
           <h2 className="text-2xl font-bold tracking-tight">Moje Studijní Plány</h2>
           <p className="text-muted-foreground">Vyberte si studijní plán nebo vytvořte nový</p>
@@ -289,7 +289,7 @@ export function DesktopStudyPlan({
   const activePlan = studyPlans.find(p => p.id === activeStudyPlanId)
 
   return (
-    <section className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10" id="desktop-study-plan">
+    <section className="flex flex-col gap-6 w-full px-8 pt-6 pb-10" id="desktop-study-plan">
       <div className="flex flex-col gap-1 pl-2 md:pl-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
           <button onClick={() => setActiveStudyPlanId(null)} className="hover:text-foreground transition-colors">← Zpět na plány</button>

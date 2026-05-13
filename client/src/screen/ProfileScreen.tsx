@@ -75,7 +75,7 @@ export function DesktopProfileScreen({
   }
 
   return (
-    <section className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-10" id="desktop-profile">
+    <section className="flex flex-col gap-6 w-full px-8 pt-6 pb-10" id="desktop-profile">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold tracking-tight">Nastavení profilu</h2>
         <p className="text-muted-foreground">Spravuj profilový obrázek, osobní údaje a studijní informace</p>
