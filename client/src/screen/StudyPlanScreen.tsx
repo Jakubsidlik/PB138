@@ -33,6 +33,9 @@ type DesktopStudyPlanProps = {
   activeStudyPlanId: number | null
   setActiveStudyPlanId: (id: number | null) => void
   onCreateStudyPlan: (data: { name: string, description?: string }) => void
+  onEditStudyPlan: (studyPlanId: number, data: { name: string, description?: string }) => void
+  onToggleArchiveStudyPlan: (studyPlanId: number) => void
+  onDeleteStudyPlan: (studyPlanId: number) => void
 }
 
 export function DesktopStudyPlan({
@@ -51,6 +54,9 @@ export function DesktopStudyPlan({
   activeStudyPlanId,
   setActiveStudyPlanId,
   onCreateStudyPlan,
+  onEditStudyPlan,
+  onToggleArchiveStudyPlan,
+  onDeleteStudyPlan,
 }: DesktopStudyPlanProps) {
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
@@ -59,6 +65,7 @@ export function DesktopStudyPlan({
   const [isAddPlanOpen, setIsAddPlanOpen] = useState(false)
   const [newPlan, setNewPlan] = useState({ name: '', description: '' })
   const [newSubject, setNewSubject] = useState({ name: '', teacher: '', code: '' })
+  const [planFilter, setPlanFilter] = useState<'all' | 'active' | 'archived'>('active')
 
   const [editingSubjectId, setEditingSubjectId] = useState<number | null>(null)
   const [editSubjectData, setEditSubjectData] = useState({ name: '', teacher: '', code: '' })
@@ -70,6 +77,17 @@ export function DesktopStudyPlan({
       setEditSubjectData({ name: editingSubject.name, teacher: editingSubject.teacher, code: editingSubject.code })
     }
   }, [editingSubject])
+
+  const [editingPlanId, setEditingPlanId] = useState<number | null>(null)
+  const [editPlanData, setEditPlanData] = useState({ name: '', description: '' })
+
+  const editingPlan = studyPlans.find(p => p.id === editingPlanId)
+
+  useEffect(() => {
+    if (editingPlan) {
+      setEditPlanData({ name: editingPlan.name, description: editingPlan.description || '' })
+    }
+  }, [editingPlan])
 
   const handleCreateSubject = (e: React.FormEvent) => {
     e.preventDefault()
@@ -121,8 +139,37 @@ export function DesktopStudyPlan({
           <p className="text-muted-foreground">Vyberte si studijní plán nebo vytvořte nový</p>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Button
+            type="button"
+            variant={planFilter === 'all' ? 'default' : 'outline'}
+            onClick={() => setPlanFilter('all')}
+          >
+            Všechny
+          </Button>
+          <Button
+            type="button"
+            variant={planFilter === 'active' ? 'default' : 'outline'}
+            onClick={() => setPlanFilter('active')}
+          >
+            Aktivní
+          </Button>
+          <Button
+            type="button"
+            variant={planFilter === 'archived' ? 'default' : 'outline'}
+            onClick={() => setPlanFilter('archived')}
+          >
+            Archivované
+          </Button>
+        </div>
+
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {studyPlans.map((plan) => (
+          {studyPlans.filter(plan => {
+            if (planFilter === 'all') return true
+            if (planFilter === 'active') return plan.isActive
+            if (planFilter === 'archived') return !plan.isActive
+            return true
+          }).map((plan) => (
             <Card
               key={plan.id}
               className="relative overflow-hidden hover:shadow-md transition-all hover:border-primary/50 cursor-pointer flex flex-col group h-full"
@@ -149,6 +196,19 @@ export function DesktopStudyPlan({
                   <span>📚 {plan.subjectsCount || 0} předmětů</span>
                 </div>
               </CardContent>
+              
+              <Separator />
+              
+              <CardFooter className="py-2 px-4 bg-muted/30">
+                <SubjectActionButtons
+                  subjectId={plan.id}
+                  isArchived={!plan.isActive}
+                  className="w-full"
+                  onEditSubject={(id) => setEditingPlanId(id)}
+                  onToggleArchiveSubject={onToggleArchiveStudyPlan}
+                  onDeleteSubject={onDeleteStudyPlan}
+                />
+              </CardFooter>
             </Card>
           ))}
           
@@ -176,6 +236,35 @@ export function DesktopStudyPlan({
                 </div>
                 <DialogFooter>
                   <Button type="submit" disabled={!newPlan.name.trim()}>Vytvořit</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={!!editingPlanId} onOpenChange={(open) => !open && setEditingPlanId(null)}>
+            <DialogContent className="sm:max-w-[425px]">
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                if (editingPlanId && editPlanData.name.trim()) {
+                  onEditStudyPlan(editingPlanId, editPlanData)
+                  setEditingPlanId(null)
+                }
+              }}>
+                <DialogHeader>
+                  <DialogTitle>Upravit studijní plán</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium">Název plánu</label>
+                    <Input value={editPlanData.name} onChange={e => setEditPlanData({...editPlanData, name: e.target.value})} autoFocus />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium">Popis</label>
+                    <Input value={editPlanData.description} onChange={e => setEditPlanData({...editPlanData, description: e.target.value})} />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={!editPlanData.name.trim()}>Uložit změny</Button>
                 </DialogFooter>
               </form>
             </DialogContent>

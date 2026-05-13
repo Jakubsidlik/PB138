@@ -18,7 +18,7 @@ export function CircularProgress({
   const strokeDashoffset = circumference - (percentage / 100) * circumference
 
   return (
-    <div className="circular-progress-wrapper" style={{ width: size, height: size }}>
+    <div className="circular-progress-wrapper" style={{ width: size, height: size, position: 'relative' }}>
       <svg
         width={size}
         height={size}
@@ -53,7 +53,18 @@ export function CircularProgress({
       </svg>
 
       {/* Text in center */}
-      <div className="circular-progress-text">
+      <div className="circular-progress-text" style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        fontSize: '0.85rem',
+        fontWeight: 'bold'
+      }}>
         <span>{Math.round(percentage)}%</span>
       </div>
     </div>

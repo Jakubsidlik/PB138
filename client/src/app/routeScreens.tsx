@@ -122,6 +122,9 @@ export function StudyComponent() {
       activeStudyPlanId={state.activeStudyPlanId}
       setActiveStudyPlanId={state.setActiveStudyPlanId}
       onCreateStudyPlan={state.createStudyPlan}
+      onEditStudyPlan={state.updateStudyPlan}
+      onToggleArchiveStudyPlan={state.toggleStudyPlanArchived}
+      onDeleteStudyPlan={state.deleteStudyPlan}
     />
   )
 }

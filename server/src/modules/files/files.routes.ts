@@ -1,6 +1,6 @@
 import express from 'express'
 import { filesService } from './files.services.js'
-import { fileCommentSchema, fileModerationSchema, fileSchema, updateFileSchema, uploadUrlSchema, shareFileSchema } from '../../schemas.js'
+import { fileCommentSchema, fileSchema, updateFileSchema, uploadUrlSchema, shareFileSchema } from '../../schemas.js'
 import { asBigInt, parseCursorPagination } from '../../utils.js'
 import { getActorFromRequest, requireAdmin, requireRegisteredActor } from '../../auth.js'
 import { asyncHandler, AppError } from '../../middleware/error-handler.js'
@@ -29,7 +29,7 @@ filesRouter.get('/', asyncHandler(async (req, res) => {
   res.json(result)
 }))
 
-filesRouter.get('/public', asyncHandler(async (req, res) => {
+filesRouter.get('/public', asyncHandler(async (_req, res) => {
   const result = await filesService.getPublicFiles()
   res.json(result)
 }))

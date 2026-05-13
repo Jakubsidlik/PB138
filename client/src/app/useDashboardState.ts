@@ -228,7 +228,7 @@ export function useDashboardState() {
           apiFetch('/api/subjects'),
           apiFetch('/api/files'),
           apiFetch('/api/lessons'),
-          apiFetch('/api/study-plans'),
+          apiFetch('/api/study-plans?includeInactive=true'),
           apiFetch('/api/profile')
         ])
 
@@ -312,7 +312,8 @@ export function useDashboardState() {
       return
     }
 
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+    const { avatarDataUrl: _, ...profileWithoutAvatar } = profile
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileWithoutAvatar))
   }, [profile, isHydrated, authSession])
 
   const onSaveProfile = async () => {
@@ -362,7 +363,7 @@ export function useDashboardState() {
   }
 
   const refreshStudyPlans = async () => {
-    const response = await apiFetch('/api/study-plans')
+    const response = await apiFetch('/api/study-plans?includeInactive=true')
     if (!response.ok) {
       return
     }
@@ -751,6 +752,39 @@ export function useDashboardState() {
     })
   }
 
+  const updateStudyPlan = (studyPlanId: number, data: { name: string, description?: string }) => {
+    if (!ensureAuthenticated()) return
+    void apiFetch(`/api/study-plans/${studyPlanId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(() => {
+      void refreshStudyPlans()
+    })
+  }
+
+  const toggleStudyPlanArchived = (studyPlanId: number) => {
+    if (!ensureAuthenticated()) return
+    const plan = studyPlans.find((item) => item.id === studyPlanId)
+    if (!plan) return
+    void apiFetch(`/api/study-plans/${studyPlanId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive: !plan.isActive }),
+    }).then(() => {
+      void refreshStudyPlans()
+    })
+  }
+
+  const deleteStudyPlan = (studyPlanId: number) => {
+    if (!ensureAuthenticated()) return
+    void apiFetch(`/api/study-plans/${studyPlanId}`, {
+      method: 'DELETE',
+    }).then(() => {
+      void refreshStudyPlans()
+    })
+  }
+
   const updateSubject = (subjectId: number, subjectData: { name: string, teacher: string, code: string }) => {
     if (!ensureAuthenticated()) return
 
@@ -1076,5 +1110,8 @@ export function useDashboardState() {
     activeStudyPlanId,
     setActiveStudyPlanId,
     createStudyPlan,
+    updateStudyPlan,
+    toggleStudyPlanArchived,
+    deleteStudyPlan,
   }
 }
