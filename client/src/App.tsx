@@ -7,12 +7,13 @@ import { router } from './app/router'
 import { queryClient } from './app/queries'
 
 import { useUser } from '@clerk/clerk-react'
-import { useDashboardState } from './app/useDashboardState'
 import { Toaster } from './components/ui/sonner'
 
-function App() {
-  const state = useDashboardState()
-  const { isLoaded, isSignedIn, user } = useUser()
+import { DashboardProvider, useDashboard } from './app/DashboardContext'
+
+function DashboardSync() {
+  const state = useDashboard()
+  const { isSignedIn, user } = useUser()
 
   // Synchronizace Clerk stavu do lokálního Dashboard stavu aplikace
   React.useEffect(() => {
@@ -26,6 +27,24 @@ function App() {
     }
   }, [isSignedIn, user, state.authSession])
 
+  return null
+}
+
+function AppContent() {
+  const state = useDashboard()
+  
+  return (
+    <>
+      <DashboardSync />
+      <RouterProvider router={router} />
+      <Toaster theme={state.themeMode} />
+    </>
+  )
+}
+
+function App() {
+  const { isLoaded } = useUser()
+
   if (!isLoaded) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
@@ -36,8 +55,9 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-      <Toaster theme={state.themeMode} />
+      <DashboardProvider>
+        <AppContent />
+      </DashboardProvider>
     </QueryClientProvider>
   )
 }

@@ -1,6 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import ghostLogo from '../../../assets/ghostLogo.jpg'
-import { useDashboardState } from '../../../app/useDashboardState'
+import { useDashboard } from '../../../app/DashboardContext'
 import { useUser } from '@clerk/clerk-react'
 import {
   Sidebar as ShadcnSidebar,
@@ -52,7 +52,7 @@ const navItems = [
 ] as const
 
 function AppSidebar({ onLogout }: AppSidebarProps) {
-  const { profile, authSession } = useDashboardState(false)
+  const { profile, authSession } = useDashboard()
   const { user } = useUser()
   const [showPermissionAlert, setShowPermissionAlert] = useState(false)
   const userEmail = user?.primaryEmailAddress?.emailAddress

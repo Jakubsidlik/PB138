@@ -1,12 +1,12 @@
 import React from 'react'
 import { Outlet, useRouterState } from '@tanstack/react-router'
-import { useDashboardState } from '../../app/useDashboardState'
+import { useDashboard } from '../../app/DashboardContext'
 import { AppSidebar, SidebarProvider, SidebarInset } from '../shared/layout/Sidebar'
 import { Topbar } from '../shared/layout/Topbar'
 
 
 export function RootLayout() {
-  const state = useDashboardState()
+  const state = useDashboard()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const pathname = useRouterState({
     select: (s) => s.location.pathname,

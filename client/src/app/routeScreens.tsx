@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useDashboardState } from './useDashboardState'
+import { useDashboard } from './DashboardContext'
 import { getDeadlineMeta, getRelativeDaysLabel, getDefaultMetaForTitle } from './utils'
 import { DashboardHomeContent } from '../components/shared/dashboard/DashboardHomeContent'
 import { DesktopCalendarScreen } from '../screen/CalendarScreen'
@@ -12,7 +12,7 @@ import { calendarWeekDays } from './data'
 
 // Home route component
 export function HomeComponent() {
-  const state = useDashboardState(true)
+  const state = useDashboard()
   const navigate = useNavigate()
 
   const handleEventClick = (dateIso: string) => {
@@ -37,7 +37,7 @@ export function HomeComponent() {
 
 // Calendar route component
 export function CalendarComponent() {
-  const state = useDashboardState(true)
+  const state = useDashboard()
   const search: any = useSearch({ strict: false })
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export function CalendarComponent() {
 
 // Files route component
 export function FilesComponent() {
-  const state = useDashboardState(true)
+  const state = useDashboard()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   return (
@@ -88,7 +88,7 @@ export function FilesComponent() {
 
 // Tasks route component
 export function TasksComponent() {
-  const state = useDashboardState(true)
+  const state = useDashboard()
 
   return (
     <DesktopTasksScreen
@@ -104,7 +104,7 @@ export function TasksComponent() {
 
 // Study plan route component
 export function StudyComponent() {
-  const state = useDashboardState(true)
+  const state = useDashboard()
 
   return (
     <DesktopStudyPlan
@@ -132,7 +132,7 @@ export function StudyComponent() {
 
 // Profile route component
 export function ProfileComponent() {
-  const state = useDashboardState(true)
+  const state = useDashboard()
 
   return (
     <DesktopProfileScreen
