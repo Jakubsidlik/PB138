@@ -120,24 +120,24 @@ export const buildCalendarCells = (displayMonth: Date): CalendarCell[] => {
 
 export const getDailyMotto = (): string => {
   const mottos = [
-    '"Vzdělání je nejlepší investice!"',
-    '"Každý den je nová příležitost!"',
-    '"Malé krůčky vedou k velkým cílům!"',
-    '"Věř ve své schopnosti!"',
-    '"Učení nikdy nekončí!"',
-    '"Soustředění je klíč k úspěchu!"',
-    '"Tvoje práce se vždy vyplatí!"',
-    '"Chyby jsou součástí učení!"',
-    '"Nejlepší čas je teď!"',
-    '"Nerezignuj na své sny!"',
-    '"Jsi silnější, než si myslíš!"',
-    '"Sebevědomost roste s praxí!"',
-    '"Společný úkol - větší síla!"',
-    '"Každý máster byl kdysi začátečník!"',
-    '"Ztráta je jen lekce!"',
-    '"Tvůj potenciál je neomezený!"',
-    '"Vytrvalost je cesta k vítězství!"',
-    '"Základy jsou důležité!"'
+    'Vzdělání je nejlepší investice!',
+    'Každý den je nová příležitost!',
+    'Malé krůčky vedou k velkým cílům!',
+    'Věř ve své schopnosti!',
+    'Učení nikdy nekončí!',
+    'Soustředění je klíč k úspěchu!',
+    'Tvoje práce se vždy vyplatí!',
+    'Chyby jsou součástí učení!',
+    'Nejlepší čas je teď!',
+    'Nerezignuj na své sny!',
+    'Jsi silnější, než si myslíš!',
+    'Sebevědomost roste s praxí!',
+    'Společný úkol - větší síla!',
+    'Každý máster byl kdysi začátečník!',
+    'Ztráta je jen lekce!',
+    'Tvůj potenciál je neomezený!',
+    'Vytrvalost je cesta k vítězství!',
+    'Základy jsou důležité!'
   ]
 
   const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000)

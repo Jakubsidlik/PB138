@@ -174,7 +174,9 @@ export function Topbar({
 
       <div className="topbar-desktop">
         <div className="desktop-title-wrap">
-          <p className="subtitle">{getDailyMotto()}</p>
+          <p className="name">
+            Motto dne ~ <span>{getDailyMotto()}</span>
+          </p>
         </div>
         <Button 
           type="button" 
