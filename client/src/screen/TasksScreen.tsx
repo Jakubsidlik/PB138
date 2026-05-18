@@ -1,29 +1,40 @@
 import { useState } from 'react'
-import { Task } from '../app/types'
+import { Task, TaskPriority } from '../app/types'
+
+const priorityMap: Record<TaskPriority, string> = {
+  NONE: 'Bez priority',
+  LOW: 'Nízká',
+  MEDIUM: 'Střední',
+  HIGH: 'Vysoká',
+  URGENT: 'Urgentní'
+}
 import { Button } from '../components/ui/button'
 import { TaskList } from '../components/shared/tasks/TaskList'
 import { TaskStats } from '../components/shared/dashboard/TaskStats'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 
 type DesktopTasksScreenProps = {
     tasks: Task[]
     tasksDone: number
     toggleTask: (taskId: number) => void
-    addTask: (title: string) => void
-    updateTask: (taskId: number, title: string) => void
+    addTask: (title: string, priority: TaskPriority) => void
+    updateTask: (taskId: number, title: string, priority?: TaskPriority) => void
     deleteTask: (taskId: number) => void
 }
 
 export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask, updateTask, deleteTask }: DesktopTasksScreenProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('NONE')
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTaskTitle.trim()) return
-    addTask(newTaskTitle)
+    addTask(newTaskTitle, newTaskPriority)
     setNewTaskTitle('')
+    setNewTaskPriority('NONE')
     setIsDialogOpen(false)
   }
 return (
@@ -57,6 +68,20 @@ return (
                             onChange={(e) => setNewTaskTitle(e.target.value)}
                             autoFocus
                         />
+                        <Select value={newTaskPriority} onValueChange={(val) => setNewTaskPriority(val as TaskPriority)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Priorita">
+                                    {priorityMap[newTaskPriority]}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="NONE">Bez priority</SelectItem>
+                                <SelectItem value="LOW">Nízká</SelectItem>
+                                <SelectItem value="MEDIUM">Střední</SelectItem>
+                                <SelectItem value="HIGH">Vysoká</SelectItem>
+                                <SelectItem value="URGENT">Urgentní</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <DialogFooter>
                         <Button type="submit" disabled={!newTaskTitle.trim()}>Uložit</Button>

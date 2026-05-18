@@ -103,7 +103,8 @@ export const buildCalendarCells = (displayMonth: Date): CalendarCell[] => {
   const year = displayMonth.getFullYear()
   const month = displayMonth.getMonth()
   const firstDay = new Date(year, month, 1)
-  const startOffset = firstDay.getDay()
+  const jsDay = firstDay.getDay()
+  const startOffset = jsDay === 0 ? 6 : jsDay - 1
   const startDate = new Date(year, month, 1 - startOffset)
 
   return Array.from({ length: 35 }, (_, index) => {

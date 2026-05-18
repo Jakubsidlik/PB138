@@ -3,7 +3,16 @@ import { ReactNode, useState, useRef, useEffect } from 'react'
 import { Button } from '../../ui/button'
 import { Checkbox } from '../../ui/checkbox'
 import { Input } from '../../ui/input'
-import { Task } from '../../../app/types'
+import { Badge } from '../../ui/badge'
+import { Task, TaskPriority } from '../../../app/types'
+
+const priorityMap: Record<TaskPriority, { label: string, color: string }> = {
+  NONE: { label: '', color: '' },
+  LOW: { label: 'Nízká', color: 'bg-green-300 text-black dark:bg-green-400 dark:text-black' },
+  MEDIUM: { label: 'Střední', color: 'bg-yellow-300 text-black dark:bg-yellow-400 dark:text-black' },
+  HIGH: { label: 'Vysoká', color: 'bg-orange-400 text-black dark:bg-orange-500 dark:text-black' },
+  URGENT: { label: 'Urgentní', color: 'bg-red-400 text-black dark:bg-red-500 dark:text-black' }
+}
 
 type TaskListProps = {
   tasks: Task[]
@@ -73,7 +82,14 @@ function TaskListItem({
             className="flex-1 h-8 px-2 min-w-0"
           />
         ) : (
-          <span className="truncate">{task.title}</span>
+          <div className="flex items-center gap-3 truncate">
+            <span className="truncate">{task.title}</span>
+            {task.priority && task.priority !== 'NONE' && (
+              <Badge variant="secondary" className={`px-3 py-1 text-sm font-semibold ${priorityMap[task.priority].color}`}>
+                {priorityMap[task.priority].label}
+              </Badge>
+            )}
+          </div>
         )}
       </label>
       <div className="flex items-center gap-2 flex-shrink-0">

@@ -22,6 +22,7 @@ import {
   MobileNavItem,
   StudyPlan,
   Task,
+  TaskPriority,
   ThemeMode,
   UserProfile,
 } from './types'
@@ -428,7 +429,7 @@ export function useDashboardState(fetchAll = false) {
     }
   }
 
-  const addTask = (title: string) => {
+  const addTask = (title: string, priority: TaskPriority = 'NONE') => {
     if (!ensureAuthenticated()) return
 
     const trimmedTitle = title.trim()
@@ -436,14 +437,14 @@ export function useDashboardState(fetchAll = false) {
 
     // Show task immediately in UI
     const tempId = Date.now()
-    const tempTask: Task = { id: tempId, title: trimmedTitle, done: false }
+    const tempTask: Task = { id: tempId, title: trimmedTitle, done: false, priority }
     setTasks((prev) => [...prev, tempTask])
 
     // Persist to server in background (don't block render)
     apiFetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, done: false }),
+      body: JSON.stringify({ title, done: false, priority }),
     }).then((res) => {
       if (res.ok) {
         return res.json().then((serverTask: Task) => {
@@ -456,19 +457,19 @@ export function useDashboardState(fetchAll = false) {
     })
   }
 
-  const updateTask = async (taskId: number, title: string) => {
+  const updateTask = async (taskId: number, title: string, priority?: TaskPriority) => {
     if (!ensureAuthenticated()) return
 
     const trimmedTitle = title.trim()
     if (!trimmedTitle) return
 
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, title: trimmedTitle } : t)))
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, title: trimmedTitle, ...(priority !== undefined && { priority }) } : t)))
 
     try {
       await apiFetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: trimmedTitle }),
+        body: JSON.stringify({ title: trimmedTitle, ...(priority !== undefined && { priority }) }),
       })
     } catch (e) {
       console.error('Failed to update task:', e)

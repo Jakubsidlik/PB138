@@ -110,8 +110,18 @@ export function DashboardHomeContent({
                     onCheckedChange={() => toggleTask(task.id)}
                     className="scale-125 ml-1"
                   />
-                  <label htmlFor={`dash-task-${task.id}`} className={`flex-1 cursor-pointer select-none text-base leading-tight transition-all ${task.done ? 'line-through text-muted-foreground' : 'font-medium'}`}>
-                    {task.title}
+                  <label htmlFor={`dash-task-${task.id}`} className={`flex-1 cursor-pointer flex items-center select-none text-base leading-tight transition-all min-w-0 ${task.done ? 'line-through text-muted-foreground' : 'font-medium'}`}>
+                    <span className="truncate">{task.title}</span>
+                    {task.priority && task.priority !== 'NONE' && (
+                      <span 
+                        className={`size-2.5 rounded-full inline-block shrink-0 ml-2 ${
+                          task.priority === 'URGENT' ? 'bg-red-500' :
+                          task.priority === 'HIGH' ? 'bg-orange-500' :
+                          task.priority === 'MEDIUM' ? 'bg-yellow-400' :
+                          'bg-green-400'
+                        }`}
+                      />
+                    )}
                   </label>
                 </li>
               ))}

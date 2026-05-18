@@ -134,7 +134,7 @@ export const inferFileCategory = (fileName: string): 'folder' | 'pdf' | 'image' 
   return 'other'
 }
 
-export const mapTask = (task: any): ApiTask & { userId: number, studyPlanId: number | null, favorite: boolean, tag: string | null, deadline: string | null, deletedAt: string | null } => ({
+export const mapTask = (task: any): ApiTask & { userId: number, studyPlanId: number | null, favorite: boolean, tag: string | null, deadline: string | null, deletedAt: string | null, priority: TaskPriority } => ({
   id: Number(task.id),
   userId: Number(task.userId),
   title: task.title,
@@ -143,6 +143,7 @@ export const mapTask = (task: any): ApiTask & { userId: number, studyPlanId: num
   studyPlanId: asNumberId(task.studyPlanId),
   favorite: task.favorite,
   tag: task.tag,
+  priority: task.priority,
   deadline: task.deadline ? task.deadline.toISOString() : null,
   deletedAt: task.deletedAt ? task.deletedAt.toISOString() : null,
 })

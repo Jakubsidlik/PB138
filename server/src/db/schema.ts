@@ -115,6 +115,7 @@ export const tasks = pgTable('Task', {
   done: boolean('done').notNull().default(false),
   favorite: boolean('favorite').notNull().default(false),
   tag: text('tag'),
+  priority: taskPriorityEnum('priority').notNull().default('NONE'),
   deadline: timestamp('deadline', { withTimezone: true, mode: 'date' }),
   deletedAt: timestamp('deletedAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),

@@ -48,6 +48,8 @@ export interface AuthResponse {
 }
 
 // Task types
+export type TaskPriority = 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+
 export interface Task {
   id: number
   title: string
@@ -58,6 +60,7 @@ export interface Task {
   favorite?: boolean
   tag?: string | null
   deadline?: string | null
+  priority?: TaskPriority
   deletedAt?: string | null
 }
 
@@ -65,6 +68,7 @@ export interface CreateTaskRequest {
   title: string
   subjectId?: number | null
   studyPlanId?: number | null
+  priority?: TaskPriority
   deadline?: string | null
 }
 
@@ -74,6 +78,7 @@ export interface UpdateTaskRequest {
   favorite?: boolean
   tag?: string | null
   deadline?: string | null
+  priority?: TaskPriority
   subjectId?: number | null
 }
 

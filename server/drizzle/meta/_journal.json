@@ -22,6 +22,13 @@
       "when": 1778587077846,
       "tag": "0002_amused_talkback",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779122365972,
+      "tag": "0003_short_thundra",
+      "breakpoints": true
     }
   ]
 }

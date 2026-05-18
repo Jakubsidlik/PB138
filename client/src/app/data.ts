@@ -57,7 +57,7 @@ export const desktopSubjectMetaByCode: Record<string, DesktopSubjectMeta> = {
   DS: { icon: '💻', tone: 'violet' },
 }
 
-export const calendarWeekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+export const calendarWeekDays = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle']
 
 export const userProfileSeed: UserProfile = {
   fullName: '',

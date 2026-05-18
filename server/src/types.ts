@@ -6,6 +6,7 @@ export type ApiTask = {
   done: boolean
   subjectId: number | null
   tag?: string | null
+  priority?: string | null
 }
 
 export type ApiEvent = {

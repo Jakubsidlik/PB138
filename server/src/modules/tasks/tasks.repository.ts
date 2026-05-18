@@ -13,6 +13,7 @@ const taskSelect = {
   done: tasks.done,
   favorite: tasks.favorite,
   tag: tasks.tag,
+  priority: tasks.priority,
   deadline: tasks.deadline,
   deletedAt: tasks.deletedAt,
   createdAt: tasks.createdAt,
@@ -92,6 +93,7 @@ export class TaskRepository {
       studyPlanId: asBigInt(data.studyPlanId),
       favorite: data.favorite,
       tag: parsedTag,
+      priority: data.priority ? parseTaskPriority(data.priority) ?? 'NONE' : 'NONE',
       deadline: parsedDeadline,
     }).returning(taskSelect)
 
@@ -128,6 +130,7 @@ export class TaskRepository {
         studyPlanId: data.studyPlanId !== undefined ? asBigInt(data.studyPlanId) : undefined,
         favorite: data.favorite,
         tag: parsedTag,
+        priority: data.priority ? parseTaskPriority(data.priority) : undefined,
         deadline: parsedDeadline,
       })
       .where(eq(tasks.id, taskId))
@@ -179,6 +182,7 @@ export class TaskRepository {
             userId: BigInt(actorId),
             favorite: false,
             tag: null,
+            priority: 'NONE',
             deletedAt: null,
           })
           .onConflictDoUpdate({

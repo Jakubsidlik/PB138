@@ -48,12 +48,6 @@ export function CalendarEventList({
             <div className={contentClassName}>
               <h4 className="break-words whitespace-normal" style={{ wordBreak: 'break-word' }}>
                 {event.title}
-                {event.priority && (
-                  <span className={`event-priority-badge ${event.priority}`}>
-                    {' - '}
-                    {event.priority === 'high' ? 'vysoká' : event.priority === 'medium' ? 'střední' : 'nízká'}
-                  </span>
-                )}
               </h4>
               <p>
                 {meta.time}
