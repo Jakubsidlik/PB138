@@ -19,7 +19,7 @@ import {
   AlertDialogMedia,
 } from '../components/ui/alert-dialog'
 import { Input } from '../components/ui/input'
-import { Share, Trash2 } from 'lucide-react'
+import { Share, Trash2, MoreVertical } from 'lucide-react'
 
 type DesktopFilesScreenProps = {
   managedFiles: ManagedFile[]
@@ -46,6 +46,7 @@ export function DesktopFilesScreen({
   const [renamingFileId, setRenamingFileId] = useState<number | null>(null)
   const [newFileName, setNewFileName] = useState('')
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null)
+  const [infoFileId, setInfoFileId] = useState<number | null>(null)
 
   const handleRename = (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,7 +59,7 @@ export function DesktopFilesScreen({
   const rows = managedFiles
 
   return (
-    <section className="flex flex-col gap-6 w-full px-8 pt-6 pb-10" id="desktop-files">
+    <section className="flex flex-col gap-6 w-full px-4 sm:px-8 pt-6 pb-10" id="desktop-files">
       <div className="flex flex-col gap-1 pl-2 md:pl-4">
         <h2 className="text-2xl font-bold tracking-tight">Moje soubory</h2>
         <p className="text-muted-foreground">Správa studijních materiálů a sdílení souborů.</p>
@@ -74,13 +75,13 @@ export function DesktopFilesScreen({
             {rows.length === 0 ? (
               <p className="text-muted-foreground text-sm py-4">Zatím nejsou dostupné žádné soubory.</p>
             ) : (
-              <div className="w-full min-w-[600px]">
-                <div className="grid grid-cols-[2fr_1fr_1fr_1fr_100px] gap-4 py-3 border-b text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              <div className="w-full">
+                <div className="grid grid-cols-[1fr_80px_40px] sm:grid-cols-[2fr_1fr_1fr_100px] md:grid-cols-[2fr_1fr_1fr_1fr_100px] gap-2 sm:gap-4 py-3 border-b text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider">
                   <div>Název souboru</div>
                   <div>Předmět</div>
-                  <div>Změna</div>
-                  <div>Velikost</div>
-                  <div className="text-right pr-2">Akce</div>
+                  <div className="hidden md:block">Změna</div>
+                  <div className="hidden sm:block">Velikost</div>
+                  <div className="text-right pr-2 sm:pr-0">Akce</div>
                 </div>
                 
                 <div className="flex flex-col">
@@ -94,7 +95,7 @@ export function DesktopFilesScreen({
                     if (tone === "accent-emerald") bgToneClass = "bg-emerald-500/10 text-emerald-600"
 
                     return (
-                      <div key={file.id} className="grid grid-cols-[2fr_1fr_1fr_1fr_100px] gap-4 py-3 items-center border-b last:border-0 hover:bg-muted/50 transition-colors">
+                      <div key={file.id} className="grid grid-cols-[1fr_80px_40px] sm:grid-cols-[2fr_1fr_1fr_100px] md:grid-cols-[2fr_1fr_1fr_1fr_100px] gap-2 sm:gap-4 py-3 items-center border-b last:border-0 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-3 overflow-hidden">
                           <span className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${bgToneClass}`}>
                             {icon}
@@ -120,9 +121,11 @@ export function DesktopFilesScreen({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                        <div className="text-sm text-muted-foreground">{file.addedLabel}</div>
-                        <div className="text-sm text-muted-foreground">{file.size}</div>
-                        <div className="flex justify-end gap-1">
+                        <div className="hidden md:block text-sm text-muted-foreground">{file.addedLabel}</div>
+                        <div className="hidden sm:block text-sm text-muted-foreground">{file.size}</div>
+                        
+                        {/* Desktop Actions */}
+                        <div className="hidden sm:flex justify-end gap-1">
                           <Button
                             type="button"
                             variant="ghost"
@@ -157,11 +160,26 @@ export function DesktopFilesScreen({
                             🗑
                           </Button>
                         </div>
+
+                        {/* Mobile Info & Actions Trigger */}
+                        <div className="flex justify-end sm:hidden">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:bg-muted"
+                            onClick={() => setInfoFileId(file.id)}
+                            title="Zobrazit podrobnosti a akce"
+                          >
+                            <MoreVertical className="size-4" />
+                          </Button>
+                        </div>
                       </div>
                     )
                   })}
                 </div>
               </div>
+
             )}
           </div>
         </section>
@@ -180,6 +198,86 @@ export function DesktopFilesScreen({
           />
         </section>
       </div>
+
+      {infoFileId && (() => {
+        const file = managedFiles.find(f => f.id === infoFileId)
+        if (!file) return null
+        const { icon, tone } = getFileIcon(file.category)
+        const subject = subjects.find(s => s.id === file.subjectId)
+        
+        let bgToneClass = "bg-primary/10 text-primary"
+        if (tone === "accent-amber") bgToneClass = "bg-amber-500/10 text-amber-600"
+        if (tone === "accent-emerald") bgToneClass = "bg-emerald-500/10 text-emerald-600"
+
+        return (
+          <Dialog open={!!infoFileId} onOpenChange={(open) => !open && setInfoFileId(null)}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 pr-6">
+                  <span className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${bgToneClass}`}>
+                    {icon}
+                  </span>
+                  <span className="truncate">{file.name}</span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 py-4">
+                <div className="grid grid-cols-2 gap-y-3 gap-x-4 border rounded-lg p-4 bg-muted/30 text-sm">
+                  <div className="font-semibold text-muted-foreground">Předmět:</div>
+                  <div className="font-medium">{subject ? `${subject.code} - ${subject.name}` : 'Bez předmětu (N/A)'}</div>
+                  
+                  <div className="font-semibold text-muted-foreground">Velikost:</div>
+                  <div className="font-medium">{file.size}</div>
+                  
+                  <div className="font-semibold text-muted-foreground">Poslední změna:</div>
+                  <div className="font-medium">{file.addedLabel}</div>
+                </div>
+                
+                <div className="flex flex-col gap-2 mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start gap-2 h-10"
+                    onClick={() => {
+                      setShareModalFileId(file.id)
+                      setInfoFileId(null)
+                    }}
+                  >
+                    <Share className="size-4 text-muted-foreground" />
+                    <span>Nasdílet uživateli</span>
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start gap-2 h-10"
+                    onClick={() => {
+                      setRenamingFileId(file.id)
+                      setNewFileName(file.name)
+                      setInfoFileId(null)
+                    }}
+                  >
+                    <span className="text-muted-foreground">✎</span>
+                    <span>Přejmenovat</span>
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="w-full justify-start gap-2 h-10"
+                    onClick={() => {
+                      setDeletingFileId(file.id)
+                      setInfoFileId(null)
+                    }}
+                  >
+                    <span className="text-destructive-foreground">🗑</span>
+                    <span>Smazat soubor</span>
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )
+      })()}
 
       {shareModalFileId && (() => {
         const targetFile = managedFiles.find(f => f.id === shareModalFileId)
