@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '../components/ui/dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +19,7 @@ import { SubjectGrid } from '../components/shared/dashboard/SubjectGrid'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription, CardAction } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { Separator } from '../components/ui/separator'
+import { toast } from 'sonner'
 
 type DesktopSubject = Subject & {
   meta: DesktopSubjectMeta
@@ -46,6 +47,7 @@ type DesktopStudyPlanProps = {
   onEditStudyPlan: (studyPlanId: number, data: { name: string, description?: string }) => void
   onToggleArchiveStudyPlan: (studyPlanId: number) => void
   onDeleteStudyPlan: (studyPlanId: number) => void
+  onShareStudyPlan?: (studyPlanId: number, email: string) => Promise<void>
 }
 
 export function DesktopStudyPlan({
@@ -67,9 +69,22 @@ export function DesktopStudyPlan({
   onEditStudyPlan,
   onToggleArchiveStudyPlan,
   onDeleteStudyPlan,
+  onShareStudyPlan,
 }: DesktopStudyPlanProps) {
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
+
+  const [sharingPlanId, setSharingPlanId] = useState<number | null>(null)
+  const [sharePlanEmail, setSharePlanEmail] = useState('')
+  const [isSharingPlanSubmitting, setIsSharingPlanSubmitting] = useState(false)
+
+  const [sharingSubjectId, setSharingSubjectId] = useState<number | null>(null)
+  const [shareSubjectEmail, setShareSubjectEmail] = useState('')
+  const [isSharingSubjectSubmitting, setIsSharingSubjectSubmitting] = useState(false)
+
+  const handleShareSubject = (subjectId: number) => {
+    setSharingSubjectId(subjectId)
+  }
 
   const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false)
   const [isAddPlanOpen, setIsAddPlanOpen] = useState(false)
@@ -249,6 +264,7 @@ export function DesktopStudyPlan({
                     onEditSubject={(id) => setEditingPlanId(id)}
                     onToggleArchiveSubject={onToggleArchiveStudyPlan}
                     onDeleteSubject={() => setPlanToDelete(plan.id)}
+                    onShare={(id) => setSharingPlanId(id)}
                   />
                 </CardFooter>
               </Card>
@@ -405,6 +421,7 @@ export function DesktopStudyPlan({
                       onEditSubject={() => setEditingSubjectId(subject.id)}
                       onToggleArchiveSubject={onToggleArchiveSubject}
                       onDeleteSubject={() => setSubjectToDelete(subject.id)}
+                      onShare={handleShareSubject}
                     />
                   </CardFooter>
                 </Card>
@@ -491,6 +508,107 @@ export function DesktopStudyPlan({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Share Study Plan Dialog */}
+      <Dialog open={sharingPlanId !== null} onOpenChange={(open) => !open && setSharingPlanId(null)}>
+        <DialogContent 
+          style={{ maxWidth: '425px', width: '100%' }}
+        >
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            if (!sharingPlanId || !sharePlanEmail.trim()) return
+            setIsSharingPlanSubmitting(true)
+            try {
+              await onShareStudyPlan?.(sharingPlanId, sharePlanEmail.trim())
+              setSharingPlanId(null)
+              setSharePlanEmail('')
+            } catch (err: any) {
+              toast.error(err.message || 'Nepodařilo se nasdílet studijní plán.')
+            } finally {
+              setIsSharingPlanSubmitting(false)
+            }
+          }} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Sdílet studijní plán</DialogTitle>
+              <DialogDescription>
+                Zadejte e-mailovou adresu uživatele, se kterým chcete sdílet studijní plán <strong>{studyPlans.find(p => p.id === sharingPlanId)?.name}</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 pt-2">
+              <label className="text-sm font-medium">E-mail uživatele</label>
+              <Input
+                type="email"
+                placeholder="např. spolužák@skola.cz"
+                value={sharePlanEmail}
+                onChange={(e) => setSharePlanEmail(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="submit" disabled={isSharingPlanSubmitting || !sharePlanEmail.trim()} className="w-full">
+                {isSharingPlanSubmitting ? 'Sdílím...' : 'Sdílet a odeslat e-mail'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Subject Dialog */}
+      <Dialog open={sharingSubjectId !== null} onOpenChange={(open) => !open && setSharingSubjectId(null)}>
+        <DialogContent 
+          style={{ maxWidth: '425px', width: '100%' }}
+        >
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            if (!sharingSubjectId || !shareSubjectEmail.trim()) return
+            setIsSharingSubjectSubmitting(true)
+            try {
+              const subject = desktopSubjects.find(s => s.id === sharingSubjectId)
+              if (!subject) return
+              
+              if (subject.studyPlanId) {
+                await onShareStudyPlan?.(subject.studyPlanId, shareSubjectEmail.trim())
+              }
+              toast.success(`Předmět ${subject.name} byl úspěšně nasdílen uživateli ${shareSubjectEmail}`)
+              setSharingSubjectId(null)
+              setShareSubjectEmail('')
+            } catch (err: any) {
+              toast.error(err.message || 'Nepodařilo se nasdílet předmět.')
+            } finally {
+              setIsSharingSubjectSubmitting(false)
+            }
+          }} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Sdílet předmět</DialogTitle>
+              <DialogDescription>
+                Zadejte e-mailovou adresu uživatele, se kterým chcete sdílet předmět <strong>{desktopSubjects.find(s => s.id === sharingSubjectId)?.name}</strong>.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2 pt-2">
+              <label className="text-sm font-medium">E-mail uživatele</label>
+              <Input
+                type="email"
+                placeholder="např. jan.novak@skola.cz"
+                value={shareSubjectEmail}
+                onChange={(e) => setShareSubjectEmail(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <Button type="submit" disabled={isSharingSubjectSubmitting || !shareSubjectEmail.trim()} className="w-full">
+                {isSharingSubjectSubmitting ? 'Sdílím a odesílám...' : 'Sdílet a odeslat e-mail'}
+              </Button>
+              <p className="text-[10px] text-muted-foreground text-center mt-2">
+                Uživateli bude v aplikaci nasdílen předmět a zároveň mu přijde e-mailové upozornění s odkazem.
+              </p>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

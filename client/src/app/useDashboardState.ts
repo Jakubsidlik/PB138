@@ -814,6 +814,21 @@ export function useDashboardState(fetchAll = false) {
     })
   }
 
+  const shareStudyPlan = async (studyPlanId: number, email: string) => {
+    if (!ensureAuthenticated()) return
+
+    const res = await apiFetch(`/api/study-plans/${studyPlanId}/share`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role: 'VIEWER' }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      throw new Error(data?.error || 'Nepodařilo se nasdílet studijní plán.')
+    }
+    toast.success(`Studijní plán byl úspěšně nasdílen uživateli ${email}`)
+  }
+
   const updateSubject = (subjectId: number, subjectData: { name: string, teacher: string, code: string }) => {
     if (!ensureAuthenticated()) return
 
@@ -1139,5 +1154,6 @@ export function useDashboardState(fetchAll = false) {
     updateStudyPlan,
     toggleStudyPlanArchived,
     deleteStudyPlan,
+    shareStudyPlan,
   }
 }
