@@ -176,6 +176,33 @@ export function DesktopStudyPlan({
             >
               Archivované
             </Button>
+            <div className="ml-auto">
+              <Dialog open={isAddPlanOpen} onOpenChange={setIsAddPlanOpen}>
+                <DialogTrigger render={<Button size="lg" className="h-10 px-5 text-sm font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--text-contrast)] shadow-sm" />}>
+                  + Nový studijní plán
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <form onSubmit={handleCreatePlan}>
+                    <DialogHeader>
+                      <DialogTitle>Nový studijní plán</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium">Název plánu</label>
+                        <Input value={newPlan.name} onChange={e => setNewPlan({ ...newPlan, name: e.target.value })} autoFocus />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium">Popis</label>
+                        <Input value={newPlan.description} onChange={e => setNewPlan({ ...newPlan, description: e.target.value })} />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" disabled={!newPlan.name.trim()}>Vytvořit</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -226,35 +253,6 @@ export function DesktopStudyPlan({
                 </CardFooter>
               </Card>
             ))}
-
-            <Dialog open={isAddPlanOpen} onOpenChange={setIsAddPlanOpen}>
-              <DialogTrigger
-                render={<Card className="relative overflow-hidden hover:shadow-md transition-all hover:border-primary/50 cursor-pointer flex flex-col group h-32 border-2 border-dashed bg-transparent hover:bg-muted/50 items-center justify-center text-muted-foreground hover:text-foreground" />}
-              >
-                <span className="text-3xl font-light">＋</span>
-                <span>Nový studijní plán</span>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <form onSubmit={handleCreatePlan}>
-                  <DialogHeader>
-                    <DialogTitle>Nový studijní plán</DialogTitle>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium">Název plánu</label>
-                      <Input value={newPlan.name} onChange={e => setNewPlan({ ...newPlan, name: e.target.value })} autoFocus />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium">Popis</label>
-                      <Input value={newPlan.description} onChange={e => setNewPlan({ ...newPlan, description: e.target.value })} />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit" disabled={!newPlan.name.trim()}>Vytvořit</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
 
             <Dialog open={!!editingPlanId} onOpenChange={(open) => !open && setEditingPlanId(null)}>
               <DialogContent className="sm:max-w-[425px]">
@@ -318,6 +316,37 @@ export function DesktopStudyPlan({
             >
               Archivované
             </Button>
+            <div className="ml-auto">
+              <Dialog open={isAddSubjectOpen} onOpenChange={setIsAddSubjectOpen}>
+                <DialogTrigger render={<Button size="lg" className="h-10 px-5 text-sm font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--text-contrast)] shadow-sm" />}>
+                  + Zapsat předmět
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <form onSubmit={handleCreateSubject}>
+                    <DialogHeader>
+                      <DialogTitle>Nový předmět</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium">Název předmětu</label>
+                        <Input value={newSubject.name} onChange={e => setNewSubject({ ...newSubject, name: e.target.value })} autoFocus />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium">Vyučující</label>
+                        <Input value={newSubject.teacher} onChange={e => setNewSubject({ ...newSubject, teacher: e.target.value })} />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium">Kód předmětu (např. PB138)</label>
+                        <Input value={newSubject.code} onChange={e => setNewSubject({ ...newSubject, code: e.target.value })} />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" disabled={!newSubject.name.trim() || !newSubject.teacher.trim() || !newSubject.code.trim()}>Zapsat</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           <SubjectGrid
@@ -382,39 +411,6 @@ export function DesktopStudyPlan({
               )
             }}
           />
-
-          <Dialog open={isAddSubjectOpen} onOpenChange={setIsAddSubjectOpen}>
-            <DialogTrigger
-              render={<Button type="button" variant="outline" className="w-full mb-8 h-32 border-2 border-dashed bg-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-all flex flex-col items-center justify-center gap-2 rounded-xl text-lg" />}
-            >
-              <span className="text-3xl font-light">＋</span>
-              <span>Zapsat další předmět</span>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <form onSubmit={handleCreateSubject}>
-                <DialogHeader>
-                  <DialogTitle>Nový předmět</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium">Název předmětu</label>
-                    <Input value={newSubject.name} onChange={e => setNewSubject({ ...newSubject, name: e.target.value })} autoFocus />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium">Vyučující</label>
-                    <Input value={newSubject.teacher} onChange={e => setNewSubject({ ...newSubject, teacher: e.target.value })} />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium">Kód předmětu (např. PB138)</label>
-                    <Input value={newSubject.code} onChange={e => setNewSubject({ ...newSubject, code: e.target.value })} />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={!newSubject.name.trim() || !newSubject.teacher.trim() || !newSubject.code.trim()}>Zapsat</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
 
           <Dialog open={!!editingSubjectId} onOpenChange={(open) => !open && setEditingSubjectId(null)}>
             <DialogContent className="sm:max-w-[425px]">

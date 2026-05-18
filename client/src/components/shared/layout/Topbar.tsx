@@ -189,7 +189,7 @@ export function Topbar({
           </div>
           <Avatar size="lg" className="border border-border">
             <AvatarImage src={profileAvatarDataUrl || ''} alt={profileName} />
-            <AvatarFallback className="bg-pink-100 text-pink-600 font-bold">
+            <AvatarFallback className="bg-primary/10 text-primary font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>

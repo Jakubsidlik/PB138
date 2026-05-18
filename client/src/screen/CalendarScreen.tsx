@@ -77,7 +77,7 @@ export function DesktopCalendarScreen({
         <div className="flex flex-wrap items-center gap-3">
           <MonthSwitcher monthLabel={monthLabel} setDisplayMonth={setDisplayMonth} />
           <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
-            <DialogTrigger render={<Button type="button" />}>
+            <DialogTrigger render={<Button size="lg" className="h-10 px-5 text-sm font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--text-contrast)] shadow-sm" />}>
               + Přidat událost
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">

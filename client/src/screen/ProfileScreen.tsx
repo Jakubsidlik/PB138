@@ -96,7 +96,7 @@ export function DesktopProfileScreen({
               <div className="flex flex-wrap gap-3 justify-center sm:justify-start mt-2">
                 <Button 
                   type="button" 
-                  className="bg-[#242f49] text-white hover:bg-[#161e2f] shadow-md hover:shadow-lg transition-all"
+                  className="bg-[var(--accent)] text-[var(--text-contrast)] hover:opacity-90 shadow-md hover:shadow-lg transition-all"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   Nahrát novou fotku

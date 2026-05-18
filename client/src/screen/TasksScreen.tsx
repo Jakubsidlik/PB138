@@ -28,6 +28,7 @@ export function DesktopTasksScreen({ tasks, tasksDone, toggleTask, addTask, upda
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('NONE')
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'ALL'>('ALL')
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,7 +54,23 @@ return (
       completed={tasksDone}
     />
 
-    <div className="flex justify-end my-2">
+    <div className="flex items-center justify-end gap-3 my-2">
+        <Select value={priorityFilter} onValueChange={(val) => setPriorityFilter(val as TaskPriority | 'ALL')}>
+            <SelectTrigger className="w-auto min-w-[160px]">
+                <SelectValue placeholder="Filtrovat podle priority">
+                    {priorityFilter === 'ALL' ? 'Všechny priority' : priorityMap[priorityFilter as TaskPriority]}
+                </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="ALL">Všechny priority</SelectItem>
+                <SelectItem value="NONE">Bez priority</SelectItem>
+                <SelectItem value="LOW">Nízká</SelectItem>
+                <SelectItem value="MEDIUM">Střední</SelectItem>
+                <SelectItem value="HIGH">Vysoká</SelectItem>
+                <SelectItem value="URGENT">Urgentní</SelectItem>
+            </SelectContent>
+        </Select>
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger render={<Button size="lg" className="h-10 px-5 text-sm font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--text-contrast)] shadow-sm" />}>+ Přidat úkol</DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
@@ -92,7 +109,7 @@ return (
     </div>
 
     <TaskList
-      tasks={tasks}
+      tasks={tasks.filter(t => priorityFilter === 'ALL' ? true : (t.priority || 'NONE') === priorityFilter)}
       onToggleTask={toggleTask}
       onUpdateTask={updateTask}
       onDeleteTask={deleteTask}
