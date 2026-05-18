@@ -1,5 +1,5 @@
 import { UserProfile } from '../../../app/types'
-import { studyYearOptions, studyTypeOptions } from './profileConstants'
+import { studyTypeOptions, getYearsForStudyType } from './profileConstants'
 import { Input } from '../../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 
@@ -9,6 +9,8 @@ type ProfileStudyInfoFormProps = {
 }
 
 export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyInfoFormProps) {
+  const availableYears = getYearsForStudyType(profile.studyType)
+
   return (
     <div className="grid gap-4">
       <div className="flex flex-col gap-1.5">
@@ -23,7 +25,18 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">Typ studia</span>
-        <Select value={profile.studyType ?? undefined} onValueChange={(value) => onChangeProfile({ studyType: value ?? '' })}>
+        <Select
+          value={profile.studyType ?? undefined}
+          onValueChange={(value) => {
+            const newType = value ?? ''
+            const validYears = getYearsForStudyType(newType)
+            const updates: Partial<UserProfile> = { studyType: newType }
+            if (profile.studyYear && !validYears.includes(profile.studyYear)) {
+              updates.studyYear = ''
+            }
+            onChangeProfile(updates)
+          }}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Vyberte typ studia" />
           </SelectTrigger>
@@ -54,7 +67,7 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
             <SelectValue placeholder="Vyberte ročník" />
           </SelectTrigger>
           <SelectContent>
-            {studyYearOptions.map((option) => (
+            {availableYears.map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
               </SelectItem>
