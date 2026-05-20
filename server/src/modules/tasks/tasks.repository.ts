@@ -11,8 +11,7 @@ const taskSelect = {
   studyPlanId: tasks.studyPlanId,
   title: tasks.title,
   done: tasks.done,
-  favorite: tasks.favorite,
-  tag: tasks.tag,
+
   priority: tasks.priority,
   deadline: tasks.deadline,
   deletedAt: tasks.deletedAt,
@@ -27,21 +26,19 @@ export class TaskRepository {
     studyPlanId?: bigint | null
     includeDeleted?: boolean
     done?: string | null
-    favorite?: string | null
-    tag?: string
+
     search?: string
     deadlineFrom?: Date | null | undefined
     deadlineTo?: Date | null | undefined
   }) {
-    const { pagination, subjectId, studyPlanId, includeDeleted, done, favorite, tag, search, deadlineFrom, deadlineTo } = filters
+    const { pagination, subjectId, studyPlanId, includeDeleted, done, search, deadlineFrom, deadlineTo } = filters
 
     const whereParts = [
       eq(tasks.userId, BigInt(actorId)),
       subjectId ? eq(tasks.subjectId, subjectId) : undefined,
       studyPlanId ? eq(tasks.studyPlanId, studyPlanId) : undefined,
       done === 'true' ? eq(tasks.done, true) : done === 'false' ? eq(tasks.done, false) : undefined,
-      favorite === 'true' ? eq(tasks.favorite, true) : favorite === 'false' ? eq(tasks.favorite, false) : undefined,
-      tag ? eq(tasks.tag, tag) : undefined,
+
       search ? ilike(tasks.title, `%${search}%`) : undefined,
       deadlineFrom || deadlineTo
         ? and(
@@ -77,13 +74,12 @@ export class TaskRepository {
     done?: boolean
     subjectId?: number | null
     studyPlanId?: number | null
-    favorite?: boolean
-    tag?: string | null
+
     priority?: string
     deadline?: string | null
   }) {
     const parsedDeadline = data.deadline ? new Date(data.deadline) : null
-    const parsedTag = data.tag !== undefined ? data.tag || null : data.priority !== undefined ? parseTaskPriority(data.priority) ?? null : null
+
 
     const [created] = await db.insert(tasks).values({
       userId: BigInt(actorId),
@@ -91,8 +87,7 @@ export class TaskRepository {
       done: data.done,
       subjectId: asBigInt(data.subjectId),
       studyPlanId: asBigInt(data.studyPlanId),
-      favorite: data.favorite,
-      tag: parsedTag,
+
       priority: data.priority ? parseTaskPriority(data.priority) ?? 'NONE' : 'NONE',
       deadline: parsedDeadline,
     }).returning(taskSelect)
@@ -113,13 +108,12 @@ export class TaskRepository {
     done?: boolean
     subjectId?: number | null
     studyPlanId?: number | null
-    favorite?: boolean
-    tag?: string | null
+
     priority?: string
     deadline?: string | null
   }) {
     const parsedDeadline = data.deadline ? new Date(data.deadline) : undefined
-    const parsedTag = data.tag !== undefined ? data.tag || null : data.priority !== undefined ? parseTaskPriority(data.priority) ?? null : undefined
+
 
     const [updated] = await db
       .update(tasks)
@@ -128,8 +122,7 @@ export class TaskRepository {
         done: data.done,
         subjectId: data.subjectId !== undefined ? asBigInt(data.subjectId) : undefined,
         studyPlanId: data.studyPlanId !== undefined ? asBigInt(data.studyPlanId) : undefined,
-        favorite: data.favorite,
-        tag: parsedTag,
+
         priority: data.priority ? parseTaskPriority(data.priority) : undefined,
         deadline: parsedDeadline,
       })
@@ -180,8 +173,7 @@ export class TaskRepository {
             done: task.done,
             subjectId: nextSubjectId,
             userId: BigInt(actorId),
-            favorite: false,
-            tag: null,
+
             priority: 'NONE',
             deletedAt: null,
           })

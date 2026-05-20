@@ -21,17 +21,12 @@ export const userRoleValues = ['REGISTERED', 'ADMIN'] as const
 export type UserRole = (typeof userRoleValues)[number]
 export const userRoleEnum = pgEnum('UserRole', userRoleValues)
 
-export const eventRecurrenceValues = ['NONE', 'DAILY', 'WEEKLY', 'MONTHLY'] as const
-export type EventRecurrence = (typeof eventRecurrenceValues)[number]
-export const eventRecurrenceEnum = pgEnum('EventRecurrence', eventRecurrenceValues)
 
 export const collaborationRoleValues = ['VIEWER', 'CONTRIBUTOR'] as const
 export type CollaborationRole = (typeof collaborationRoleValues)[number]
 export const collaborationRoleEnum = pgEnum('CollaborationRole', collaborationRoleValues)
 
-export const annotationTargetTypeValues = ['LESSON', 'LESSON_NOTE', 'FILE_COMMENT'] as const
-export type AnnotationTargetType = (typeof annotationTargetTypeValues)[number]
-export const annotationTargetTypeEnum = pgEnum('AnnotationTargetType', annotationTargetTypeValues)
+
 
 export const users = pgTable('User', {
   id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
@@ -45,8 +40,7 @@ export const users = pgTable('User', {
   studyMajor: text('studyMajor'),
   studyYear: text('studyYear'),
   studyType: text('studyType'),
-  birthDate: date('birthDate', { mode: 'date' }),
-  bio: text('bio'),
+
   avatarDataUrl: text('avatarDataUrl'),
   contactEmail: text('contactEmail'),
   deletedAt: timestamp('deletedAt', { withTimezone: true, mode: 'date' }),
@@ -61,9 +55,7 @@ export const studyPlans = pgTable('StudyPlan', {
   userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description'),
-  faculty: text('faculty'),
-  startDate: date('startDate', { mode: 'date' }),
-  endDate: date('endDate', { mode: 'date' }),
+
   isActive: boolean('isActive').notNull().default(true),
   isShared: boolean('isShared').notNull().default(false),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
@@ -113,8 +105,7 @@ export const tasks = pgTable('Task', {
   studyPlanId: bigint('studyPlanId', { mode: 'bigint' }).references(() => studyPlans.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   done: boolean('done').notNull().default(false),
-  favorite: boolean('favorite').notNull().default(false),
-  tag: text('tag'),
+
   priority: taskPriorityEnum('priority').notNull().default('NONE'),
   deadline: timestamp('deadline', { withTimezone: true, mode: 'date' }),
   deletedAt: timestamp('deletedAt', { withTimezone: true, mode: 'date' }),
@@ -172,17 +163,7 @@ export const fileSharesRelations = relations(fileShares, ({ one }) => ({
   user: one(users, { fields: [fileShares.userId], references: [users.id] }),
 }))
 
-export const fileComments = pgTable('FileComment', {
-  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
-  fileId: bigint('fileId', { mode: 'bigint' }).notNull().references(() => fileRecords.id, { onDelete: 'cascade' }),
-  userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
-  comment: text('comment').notNull(),
-  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-}, (table) => ({
-  fileIdIdx: index('FileComment_fileId_idx').on(table.fileId),
-  userIdIdx: index('FileComment_userId_idx').on(table.userId),
-}))
+
 
 export const lessons = pgTable('Lesson', {
   id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
@@ -202,18 +183,7 @@ export const lessons = pgTable('Lesson', {
   deletedAtIdx: index('Lesson_deletedAt_idx').on(table.deletedAt),
 }))
 
-export const lessonNotes = pgTable('LessonNote', {
-  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
-  lessonId: bigint('lessonId', { mode: 'bigint' }).notNull().references(() => lessons.id, { onDelete: 'cascade' }),
-  userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
-  note: text('note').notNull(),
-  isPinned: boolean('isPinned').notNull().default(false),
-  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-}, (table) => ({
-  lessonIdIdx: index('LessonNote_lessonId_idx').on(table.lessonId),
-  userIdIdx: index('LessonNote_userId_idx').on(table.userId),
-}))
+
 
 export const events = pgTable('Event', {
   id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
@@ -224,8 +194,7 @@ export const events = pgTable('Event', {
   time: text('time'),
   location: text('location'),
   isShared: boolean('isShared').notNull().default(false),
-  recurrence: eventRecurrenceEnum('recurrence').notNull().default('NONE'),
-  recurrenceGroupId: text('recurrenceGroupId'),
+
   deletedAt: timestamp('deletedAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
@@ -235,24 +204,10 @@ export const events = pgTable('Event', {
   isSharedIdx: index('Event_isShared_idx').on(table.isShared),
   dateIdx: index('Event_date_idx').on(table.date),
   deletedAtIdx: index('Event_deletedAt_idx').on(table.deletedAt),
-  recurrenceGroupIdIdx: index('Event_recurrenceGroupId_idx').on(table.recurrenceGroupId),
+
 }))
 
-export const textAnnotations = pgTable('TextAnnotation', {
-  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
-  targetType: annotationTargetTypeEnum('targetType').notNull(),
-  targetId: bigint('targetId', { mode: 'bigint' }).notNull(),
-  userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
-  startOffset: integer('startOffset').notNull(),
-  endOffset: integer('endOffset').notNull(),
-  selectedText: text('selectedText').notNull(),
-  comment: text('comment').notNull(),
-  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-}, (table) => ({
-  targetIdx: index('TextAnnotation_targetType_targetId_idx').on(table.targetType, table.targetId),
-  userIdIdx: index('TextAnnotation_userId_idx').on(table.userId),
-}))
+
 
 export type DbUser = typeof users.$inferSelect
 export type DbStudyPlan = typeof studyPlans.$inferSelect
@@ -260,8 +215,5 @@ export type DbStudyPlanCollaborator = typeof studyPlanCollaborators.$inferSelect
 export type DbSubject = typeof subjects.$inferSelect
 export type DbTask = typeof tasks.$inferSelect
 export type DbFileRecord = typeof fileRecords.$inferSelect
-export type DbFileComment = typeof fileComments.$inferSelect
 export type DbLesson = typeof lessons.$inferSelect
-export type DbLessonNote = typeof lessonNotes.$inferSelect
 export type DbEvent = typeof events.$inferSelect
-export type DbTextAnnotation = typeof textAnnotations.$inferSelect

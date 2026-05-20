@@ -20,8 +20,7 @@ tasksRouter.get('/', asyncHandler(async (req, res) => {
     studyPlanId: asBigInt(req.query.studyPlanId),
     includeDeleted: req.query.includeDeleted === 'true',
     done: req.query.done as string | null,
-    favorite: req.query.favorite as string | null,
-    tag: typeof req.query.tag === 'string' ? req.query.tag.trim() : '',
+
     search: typeof req.query.search === 'string' ? req.query.search.trim() : '',
     deadlineFrom: parseOptionalDate(req.query.deadlineFrom),
     deadlineTo: parseOptionalDate(req.query.deadlineTo),

@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, exists, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { lessons, lessonNotes, textAnnotations, studyPlans, studyPlanCollaborators, subjects } from '../../db/schema.js'
+import { lessons, studyPlans, studyPlanCollaborators, subjects } from '../../db/schema.js'
 
 const lessonSelect = {
   id: lessons.id,
@@ -80,51 +80,6 @@ export class LessonsRepository {
     return row?.count ?? 0
   }
 
-  async findNotes(lessonId: bigint, filters: { includeAll?: boolean, userId?: bigint, isPublic?: boolean }) {
-    const whereParts = [
-      eq(lessonNotes.lessonId, lessonId),
-      filters.isPublic ? undefined : (filters.includeAll ? undefined : eq(lessonNotes.userId, filters.userId!)),
-    ].filter(Boolean)
-
-    return db
-      .select()
-      .from(lessonNotes)
-      .where(and(...(whereParts as any)))
-      .orderBy(desc(lessonNotes.isPinned), asc(lessonNotes.createdAt))
-  }
-
-  async createNote(data: any) {
-    const [created] = await db.insert(lessonNotes).values(data).returning()
-    return created
-  }
-
-  async updateNote(noteId: bigint, data: any) {
-    const [updated] = await db.update(lessonNotes).set(data).where(eq(lessonNotes.id, noteId)).returning()
-    return updated
-  }
-
-  async deleteNote(noteId: bigint) {
-    await db.delete(lessonNotes).where(eq(lessonNotes.id, noteId))
-    return { success: true }
-  }
-
-  async findAnnotations(targetType: any, targetId: bigint) {
-    return db
-      .select()
-      .from(textAnnotations)
-      .where(and(eq(textAnnotations.targetType, targetType), eq(textAnnotations.targetId, targetId)))
-      .orderBy(asc(textAnnotations.createdAt))
-  }
-
-  async createAnnotation(data: any) {
-    const [created] = await db.insert(textAnnotations).values(data).returning()
-    return created
-  }
-
-  async deleteAnnotation(annotationId: bigint) {
-    await db.delete(textAnnotations).where(eq(textAnnotations.id, annotationId))
-    return { success: true }
-  }
 
   async canActorManageLesson(actorId: number, actorRole: string, lessonId: bigint) {
     if (actorRole === 'ADMIN') return true
@@ -148,15 +103,6 @@ export class LessonsRepository {
     return false
   }
 
-  async findNoteById(noteId: bigint) {
-    const [note] = await db.select({ id: lessonNotes.id, userId: lessonNotes.userId }).from(lessonNotes).where(eq(lessonNotes.id, noteId)).limit(1)
-    return note || null
-  }
-
-  async findAnnotationById(annotationId: bigint) {
-    const [annotation] = await db.select({ id: textAnnotations.id, userId: textAnnotations.userId }).from(textAnnotations).where(eq(textAnnotations.id, annotationId)).limit(1)
-    return annotation || null
-  }
 }
 
 export const lessonsRepository = new LessonsRepository()

@@ -6,7 +6,6 @@ import { env } from '../../env.js'
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { v4 as uuidv4 } from 'uuid'
-import { fileComments } from '../../db/schema.js'
 import { Resend } from 'resend'
 
 const s3Client = new S3Client({
@@ -21,14 +20,6 @@ const s3Client = new S3Client({
 
 const BUCKET_NAME = env.S3_BUCKET_NAME
 
-const mapComment = (comment: typeof fileComments.$inferSelect) => ({
-  id: Number(comment.id),
-  fileId: Number(comment.fileId),
-  userId: Number(comment.userId),
-  comment: comment.comment,
-  createdAt: comment.createdAt.toISOString(),
-  updatedAt: comment.updatedAt.toISOString(),
-})
 
 export class FilesService {
   async getFiles(actor: { id: number, role: string }, filters: {
@@ -224,29 +215,6 @@ export class FilesService {
     return filesRepository.deleteShare(fileId, userId)
   }
 
-  async getComments(fileId: bigint, actor: { id: number, role: string }) {
-    const comments = await filesRepository.findComments(fileId)
-    return comments.map(mapComment)
-  }
-
-  async createComment(fileId: bigint, actorId: number, actorRole: string, data: { comment: string }) {
-    const created = await filesRepository.createComment({
-      fileId,
-      userId: BigInt(actorId),
-      comment: data.comment,
-    })
-
-    return mapComment(created)
-  }
-
-  async updateComment(commentId: bigint, actorId: number, actorRole: string, data: { comment: string }) {
-    const updated = await filesRepository.updateComment(commentId, { comment: data.comment })
-    return mapComment(updated)
-  }
-
-  async deleteComment(commentId: bigint, actorId: number, actorRole: string) {
-    return filesRepository.deleteComment(commentId)
-  }
 }
 
 export const filesService = new FilesService()

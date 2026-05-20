@@ -9,8 +9,8 @@ import { eventsRouter } from './modules/events/events.routes.js'
 import { studyPlansRouter } from './modules/study-plans/study-plans.routes.js'
 import { subjectsRouter } from './modules/subjects/subjects.routes.js'
 import { usersRouter } from './modules/users/users.routes.js'
-import { filesRouter, adminFilesRouter, fileCommentsRouter } from './modules/files/files.routes.js'
-import { lessonsRouter, lessonNotesRouter, annotationsRouter } from './modules/lessons/lessons.routes.js'
+import { filesRouter, adminFilesRouter } from './modules/files/files.routes.js'
+import { lessonsRouter } from './modules/lessons/lessons.routes.js'
 import { errorHandler } from './middleware/error-handler.js'
 
 const app = express()
@@ -26,10 +26,7 @@ app.use('/api/study-plans', studyPlansRouter)
 app.use('/api/subjects', subjectsRouter)
 app.use('/api/files', filesRouter)
 app.use('/api/admin/files', adminFilesRouter)
-app.use('/api/file-comments', fileCommentsRouter)
 app.use('/api/lessons', lessonsRouter)
-app.use('/api/lesson-notes', lessonNotesRouter)
-app.use('/api/annotations', annotationsRouter)
 app.use('/api', usersRouter)
 
 app.get('/api/health', async (_req, res) => {

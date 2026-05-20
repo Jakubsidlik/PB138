@@ -9,8 +9,7 @@ export class TasksService {
     studyPlanId?: bigint | null
     includeDeleted?: boolean
     done?: string | null
-    favorite?: string | null
-    tag?: string
+
     search?: string
     deadlineFrom?: Date | null | undefined
     deadlineTo?: Date | null | undefined

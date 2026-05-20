@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gt, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { fileRecords, fileComments, fileShares, users } from '../../db/schema.js'
+import { fileRecords, fileShares, users } from '../../db/schema.js'
 
 const fileSelect = {
   id: fileRecords.id,
@@ -99,38 +99,6 @@ export class FilesRepository {
     return { success: true }
   }
 
-  async findComments(fileId: bigint) {
-    return db.select().from(fileComments).where(eq(fileComments.fileId, fileId)).orderBy(asc(fileComments.createdAt))
-  }
-
-  async createComment(data: any) {
-    const [created] = await db.insert(fileComments).values(data).returning()
-    return created
-  }
-
-  async updateComment(commentId: bigint, data: any) {
-    const [updated] = await db.update(fileComments).set(data).where(eq(fileComments.id, commentId)).returning()
-    return updated
-  }
-
-  async deleteComment(commentId: bigint) {
-    await db.delete(fileComments).where(eq(fileComments.id, commentId))
-    return { success: true }
-  }
-
-  async findCommentWithFileUser(commentId: bigint) {
-    const [existing] = await db
-      .select({
-        id: fileComments.id,
-        userId: fileComments.userId,
-        fileUserId: fileRecords.userId,
-      })
-      .from(fileComments)
-      .innerJoin(fileRecords, eq(fileComments.fileId, fileRecords.id))
-      .where(eq(fileComments.id, commentId))
-      .limit(1)
-    return existing || null
-  }
 
   async createShare(data: any) {
     const [share] = await db

@@ -1,4 +1,4 @@
-import { type EventRecurrence, type UserRole } from './db/schema.js'
+import { type UserRole } from './db/schema.js'
 
 export type ApiTask = {
   id: number
@@ -17,8 +17,7 @@ export type ApiEvent = {
   location: string | null
   subjectId: number | null
   isShared?: boolean
-  recurrence?: EventRecurrence
-  recurrenceGroupId?: string | null
+
 }
 
 export type AuthActor = {

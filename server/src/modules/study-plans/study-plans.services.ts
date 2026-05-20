@@ -1,6 +1,6 @@
 import { studyPlanRepository } from './study-plans.repository.js'
 import { AppError } from '../../middleware/error-handler.js'
-import { toDateOnlyIso, parseOptionalDate } from '../../utils.js'
+
 import { subjects, tasks, lessons } from '../../db/schema.js'
 
 export class StudyPlansService {
@@ -17,9 +17,7 @@ export class StudyPlansService {
         userId: Number(plan.userId),
         name: plan.name,
         description: plan.description,
-        faculty: plan.faculty,
-        startDate: plan.startDate ? toDateOnlyIso(plan.startDate) : null,
-        endDate: plan.endDate ? toDateOnlyIso(plan.endDate) : null,
+
         isActive: plan.isActive,
         isShared: plan.isShared,
         collaboratorRole,
@@ -41,23 +39,12 @@ export class StudyPlansService {
   }
 
   async createStudyPlan(actorId: number, data: any) {
-    const parsedStartDate = parseOptionalDate(data.startDate)
-    if (data.startDate !== undefined && parsedStartDate === undefined) {
-      throw new AppError('Neplatny format startDate.', 400)
-    }
-
-    const parsedEndDate = parseOptionalDate(data.endDate)
-    if (data.endDate !== undefined && parsedEndDate === undefined) {
-      throw new AppError('Neplatny format endDate.', 400)
-    }
 
     const created = await studyPlanRepository.create({
       userId: BigInt(actorId),
       name: data.name,
       description: data.description ?? null,
-      faculty: data.faculty ?? null,
-      startDate: parsedStartDate,
-      endDate: parsedEndDate,
+
       isActive: data.isActive,
       isShared: data.isShared,
     })
@@ -67,9 +54,7 @@ export class StudyPlansService {
       userId: Number(created.userId),
       name: created.name,
       description: created.description,
-      faculty: created.faculty,
-      startDate: created.startDate ? toDateOnlyIso(created.startDate) : null,
-      endDate: created.endDate ? toDateOnlyIso(created.endDate) : null,
+
       isActive: created.isActive,
       isShared: created.isShared,
       createdAt: created.createdAt.toISOString(),
@@ -86,22 +71,11 @@ export class StudyPlansService {
       throw new AppError('Nemate opravneni upravovat metadata tohoto planu.', 403)
     }
 
-    const parsedStartDate = parseOptionalDate(data.startDate)
-    if (data.startDate !== undefined && (parsedStartDate === undefined || parsedStartDate === null)) {
-      throw new AppError('Neplatny format startDate.', 400)
-    }
-
-    const parsedEndDate = parseOptionalDate(data.endDate)
-    if (data.endDate !== undefined && parsedEndDate === undefined) {
-      throw new AppError('Neplatny format endDate.', 400)
-    }
 
     const updated = await studyPlanRepository.update(studyPlanId, {
       name: data.name,
       description: data.description,
-      faculty: data.faculty,
-      startDate: parsedStartDate ?? undefined,
-      endDate: parsedEndDate,
+
       isActive: data.isActive,
       isShared: data.isShared,
     })
@@ -111,9 +85,7 @@ export class StudyPlansService {
       userId: Number(updated.userId),
       name: updated.name,
       description: updated.description,
-      faculty: updated.faculty,
-      startDate: updated.startDate ? toDateOnlyIso(updated.startDate) : null,
-      endDate: updated.endDate ? toDateOnlyIso(updated.endDate) : null,
+
       isActive: updated.isActive,
       isShared: updated.isShared,
       createdAt: updated.createdAt.toISOString(),

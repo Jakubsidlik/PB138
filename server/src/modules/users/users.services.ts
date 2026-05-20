@@ -1,10 +1,39 @@
+import { clerkClient } from '@clerk/express'
+import { db } from '../../db/client.js'
+import { users } from '../../db/schema.js'
 import { usersRepository } from './users.repository.js'
 import { AppError } from '../../middleware/error-handler.js'
-import { toDateOnlyIso, parseOptionalDate } from '../../utils.js'
+import { toDateOnlyIso } from '../../utils.js'
 import { UserRole } from '../../db/schema.js'
 
 export class UsersService {
   async getAllUsers() {
+    try {
+      const clerkUsers = await clerkClient.users.getUserList()
+      const dbUsers = await db.select({ email: users.email, clerkId: users.clerkId }).from(users)
+      const dbEmails = new Set(dbUsers.map(u => u.email.toLowerCase()))
+      const dbClerkIds = new Set(dbUsers.map(u => u.clerkId).filter(Boolean))
+
+      for (const cu of clerkUsers.data) {
+        const email = cu.emailAddresses[0]?.emailAddress?.toLowerCase()
+        if (!email) continue
+
+        if (!dbEmails.has(email) && !dbClerkIds.has(cu.id)) {
+          const fullName = `${cu.firstName || ''} ${cu.lastName || ''}`.trim() || 'Uživatel'
+          await db.insert(users).values({
+            clerkId: cu.id,
+            email,
+            fullName,
+            role: 'REGISTERED'
+          })
+          dbEmails.add(email)
+          dbClerkIds.add(cu.id)
+        }
+      }
+    } catch (err) {
+      console.error('Chyba při synchronizaci uživatelů z Clerku:', err)
+    }
+
     const rows = await usersRepository.findAll()
     return rows.map((user: any) => ({
       id: Number(user.id),
@@ -31,8 +60,7 @@ export class UsersService {
       studyMajor: user.studyMajor ?? '',
       studyYear: user.studyYear ?? '',
       studyType: user.studyType ?? '',
-      birthDate: user.birthDate ? toDateOnlyIso(user.birthDate) : null,
-      bio: user.bio,
+
       avatarDataUrl: user.avatarDataUrl,
       contactEmail: user.contactEmail,
       updatedAt: user.updatedAt.toISOString(),
@@ -45,10 +73,7 @@ export class UsersService {
       throw new AppError('Profil uz existuje. Pouzijte PUT /api/profile.', 409)
     }
 
-    const parsedBirthDate = parseOptionalDate(data.birthDate)
-    if (data.birthDate !== undefined && parsedBirthDate === undefined) {
-      throw new AppError('Neplatny format birthDate.', 400)
-    }
+
 
     const defaultUserPayload = {
       passwordHash: 'demo-password',
@@ -58,8 +83,7 @@ export class UsersService {
       studyMajor: null as string | null,
       studyYear: null as string | null,
       studyType: null as string | null,
-      birthDate: null as Date | null,
-      bio: null as string | null,
+
       avatarDataUrl: null as string | null,
     }
 
@@ -78,8 +102,7 @@ export class UsersService {
       studyMajor: data.studyMajor ?? null,
       studyYear: data.studyYear ?? null,
       studyType: data.studyType ?? null,
-      birthDate: parsedBirthDate ?? null,
-      bio: data.bio ?? null,
+
       avatarDataUrl: data.avatarDataUrl ?? null,
       contactEmail: data.contactEmail ?? null,
     })
@@ -94,18 +117,14 @@ export class UsersService {
       studyMajor: created.studyMajor ?? '',
       studyYear: created.studyYear ?? '',
       studyType: created.studyType ?? '',
-      birthDate: created.birthDate ? toDateOnlyIso(created.birthDate) : null,
-      bio: created.bio,
+
       avatarDataUrl: created.avatarDataUrl,
       contactEmail: created.contactEmail,
     }
   }
 
   async updateProfile(actorId: number, actorRole: string, data: any) {
-    const parsedBirthDate = parseOptionalDate(data.birthDate)
-    if (data.birthDate !== undefined && parsedBirthDate === undefined) {
-      throw new AppError('Neplatny format birthDate.', 400)
-    }
+
 
     const updatePayload: any = {
       fullName: data.fullName,
@@ -114,8 +133,7 @@ export class UsersService {
       studyMajor: data.studyMajor,
       studyYear: data.studyYear,
       studyType: data.studyType,
-      birthDate: parsedBirthDate ?? undefined,
-      bio: data.bio,
+
       avatarDataUrl: data.avatarDataUrl,
       contactEmail: data.contactEmail,
     }
@@ -136,8 +154,7 @@ export class UsersService {
       studyMajor: updated.studyMajor ?? '',
       studyYear: updated.studyYear ?? '',
       studyType: updated.studyType ?? '',
-      birthDate: updated.birthDate ? toDateOnlyIso(updated.birthDate) : null,
-      bio: updated.bio,
+
       avatarDataUrl: updated.avatarDataUrl,
       contactEmail: updated.contactEmail,
       updatedAt: updated.updatedAt.toISOString(),

@@ -29,6 +29,27 @@
       "when": 1779122365972,
       "tag": "0003_short_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779280903557,
+      "tag": "0004_high_ben_urich",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779281358011,
+      "tag": "0005_boring_toad",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779281916840,
+      "tag": "0006_fixed_odin",
+      "breakpoints": true
     }
   ]
 }

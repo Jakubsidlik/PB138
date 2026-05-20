@@ -13,8 +13,6 @@ const eventSelect = {
   time: events.time,
   location: events.location,
   isShared: events.isShared,
-  recurrence: events.recurrence,
-  recurrenceGroupId: events.recurrenceGroupId,
   deletedAt: events.deletedAt,
   createdAt: events.createdAt,
   updatedAt: events.updatedAt,
@@ -118,8 +116,6 @@ export class EventRepository {
             location: event.location,
             isShared: typeof event.isShared === 'boolean' ? event.isShared : false,
             subjectId: nextSubjectId,
-            recurrence: 'NONE',
-            recurrenceGroupId: null,
             deletedAt: null,
           })
           .onConflictDoUpdate({
@@ -132,8 +128,6 @@ export class EventRepository {
               location: event.location,
               isShared: typeof event.isShared === 'boolean' ? event.isShared : false,
               subjectId: nextSubjectId,
-              recurrence: 'NONE',
-              recurrenceGroupId: null,
               deletedAt: null,
             },
           })

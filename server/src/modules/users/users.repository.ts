@@ -12,8 +12,7 @@ const userSelect = {
   studyMajor: users.studyMajor,
   studyYear: users.studyYear,
   studyType: users.studyType,
-  birthDate: users.birthDate,
-  bio: users.bio,
+
   avatarDataUrl: users.avatarDataUrl,
   contactEmail: users.contactEmail,
   createdAt: users.createdAt,

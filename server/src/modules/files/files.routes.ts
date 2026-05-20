@@ -1,6 +1,6 @@
 import express from 'express'
 import { filesService } from './files.services.js'
-import { fileCommentSchema, fileSchema, updateFileSchema, uploadUrlSchema, shareFileSchema } from '../../schemas.js'
+import { fileSchema, updateFileSchema, uploadUrlSchema, shareFileSchema } from '../../schemas.js'
 import { asBigInt, parseCursorPagination } from '../../utils.js'
 import { getActorFromRequest, requireAdmin, requireRegisteredActor } from '../../auth.js'
 import { asyncHandler, AppError } from '../../middleware/error-handler.js'
@@ -10,7 +10,6 @@ import { pipeline } from 'stream/promises'
 
 export const filesRouter: express.Router = express.Router()
 export const adminFilesRouter: express.Router = express.Router()
-export const fileCommentsRouter: express.Router = express.Router()
 
 // filesRouter
 filesRouter.get('/', asyncHandler(async (req, res) => {
@@ -140,30 +139,6 @@ filesRouter.delete('/:id/share/:userId', asyncHandler(async (req, res) => {
   res.json(result)
 }))
 
-filesRouter.get('/:id/comments', asyncHandler(async (req, res) => {
-  const actor = await getActorFromRequest(req)
-  const fileId = asBigInt(req.params.id)
-  if (!fileId) throw new AppError('Neplatne ID souboru.', 400)
-
-  const result = await filesService.getComments(fileId, actor)
-  res.json(result)
-}))
-
-filesRouter.post('/:id/comments', asyncHandler(async (req, res) => {
-  const actor = await requireRegisteredActor(req, res)
-  if (!actor) return
-
-  const fileId = asBigInt(req.params.id)
-  if (!fileId) throw new AppError('Neplatne ID souboru.', 400)
-
-  const parsed = fileCommentSchema.safeParse(req.body)
-  if (!parsed.success) {
-    throw new AppError(parsed.error.errors[0].message, 400)
-  }
-
-  const result = await filesService.createComment(fileId, actor.id, actor.role, parsed.data)
-  res.status(201).json(result)
-}))
 
 // adminFilesRouter
 adminFilesRouter.get('/', asyncHandler(async (req, res) => {
@@ -175,30 +150,3 @@ adminFilesRouter.get('/', asyncHandler(async (req, res) => {
   res.json(result)
 }))
 
-// fileCommentsRouter
-fileCommentsRouter.patch('/:id', asyncHandler(async (req, res) => {
-  const actor = await requireRegisteredActor(req, res)
-  if (!actor) return
-
-  const commentId = asBigInt(req.params.id)
-  if (!commentId) throw new AppError('Neplatne ID komentare.', 400)
-
-  const parsed = fileCommentSchema.safeParse(req.body)
-  if (!parsed.success) {
-    throw new AppError(parsed.error.errors[0].message, 400)
-  }
-
-  const result = await filesService.updateComment(commentId, actor.id, actor.role, parsed.data)
-  res.json(result)
-}))
-
-fileCommentsRouter.delete('/:id', asyncHandler(async (req, res) => {
-  const actor = await requireRegisteredActor(req, res)
-  if (!actor) return
-
-  const commentId = asBigInt(req.params.id)
-  if (!commentId) throw new AppError('Neplatne ID komentare.', 400)
-
-  const result = await filesService.deleteComment(commentId, actor.id, actor.role)
-  res.json(result)
-}))

@@ -3,15 +3,7 @@ import { getAuth, clerkClient } from '@clerk/express'
 import { and, eq, isNull } from 'drizzle-orm'
 import { db } from './db/client.js'
 import {
-  type AnnotationTargetType,
   type UserRole,
-  fileComments,
-  lessonNotes,
-  lessons,
-  fileRecords,
-  studyPlanCollaborators,
-  studyPlans,
-  subjects,
   users,
 } from './db/schema.js'
 import { AuthActor } from './types.js'
@@ -111,62 +103,4 @@ export const requireAdmin = async (req: express.Request, res: express.Response) 
     return null
   }
   return actor
-}
-
-export const canActorReadLessonTarget = async (lessonId: bigint, actor: AuthActor): Promise<boolean> => {
-  const [lesson] = await db
-    .select({
-      id: lessons.id,
-      deletedAt: lessons.deletedAt,
-      isShared: lessons.isShared,
-      subjectUserId: subjects.userId,
-      studyPlanId: studyPlans.id,
-      studyPlanUserId: studyPlans.userId,
-    })
-    .from(lessons)
-    .leftJoin(subjects, eq(lessons.subjectId, subjects.id))
-    .leftJoin(studyPlans, eq(lessons.studyPlanId, studyPlans.id))
-    .where(eq(lessons.id, lessonId))
-    .limit(1)
-  if (!lesson || lesson.deletedAt) return false
-  if (lesson.isShared) return true
-  if (isPublicActor(actor)) return false
-  if (actor.role === 'ADMIN') return true
-  if (lesson.subjectUserId === BigInt(actor.id) || lesson.studyPlanUserId === BigInt(actor.id)) return true
-  if (!lesson.studyPlanId) return false
-
-  const collaborator = await db
-    .select({ id: studyPlanCollaborators.id })
-    .from(studyPlanCollaborators)
-    .where(and(eq(studyPlanCollaborators.studyPlanId, lesson.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id))))
-    .limit(1)
-  return collaborator.length > 0
-}
-
-export const canActorReadAnnotationTarget = async (targetType: AnnotationTargetType, targetId: bigint, actor: AuthActor): Promise<boolean> => {
-  if (targetType === 'LESSON') return canActorReadLessonTarget(targetId, actor)
-  if (targetType === 'LESSON_NOTE') {
-    const [note] = await db
-      .select({ lessonId: lessonNotes.lessonId })
-      .from(lessonNotes)
-      .where(eq(lessonNotes.id, targetId))
-      .limit(1)
-    if (!note) return false
-    return canActorReadLessonTarget(note.lessonId, actor)
-  }
-  const [fileComment] = await db
-    .select({
-      fileDeletedAt: fileRecords.deletedAt,
-      fileIsShared: fileRecords.isShared,
-      fileUserId: fileRecords.userId,
-    })
-    .from(fileComments)
-    .innerJoin(fileRecords, eq(fileComments.fileId, fileRecords.id))
-    .where(eq(fileComments.id, targetId))
-    .limit(1)
-  if (!fileComment) return false
-  if (fileComment.fileDeletedAt) return false
-  if (fileComment.fileIsShared) return true
-  if (isPublicActor(actor)) return false
-  return actor.role === 'ADMIN' || fileComment.fileUserId === BigInt(actor.id)
 }

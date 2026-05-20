@@ -7,9 +7,7 @@ const studyPlanSelect = {
   userId: studyPlans.userId,
   name: studyPlans.name,
   description: studyPlans.description,
-  faculty: studyPlans.faculty,
-  startDate: studyPlans.startDate,
-  endDate: studyPlans.endDate,
+
   isActive: studyPlans.isActive,
   isShared: studyPlans.isShared,
   createdAt: studyPlans.createdAt,
@@ -36,7 +34,7 @@ export class StudyPlanRepository {
       visibility,
     )
 
-    const rows = await db.select(studyPlanSelect).from(studyPlans).where(whereClause).orderBy(asc(studyPlans.isActive), asc(studyPlans.startDate))
+    const rows = await db.select(studyPlanSelect).from(studyPlans).where(whereClause).orderBy(asc(studyPlans.isActive), asc(studyPlans.createdAt))
     return rows
   }
 
