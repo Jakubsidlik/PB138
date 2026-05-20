@@ -5,7 +5,6 @@ export type ApiTask = {
   title: string
   done: boolean
   subjectId: number | null
-  tag?: string | null
   priority?: string | null
 }
 

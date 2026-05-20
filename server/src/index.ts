@@ -13,7 +13,7 @@ import { filesRouter, adminFilesRouter } from './modules/files/files.routes.js'
 import { lessonsRouter } from './modules/lessons/lessons.routes.js'
 import { errorHandler } from './middleware/error-handler.js'
 
-const app = express()
+export const app = express()
 const PORT = env.PORT
 
 app.use(cors())
@@ -49,4 +49,6 @@ const start = async () => {
   })
 }
 
-void start()
+if (process.env.NODE_ENV !== 'test') {
+  void start()
+}

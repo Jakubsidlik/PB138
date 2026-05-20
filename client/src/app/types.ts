@@ -17,8 +17,6 @@ export interface User {
   studyMajor?: string
   studyYear?: string
   studyType?: string
-  birthDate?: string | null
-  bio?: string | null
   avatarDataUrl?: string | null
   contactEmail?: string | null
   createdAt?: string
@@ -34,8 +32,6 @@ export interface RegisterRequest {
   studyMajor?: string
   studyYear?: string
   studyType?: string
-  birthDate?: string
-  bio?: string
 }
 
 export interface LoginRequest {
@@ -57,8 +53,6 @@ export interface Task {
   subjectId?: number | null
   userId?: number
   studyPlanId?: number | null
-  favorite?: boolean
-  tag?: string | null
   deadline?: string | null
   priority?: TaskPriority
   deletedAt?: string | null
@@ -75,15 +69,12 @@ export interface CreateTaskRequest {
 export interface UpdateTaskRequest {
   title?: string
   done?: boolean
-  favorite?: boolean
-  tag?: string | null
   deadline?: string | null
   priority?: TaskPriority
   subjectId?: number | null
 }
 
 // Event types
-export type EventRecurrence = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
 export type EventPriority = 'low' | 'medium' | 'high'
 
 export interface CalendarEvent {
@@ -94,8 +85,6 @@ export interface CalendarEvent {
   location?: string | null
   subjectId?: number | null
   isShared?: boolean
-  recurrence?: EventRecurrence
-  recurrenceGroupId?: string | null
   userId?: number
   deletedAt?: string | null
   priority?: EventPriority
@@ -107,7 +96,6 @@ export interface CreateEventRequest {
   time?: string | null
   location?: string | null
   subjectId?: number | null
-  recurrence?: EventRecurrence
   priority?: EventPriority
 }
 
@@ -116,7 +104,6 @@ export interface UpdateEventRequest {
   date?: string
   time?: string | null
   location?: string | null
-  recurrence?: EventRecurrence
   subjectId?: number | null
   priority?: EventPriority
 }
@@ -156,9 +143,6 @@ export interface StudyPlan {
   userId: number
   name: string
   description?: string
-  faculty?: string
-  startDate?: string | null
-  endDate?: string | null
   isActive?: boolean
   isShared?: boolean
   createdAt?: string
@@ -171,9 +155,6 @@ export interface StudyPlan {
 export interface CreateStudyPlanRequest {
   name: string
   description?: string
-  faculty?: string
-  startDate?: string | null
-  endDate?: string | null
 }
 
 export interface UpdateStudyPlanRequest {
@@ -213,23 +194,7 @@ export interface UpdateFileRequest {
   addedLabel?: string
 }
 
-// File Comment types
-export interface FileComment {
-  id: number
-  fileId: number
-  userId: number
-  comment: string
-  createdAt?: string
-  updatedAt?: string
-}
 
-export interface CreateFileCommentRequest {
-  comment: string
-}
-
-export interface UpdateFileCommentRequest {
-  comment: string
-}
 
 // Lesson types
 export interface Lesson {
@@ -260,51 +225,7 @@ export interface UpdateLessonRequest {
   orderIndex?: number
 }
 
-// Lesson Note types
-export interface LessonNote {
-  id: number
-  lessonId: number
-  userId: number
-  note: string
-  isPinned?: boolean
-  createdAt?: string
-  updatedAt?: string
-}
 
-export interface CreateLessonNoteRequest {
-  note: string
-  isPinned?: boolean
-}
-
-export interface UpdateLessonNoteRequest {
-  note?: string
-  isPinned?: boolean
-}
-
-// Annotation types
-export type AnnotationTargetType = 'LESSON' | 'LESSON_NOTE' | 'FILE_COMMENT'
-
-export interface TextAnnotation {
-  id: number
-  targetType: AnnotationTargetType
-  targetId: number
-  userId: number
-  startOffset: number
-  endOffset: number
-  selectedText: string
-  comment: string
-  createdAt?: string
-  updatedAt?: string
-}
-
-export interface CreateAnnotationRequest {
-  targetType: AnnotationTargetType
-  targetId: number
-  startOffset: number
-  endOffset: number
-  selectedText: string
-  comment: string
-}
 
 // Collaboration types
 export type CollaborationRole = 'VIEWER' | 'CONTRIBUTOR'
@@ -371,8 +292,6 @@ export type UserProfile = {
   studyMajor: string
   studyYear: string
   studyType: string
-  birthDate: string | null
-  bio: string | null
   avatarDataUrl: string | null
   contactEmail: string | null
 }

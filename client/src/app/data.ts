@@ -2,14 +2,12 @@ import {
   CalendarEvent,
   DesktopSubjectMeta,
   EventMeta,
-  FileComment,
   FileFolder,
   Subject,
   SubjectVisual,
   Task,
   UserProfile,
   Lesson,
-  LessonNote,
   StudyPlan,
   ManagedFile,
 } from './types'
@@ -23,17 +21,11 @@ export const PROFILE_STORAGE_KEY = 'pb138.profile'
 // STUDY PLANS - Studijní plány
 export const studyPlansSeed: StudyPlan[] = []
 
-// TAGS (dříve Subject) - Předměty/Tagy
+// SUBJECTS - Předměty
 export const subjectsSeed: Subject[] = []
 
 // LESSONS - Lekce
 export const lessonsSeed: Lesson[] = []
-
-// LESSON NOTES - Poznámky k lekcím
-export const lessonNotesSeed: LessonNote[] = []
-
-// LESSON COMMENTS - Komentáře k poznámkám
-export const lessonCommentsSeed: FileComment[] = []
 
 export const foldersSeed: FileFolder[] = []
 
@@ -67,8 +59,6 @@ export const userProfileSeed: UserProfile = {
   studyMajor: 'Aplikovaná informatika',
   studyYear: '2.',
   studyType: 'Bakalářské',
-  birthDate: null,
-  bio: '',
   avatarDataUrl: null,
   contactEmail: null,
 }

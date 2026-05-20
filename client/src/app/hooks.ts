@@ -286,18 +286,6 @@ export function useLessons(studyPlanId?: number | null) {
   return usePaginatedQuery(() => apiClient.getLessons(studyPlanId), [studyPlanId])
 }
 
-export function useLessonNotes(lessonId: number) {
-  return usePaginatedQuery(() => apiClient.getLessonNotes(lessonId), [lessonId])
-}
-
-export function useFileComments(fileId: number) {
-  return usePaginatedQuery(() => apiClient.getFileComments(fileId), [fileId])
-}
-
-export function useAnnotations(targetId: number) {
-  return usePaginatedQuery(() => apiClient.getAnnotations(targetId), [targetId])
-}
-
 export function useUsers() {
   return useQuery(() => apiClient.getUsers())
 }

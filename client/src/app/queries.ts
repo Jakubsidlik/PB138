@@ -56,8 +56,6 @@ const fetchProfile = async (): Promise<UserProfile> => {
     studyMajor: '',
     studyYear: '',
     studyType: '',
-    birthDate: null,
-    bio: '',
     avatarDataUrl: '',
     contactEmail: '',
   }
