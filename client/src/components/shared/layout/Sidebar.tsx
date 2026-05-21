@@ -29,7 +29,6 @@ import {
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -52,7 +51,7 @@ const navItems = [
 ] as const
 
 function AppSidebar({ onLogout }: AppSidebarProps) {
-  const { profile, authSession } = useDashboard()
+  const { authSession } = useDashboard()
   const { user } = useUser()
   const [showPermissionAlert, setShowPermissionAlert] = useState(false)
   const userEmail = user?.primaryEmailAddress?.emailAddress

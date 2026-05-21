@@ -18,6 +18,7 @@ import type {
   StudyPlanCollaborator,
   Subject,
   Task,
+  Tag,
   UpdateEventRequest,
   UpdateFileRequest,
   UpdateLessonRequest,
@@ -180,6 +181,19 @@ class ApiClient {
 
   async deleteSubject(id: number) {
     return this.request('DELETE', `/api/subjects/${id}`)
+  }
+
+  // Tags API
+  async getTags() {
+    return this.request<Tag[]>('GET', '/api/tags')
+  }
+
+  async createTag(payload: { name: string, color: string }) {
+    return this.request<Tag>('POST', '/api/tags', payload)
+  }
+
+  async deleteTag(id: number) {
+    return this.request('DELETE', `/api/tags/${id}`)
   }
 
   // Task endpoints

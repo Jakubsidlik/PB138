@@ -94,7 +94,14 @@ export interface UpdateEventRequest {
   priority?: EventPriority
 }
 
-// Subject types
+// Subject & Tag types
+export interface Tag {
+  id: number
+  name: string
+  color: string
+  isSystem: boolean
+}
+
 export interface Subject {
   id: number
   name: string
@@ -108,6 +115,7 @@ export interface Subject {
   notes?: number
   events?: number
   archived?: boolean
+  tags?: Tag[]
 }
 
 export interface CreateSubjectRequest {
@@ -115,12 +123,14 @@ export interface CreateSubjectRequest {
   teacher: string
   code: string
   studyPlanId?: number | null
+  tagIds?: number[]
 }
 
 export interface UpdateSubjectRequest {
   name?: string
   teacher?: string
   code?: string
+  tagIds?: number[]
 }
 
 // StudyPlan types

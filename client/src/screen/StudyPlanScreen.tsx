@@ -12,13 +12,15 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog'
 import { Input } from '../components/ui/input'
-import { DesktopSubjectMeta, Subject, ManagedFile, Lesson, StudyPlan } from '../app/types'
+import { DesktopSubjectMeta, Subject, ManagedFile, Lesson, StudyPlan, Tag } from '../app/types'
 import { SubjectDetailModal } from '../components/shared/dashboard/SubjectDetailModal'
 import { SubjectActionButtons } from '../components/shared/dashboard/SubjectActionButtons'
 import { SubjectGrid } from '../components/shared/dashboard/SubjectGrid'
+import { TagManagerModal } from '../components/shared/dashboard/TagManagerModal'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription, CardAction } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { Separator } from '../components/ui/separator'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { toast } from 'sonner'
 
 type DesktopSubject = Subject & {
@@ -32,10 +34,15 @@ type DesktopStudyPlanProps = {
   desktopSubjects: DesktopSubject[]
   subjectFilter: SubjectFilter
   setSubjectFilter: React.Dispatch<React.SetStateAction<SubjectFilter>>
-  onCreateSubject: (data: { name: string, teacher: string, code: string }) => void
-  onEditSubject: (subjectId: number, data: { name: string, teacher: string, code: string }) => void
+  onCreateSubject: (data: { name: string, teacher: string, code: string, tagIds?: number[] }) => void
+  onEditSubject: (subjectId: number, data: { name: string, teacher: string, code: string, tagIds?: number[] }) => void
   onToggleArchiveSubject: (subjectId: number) => void
   onDeleteSubject: (subjectId: number) => void
+  tags: Tag[]
+  tagFilter: number | null
+  setTagFilter: React.Dispatch<React.SetStateAction<number | null>>
+  onCreateTag: (data: { name: string, color: string }) => Promise<any>
+  onDeleteTag: (id: number) => Promise<any>
   managedFiles: ManagedFile[]
   onUploadFiles: (files: FileList | File[] | null, options?: { subjectId?: number }) => Promise<void>
   lessons: Lesson[]
@@ -58,6 +65,11 @@ export function DesktopStudyPlan({
   onEditSubject,
   onToggleArchiveSubject,
   onDeleteSubject,
+  tags,
+  tagFilter,
+  setTagFilter,
+  onCreateTag,
+  onDeleteTag,
   managedFiles,
   onUploadFiles,
   lessons,
@@ -89,19 +101,19 @@ export function DesktopStudyPlan({
   const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false)
   const [isAddPlanOpen, setIsAddPlanOpen] = useState(false)
   const [newPlan, setNewPlan] = useState({ name: '', description: '' })
-  const [newSubject, setNewSubject] = useState({ name: '', teacher: '', code: '' })
+  const [newSubject, setNewSubject] = useState({ name: '', teacher: '', code: '', tagIds: [] as number[] })
   const [planFilter, setPlanFilter] = useState<'all' | 'active' | 'archived'>('active')
 
   const [editingSubjectId, setEditingSubjectId] = useState<number | null>(null)
   const [subjectToDelete, setSubjectToDelete] = useState<number | null>(null)
   const [planToDelete, setPlanToDelete] = useState<number | null>(null)
-  const [editSubjectData, setEditSubjectData] = useState({ name: '', teacher: '', code: '' })
+  const [editSubjectData, setEditSubjectData] = useState({ name: '', teacher: '', code: '', tagIds: [] as number[] })
 
   const editingSubject = desktopSubjects.find(s => s.id === editingSubjectId)
 
   useEffect(() => {
     if (editingSubject) {
-      setEditSubjectData({ name: editingSubject.name, teacher: editingSubject.teacher, code: editingSubject.code })
+      setEditSubjectData({ name: editingSubject.name, teacher: editingSubject.teacher, code: editingSubject.code, tagIds: editingSubject.tags?.map(t => t.id) || [] })
     }
   }, [editingSubject])
 
@@ -120,7 +132,7 @@ export function DesktopStudyPlan({
     e.preventDefault()
     if (!newSubject.name.trim() || !newSubject.teacher.trim() || !newSubject.code.trim()) return
     onCreateSubject(newSubject)
-    setNewSubject({ name: '', teacher: '', code: '' })
+    setNewSubject({ name: '', teacher: '', code: '', tagIds: [] })
     setIsAddSubjectOpen(false)
   }
 
@@ -332,9 +344,27 @@ export function DesktopStudyPlan({
             >
               Archivované
             </Button>
+            
+            <div className="ml-2 w-40">
+              <Select
+                value={tagFilter ? tagFilter.toString() : 'all'}
+                onValueChange={(val) => setTagFilter(val === 'all' ? null : parseInt(val || '0'))}
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Filtrovat podle štítku" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Všechny štítky</SelectItem>
+                  {tags.map(tag => (
+                    <SelectItem key={tag.id} value={tag.id.toString()}>{tag.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="ml-auto">
               <Dialog open={isAddSubjectOpen} onOpenChange={setIsAddSubjectOpen}>
-                <DialogTrigger render={<Button size="lg" className="h-10 px-5 text-sm font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--text-contrast)] shadow-sm" />}>
+                <DialogTrigger render={<Button size="lg" className="h-10 px-5 text-sm font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--text-contrast)] shadow-sm mr-2" />}>
                   + Zapsat předmět
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
@@ -355,6 +385,29 @@ export function DesktopStudyPlan({
                         <label className="text-sm font-medium">Kód předmětu (např. PB138)</label>
                         <Input value={newSubject.code} onChange={e => setNewSubject({ ...newSubject, code: e.target.value })} />
                       </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium">Štítky</label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {tags.map(tag => {
+                            const isSelected = newSubject.tagIds.includes(tag.id)
+                            return (
+                              <Badge
+                                key={tag.id}
+                                variant={isSelected ? "default" : "outline"}
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setNewSubject(prev => ({
+                                    ...prev,
+                                    tagIds: isSelected ? prev.tagIds.filter(id => id !== tag.id) : [...prev.tagIds, tag.id]
+                                  }))
+                                }}
+                              >
+                                {tag.name}
+                              </Badge>
+                            )
+                          })}
+                        </div>
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button type="submit" disabled={!newSubject.name.trim() || !newSubject.teacher.trim() || !newSubject.code.trim()}>Zapsat</Button>
@@ -362,6 +415,11 @@ export function DesktopStudyPlan({
                   </form>
                 </DialogContent>
               </Dialog>
+              <TagManagerModal
+                tags={tags}
+                onCreateTag={onCreateTag}
+                onDeleteTag={onDeleteTag}
+              />
             </div>
           </div>
 
@@ -399,6 +457,15 @@ export function DesktopStudyPlan({
                       <CardDescription className="line-clamp-1">
                         {subject.teacher}
                       </CardDescription>
+                      {subject.tags && subject.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {subject.tags.map(tag => (
+                            <Badge key={tag.id} variant="outline" className="text-[10px] h-5 px-1.5 leading-none">
+                              {tag.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-2.5 text-sm text-muted-foreground mt-auto pb-4">
@@ -447,6 +514,29 @@ export function DesktopStudyPlan({
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Kód předmětu</label>
                     <Input value={editSubjectData.code} onChange={e => setEditSubjectData({ ...editSubjectData, code: e.target.value })} />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium">Štítky</label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {tags.map(tag => {
+                        const isSelected = editSubjectData.tagIds.includes(tag.id)
+                        return (
+                          <Badge
+                            key={tag.id}
+                            variant={isSelected ? "default" : "outline"}
+                            className="cursor-pointer"
+                            onClick={() => {
+                              setEditSubjectData(prev => ({
+                                ...prev,
+                                tagIds: isSelected ? prev.tagIds.filter(id => id !== tag.id) : [...prev.tagIds, tag.id]
+                              }))
+                            }}
+                          >
+                            {tag.name}
+                          </Badge>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>

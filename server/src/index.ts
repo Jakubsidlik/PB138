@@ -11,6 +11,7 @@ import { subjectsRouter } from './modules/subjects/subjects.routes.js'
 import { usersRouter } from './modules/users/users.routes.js'
 import { filesRouter, adminFilesRouter } from './modules/files/files.routes.js'
 import { lessonsRouter } from './modules/lessons/lessons.routes.js'
+import { tagsRouter } from './modules/tags/tags.routes.js'
 import { errorHandler } from './middleware/error-handler.js'
 
 export const app = express()
@@ -27,6 +28,7 @@ app.use('/api/subjects', subjectsRouter)
 app.use('/api/files', filesRouter)
 app.use('/api/admin/files', adminFilesRouter)
 app.use('/api/lessons', lessonsRouter)
+app.use('/api/tags', tagsRouter)
 app.use('/api', usersRouter)
 
 app.get('/api/health', async (_req, res) => {

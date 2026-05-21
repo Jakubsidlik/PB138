@@ -3,8 +3,8 @@ import { AppError } from '../../middleware/error-handler.js'
 import { asNumberId, toPaginatedPayload, asBigInt } from '../../utils.js'
 import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators } from '../../db/schema.js'
 import { db } from '../../db/client.js'
-import { and, eq } from 'drizzle-orm'
-
+import { and, eq, inArray } from 'drizzle-orm'
+import { tags, subjectTags } from '../../db/schema.js'
 export class SubjectsService {
   async getSubjects(actor: { id: number, role: string }, filters: {
     pagination: any
@@ -12,6 +12,28 @@ export class SubjectsService {
     studyPlanId?: bigint | null
   }) {
     const rows = await subjectsRepository.findAll(actor, filters)
+    
+    const subjectIds = rows.map(r => r.id)
+    const tagsBySubjectId: Record<string, any[]> = {}
+    
+    if (subjectIds.length > 0) {
+      const allTags = await db.select({
+        subjectId: subjectTags.subjectId,
+        id: tags.id,
+        name: tags.name,
+        color: tags.color,
+        isSystem: tags.isSystem,
+      })
+      .from(subjectTags)
+      .innerJoin(tags, eq(subjectTags.tagId, tags.id))
+      .where(inArray(subjectTags.subjectId, subjectIds))
+
+      for (const t of allTags) {
+        const sId = t.subjectId.toString()
+        if (!tagsBySubjectId[sId]) tagsBySubjectId[sId] = []
+        tagsBySubjectId[sId].push({ id: Number(t.id), name: t.name, color: t.color, isSystem: t.isSystem })
+      }
+    }
     
     const mappedSubjects = await Promise.all(rows.map(async (subject) => ({
       id: Number(subject.id),
@@ -23,6 +45,7 @@ export class SubjectsService {
       isShared: subject.isShared,
       archived: subject.isArchived,
       deletedAt: subject.deletedAt ? subject.deletedAt.toISOString() : null,
+      tags: tagsBySubjectId[subject.id.toString()] || [],
       files: await subjectsRepository.countRows(fileRecords, subject.id),
       notes: await subjectsRepository.countRows(lessons, subject.id),
       createdAt: subject.createdAt.toISOString(),
@@ -45,6 +68,7 @@ export class SubjectsService {
     code?: string | null
     studyPlanId?: number | null
     isShared?: boolean
+    tagIds?: number[]
   }) {
     const parsedStudyPlanId = asBigInt(data.studyPlanId)
     let ownerUserId = BigInt(actor.id)
@@ -82,6 +106,11 @@ export class SubjectsService {
       isShared: data.isShared,
     })
 
+    if (data.tagIds && data.tagIds.length > 0) {
+      const toInsert = data.tagIds.map(tid => ({ subjectId: created.id, tagId: BigInt(tid) }))
+      await db.insert(subjectTags).values(toInsert).onConflictDoNothing()
+    }
+
     return {
       id: Number(created.id),
       userId: Number(created.userId),
@@ -92,6 +121,7 @@ export class SubjectsService {
       isShared: created.isShared,
       archived: created.isArchived,
       deletedAt: null,
+      tags: [], // Tags can be fetched later or mapped if needed
     }
   }
 
@@ -114,6 +144,15 @@ export class SubjectsService {
       isArchived: data.archived,
     })
 
+    if (data.tagIds !== undefined) {
+      // replace tags
+      await db.delete(subjectTags).where(eq(subjectTags.subjectId, subjectId))
+      if (data.tagIds.length > 0) {
+        const toInsert = data.tagIds.map((tid: number) => ({ subjectId, tagId: BigInt(tid) }))
+        await db.insert(subjectTags).values(toInsert).onConflictDoNothing()
+      }
+    }
+
     return {
       id: Number(updated.id),
       userId: asNumberId(updated.userId),
@@ -124,6 +163,7 @@ export class SubjectsService {
       isShared: updated.isShared,
       archived: updated.isArchived,
       deletedAt: updated.deletedAt ? updated.deletedAt.toISOString() : null,
+      tags: [], // Client will refetch
     }
   }
 

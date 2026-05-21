@@ -15,10 +15,17 @@ export const subjectSchema = z.object({
   code: z.string().trim().min(1, 'Pole code je povinne.').toUpperCase(),
   studyPlanId: z.number().nullable().optional(),
   isShared: z.boolean().optional().default(false),
+  tagIds: z.array(z.number()).optional(),
 })
 export const updateSubjectSchema = subjectSchema.partial().extend({
-  archived: z.boolean().optional()
+  archived: z.boolean().optional(),
 })
+
+export const tagSchema = z.object({
+  name: z.string().trim().min(1, 'Pole name je povinne.'),
+  color: z.string().trim().min(1, 'Pole color je povinne.'),
+})
+
 
 export const taskSchema = z.object({
   title: z.string().trim().min(1, 'Pole title je povinne.'),

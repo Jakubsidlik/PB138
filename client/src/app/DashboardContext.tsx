@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode } from 'react'
 import { useDashboardState } from './useDashboardState'
 
 // Type of the state returned by useDashboardState

@@ -22,6 +22,7 @@ import {
   MobileNavItem,
   StudyPlan,
   Task,
+  Tag,
   TaskPriority,
   ThemeMode,
   UserProfile,
@@ -106,8 +107,10 @@ export function useDashboardState(fetchAll = false) {
   const [activeStudyPlanId, setActiveStudyPlanId] = React.useState<number | null>(null)
   const [subjectSearch, setSubjectSearch] = React.useState('')
   const [subjectFilter, setSubjectFilter] = React.useState<SubjectFilter>('all')
+  const [tagFilter, setTagFilter] = React.useState<number | null>(null)
   const [isDragActive, setIsDragActive] = React.useState(false)
   const [isHydrated, setIsHydrated] = React.useState(false)
+  const [tags, setTags] = React.useState<Tag[]>([])
   const [profile, setProfile] = React.useState<UserProfile>(() =>
     readProfileFromStorage() ?? userProfileSeed,
   )
@@ -231,7 +234,8 @@ export function useDashboardState(fetchAll = false) {
           filesRes,
           lessonsRes,
           studyPlansRes,
-          profileRes
+          profileRes,
+          tagsRes
         ] = await Promise.allSettled([
           apiFetch('/api/tasks'),
           apiFetch('/api/events'),
@@ -239,7 +243,8 @@ export function useDashboardState(fetchAll = false) {
           apiFetch('/api/files'),
           apiFetch('/api/lessons'),
           apiFetch('/api/study-plans?includeInactive=true'),
-          apiFetch('/api/profile')
+          apiFetch('/api/profile'),
+          apiFetch('/api/tags')
         ])
 
         if (tasksRes.status === 'fulfilled' && tasksRes.value.ok) {
@@ -271,6 +276,10 @@ export function useDashboardState(fetchAll = false) {
           if (typeof serverProfile === 'object' && serverProfile !== null) {
             loadedProfile = { ...userProfileSeed, ...(serverProfile as Partial<UserProfile>) }
           }
+        }
+        if (tagsRes.status === 'fulfilled' && tagsRes.value.ok) {
+          const serverTags = await tagsRes.value.json()
+          if (Array.isArray(serverTags)) setTags(serverTags)
         }
       } catch (e) {
         console.error('Hydration error:', e)
@@ -401,11 +410,22 @@ export function useDashboardState(fetchAll = false) {
     if (!response.ok) {
       return
     }
-    const payload: unknown = await response.json()
+
+    const payload = await response.json()
     if (Array.isArray(payload)) {
-      setLessons(payload as Lesson[])
+      setLessons(payload)
     }
   }
+
+  const refreshTags = async () => {
+    const response = await apiFetch('/api/tags')
+    if (!response.ok) return
+    const payload = await response.json()
+    if (Array.isArray(payload)) {
+      setTags(payload)
+    }
+  }
+
 
   const toggleTask = async (taskId: number) => {
     if (!ensureAuthenticated()) return
@@ -755,7 +775,26 @@ export function useDashboardState(fetchAll = false) {
     await signOut()
   }
 
-  const createSubject = (subjectData: { name: string, teacher: string, code: string }) => {
+  // --- TAGS ---
+  const createTag = async (data: { name: string, color: string }) => {
+    if (!ensureAuthenticated()) return
+    const res = await apiFetch('/api/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    if (res.ok) void refreshTags()
+    return res
+  }
+
+  const deleteTag = async (id: number) => {
+    if (!ensureAuthenticated()) return
+    const res = await apiFetch(`/api/tags/${id}`, { method: 'DELETE' })
+    if (res.ok) void refreshTags()
+    return res
+  }
+
+  const createSubject = (subjectData: { name: string, teacher: string, code: string, tagIds?: number[] }) => {
     if (!ensureAuthenticated()) return
 
     const name = subjectData.name.trim()
@@ -769,7 +808,7 @@ export function useDashboardState(fetchAll = false) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, teacher, code, studyPlanId: activeStudyPlanId }),
+      body: JSON.stringify({ name, teacher, code, studyPlanId: activeStudyPlanId, tagIds: subjectData.tagIds || [] }),
     }).then(() => {
       void refreshSubjects()
     })
@@ -840,7 +879,7 @@ export function useDashboardState(fetchAll = false) {
     toast.success(`Studijní plán byl úspěšně nasdílen uživateli ${email}`)
   }
 
-  const updateSubject = (subjectId: number, subjectData: { name: string, teacher: string, code: string }) => {
+  const updateSubject = (subjectId: number, subjectData: { name: string, teacher: string, code: string, tagIds?: number[] }) => {
     if (!ensureAuthenticated()) return
 
     const subject = subjects.find((item) => item.id === subjectId)
@@ -857,7 +896,7 @@ export function useDashboardState(fetchAll = false) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, teacher, code }),
+      body: JSON.stringify({ name, teacher, code, tagIds: subjectData.tagIds }),
     }).then(() => {
       void refreshSubjects()
     })
@@ -1058,6 +1097,12 @@ export function useDashboardState(fetchAll = false) {
           return false
         }
 
+        if (tagFilter !== null) {
+          if (!subject.tags?.some((t) => t.id === tagFilter)) {
+            return false
+          }
+        }
+
         if (subjectFilter === 'active') {
           return !subject.archived
         }
@@ -1068,7 +1113,7 @@ export function useDashboardState(fetchAll = false) {
 
         return true
       }),
-    [subjects, subjectSearch, subjectFilter, activeStudyPlanId],
+    [subjects, subjectSearch, subjectFilter, activeStudyPlanId, tagFilter],
   )
 
   const desktopSubjects = React.useMemo(
@@ -1112,6 +1157,8 @@ export function useDashboardState(fetchAll = false) {
     setSubjectSearch,
     subjectFilter,
     setSubjectFilter,
+    tagFilter,
+    setTagFilter,
     isDragActive,
     setIsDragActive,
     profile,
@@ -1166,5 +1213,8 @@ export function useDashboardState(fetchAll = false) {
     toggleStudyPlanArchived,
     deleteStudyPlan,
     shareStudyPlan,
+    tags,
+    createTag,
+    deleteTag,
   }
 }

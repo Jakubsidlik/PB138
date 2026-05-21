@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../../ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../ui/dialog'
 import { Button } from '../../ui/button'
 import { Input } from '../../ui/input'
 import { Label } from '../../ui/label'
@@ -12,7 +12,7 @@ type ShareFileModalProps = {
   fileUrl?: string
 }
 
-export function ShareFileModal({ isOpen, onClose, onShare, fileName, fileUrl }: ShareFileModalProps) {
+export function ShareFileModal({ isOpen, onClose, onShare, fileName }: ShareFileModalProps) {
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,14 +33,6 @@ export function ShareFileModal({ isOpen, onClose, onShare, fileName, fileUrl }: 
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const handleSendViaEmailClient = () => {
-    const subject = encodeURIComponent(`Sdílený soubor: ${fileName}`)
-    const body = encodeURIComponent(
-      `Ahoj,\n\nposílám ti odkaz na soubor "${fileName}" v aplikaci Planner.\n\nOdkaz: ${fileUrl || 'není k dispozici'}\n\nS pozdravem`
-    )
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`
   }
 
   return (

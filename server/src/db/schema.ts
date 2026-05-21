@@ -193,7 +193,27 @@ export const events = pgTable('Event', {
 
 }))
 
+export const tags = pgTable('Tag', {
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+  userId: bigint('userId', { mode: 'bigint' }).references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  color: text('color').notNull().default('blue'),
+  isSystem: boolean('isSystem').notNull().default(false),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  userIdIdx: index('Tag_userId_idx').on(table.userId),
+  isSystemIdx: index('Tag_isSystem_idx').on(table.isSystem),
+}))
 
+export const subjectTags = pgTable('SubjectTag', {
+  subjectId: bigint('subjectId', { mode: 'bigint' }).notNull().references(() => subjects.id, { onDelete: 'cascade' }),
+  tagId: bigint('tagId', { mode: 'bigint' }).notNull().references(() => tags.id, { onDelete: 'cascade' }),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.subjectId, table.tagId] }),
+  subjectIdIdx: index('SubjectTag_subjectId_idx').on(table.subjectId),
+  tagIdIdx: index('SubjectTag_tagId_idx').on(table.tagId),
+}))
 
 export type DbUser = typeof users.$inferSelect
 export type DbStudyPlan = typeof studyPlans.$inferSelect
@@ -203,3 +223,5 @@ export type DbTask = typeof tasks.$inferSelect
 export type DbFileRecord = typeof fileRecords.$inferSelect
 export type DbLesson = typeof lessons.$inferSelect
 export type DbEvent = typeof events.$inferSelect
+export type DbTag = typeof tags.$inferSelect
+export type DbSubjectTag = typeof subjectTags.$inferSelect

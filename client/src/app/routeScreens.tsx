@@ -113,6 +113,11 @@ export function StudyComponent() {
       setSubjectFilter={state.setSubjectFilter}
       onCreateSubject={state.createSubject}
       onEditSubject={state.updateSubject}
+      tags={state.tags}
+      tagFilter={state.tagFilter}
+      setTagFilter={state.setTagFilter}
+      onCreateTag={state.createTag}
+      onDeleteTag={state.deleteTag}
       onToggleArchiveSubject={state.toggleSubjectArchived}
       onDeleteSubject={state.deleteSubject}
       managedFiles={state.managedFiles}
