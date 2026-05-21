@@ -10,7 +10,9 @@ import {
   parseFileSizeToBytes,
   formatFileSize,
   inferFileCategory,
-  parseCursorPagination
+  parseCursorPagination,
+  mapFileRecord,
+  toPaginatedPayload
 } from '../../src/utils.js'
 
 describe('utils.ts', () => {
@@ -144,6 +146,54 @@ describe('utils.ts', () => {
       const mockReq = { query: { limit: '500' } } as any
       const result = parseCursorPagination(mockReq, { defaultLimit: 25, maxLimit: 100 })
       expect(result.limit).toBe(100)
+    })
+  })
+
+  describe('mapFileRecord', () => {
+    it('should map db object to FileRecord correctly', () => {
+      const dbFile = {
+        id: 1n,
+        userId: 2n,
+        subjectId: 3n,
+        name: 'test.pdf',
+        size: 1024,
+        fileKey: 'key',
+        fileUrl: 'http://url',
+        addedLabel: 'label',
+        isShared: true,
+        userEmail: 'test@example.com',
+        likes: 5,
+        dislikes: 1,
+        userVote: 'LIKE',
+        deletedAt: new Date('2024-05-20T14:30:00.000Z')
+      }
+      const result = mapFileRecord(dbFile)
+      expect(result.id).toBe(1)
+      expect(result.userId).toBe(2)
+      expect(result.subjectId).toBe(3)
+      expect(result.name).toBe('test.pdf')
+      expect(result.category).toBe('pdf')
+      expect(result.sizeBytes).toBe(1024)
+      expect(result.userEmail).toBe('test@example.com')
+      expect(result.likes).toBe(5)
+      expect(result.userVote).toBe('LIKE')
+      expect(result.deletedAt).toBe('2024-05-20T14:30:00.000Z')
+    })
+  })
+
+  describe('toPaginatedPayload', () => {
+    it('should calculate pagination correctly', () => {
+      const result = toPaginatedPayload([{id: 1}, {id: 2}, {id: 3}], 2)
+      expect(result.data).toEqual([{id: 1}, {id: 2}])
+      expect(result.hasMore).toBe(true)
+      expect(result.nextCursor).toBe('2')
+    })
+
+    it('should handle no next page', () => {
+      const result = toPaginatedPayload([{id: 1}, {id: 2}], 2)
+      expect(result.data).toEqual([{id: 1}, {id: 2}])
+      expect(result.hasMore).toBe(false)
+      expect(result.nextCursor).toBeNull()
     })
   })
 })
