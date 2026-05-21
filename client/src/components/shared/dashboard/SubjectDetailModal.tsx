@@ -1,4 +1,6 @@
 import React from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Subject, ManagedFile, Lesson } from '../../../app/types'
 import { Button } from '../../ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../ui/dialog'
@@ -6,6 +8,7 @@ import { Textarea } from '../../ui/textarea'
 import { Hash, User, FileText, Upload, Plus, MessageSquare, Paperclip, Clock, UserCircle2, ThumbsUp, ThumbsDown, Share } from 'lucide-react'
 import { useDashboard } from '../../../app/DashboardContext'
 import { ShareFileModal } from '../files/ShareFileModal'
+import { createNoteSchema, type CreateNoteFormData } from '../../../app/schemas'
 
 type SubjectDetailModalProps = {
   subject: Subject | null
@@ -25,7 +28,10 @@ export function SubjectDetailModal({
   onAddFile,
 }: SubjectDetailModalProps) {
   const { toggleFileShared } = useDashboard()
-  const [noteText, setNoteText] = React.useState('')
+  const noteForm = useForm<CreateNoteFormData>({
+    resolver: zodResolver(createNoteSchema),
+    defaultValues: { text: '' },
+  })
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [shareFileId, setShareFileId] = React.useState<number | null>(null)
 
@@ -94,13 +100,13 @@ export function SubjectDetailModal({
     })
   }
 
-  const handleAddNote = () => {
-    if (!noteText.trim()) {
+  const handleAddNote = (data: CreateNoteFormData) => {
+    if (!data.text.trim()) {
       return
     }
 
-    onAddNote?.(subject.id, noteText)
-    setNoteText('')
+    onAddNote?.(subject.id, data.text)
+    noteForm.reset()
   }
 
   const handleAddFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,15 +255,14 @@ export function SubjectDetailModal({
             
             <div className="bg-card p-3 rounded-lg border shadow-sm focus-within:ring-1 focus-within:ring-primary/50 transition-all duration-200">
               <Textarea
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
+                {...noteForm.register('text')}
                 placeholder="Napište rychlou poznámku k předmětu..."
                 rows={2}
                 className="resize-none border-0 focus-visible:ring-0 shadow-none bg-transparent p-1 min-h-[60px] text-sm"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    handleAddNote();
+                    noteForm.handleSubmit(handleAddNote)();
                   }
                 }}
               />
@@ -266,13 +271,16 @@ export function SubjectDetailModal({
                   type="button" 
                   size="sm"
                   className="gap-1.5 rounded-full px-4"
-                  onClick={handleAddNote}
-                  disabled={!noteText.trim()}
+                  onClick={() => noteForm.handleSubmit(handleAddNote)()}
+                  disabled={!noteForm.watch('text')?.trim() || noteForm.formState.isSubmitting}
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Přidat
                 </Button>
               </div>
+              {noteForm.formState.errors.text && (
+                <p className="text-sm font-medium text-destructive mt-2">{noteForm.formState.errors.text.message}</p>
+              )}
             </div>
 
             {subjectLessons.length > 0 ? (

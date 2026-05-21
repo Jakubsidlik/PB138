@@ -1,10 +1,13 @@
 import React from 'react'
 import { useSignIn, useSignUp } from '@clerk/clerk-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
+import { signUpSchema, signInSchema, verificationCodeSchema, type SignUpFormData, type SignInFormData, type VerificationCodeFormData } from '../../app/schemas'
 
 export function AuthScreen() {
   const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn()
@@ -12,27 +15,47 @@ export function AuthScreen() {
 
   const [pendingVerification, setPendingVerification] = React.useState(false)
   const [pendingSignInCode, setPendingSignInCode] = React.useState<'totp' | 'email_code' | null>(null)
-  const [code, setCode] = React.useState('')
-  const [fullName, setFullName] = React.useState('')
-  const [email, setEmail] = React.useState('')
-  const [password, setPassword] = React.useState('')
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState('')
+  const [globalError, setGlobalError] = React.useState('')
 
-  const handleSignUpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Sign up form
+  const signUpForm = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      fullName: '',
+    },
+  })
+
+  // Sign in form
+  const signInForm = useForm<SignInFormData>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  })
+
+  // Verification form
+  const verificationForm = useForm<VerificationCodeFormData>({
+    resolver: zodResolver(verificationCodeSchema),
+    defaultValues: {
+      code: '',
+    },
+  })
+
+  const handleSignUpSubmit = async (data: SignUpFormData) => {
     if (!isSignUpLoaded) return
-    setError('')
-    setIsLoading(true)
+    setGlobalError('')
 
     try {
-      const nameParts = fullName.trim().split(' ')
+      const nameParts = data.fullName.trim().split(' ')
       const firstName = nameParts[0] || ''
       const lastName = nameParts.slice(1).join(' ') || undefined
 
       const result = await signUp.create({
-        emailAddress: email.trim(),
-        password,
+        emailAddress: data.email.trim(),
+        password: data.password,
         firstName,
         lastName,
       })
@@ -44,68 +67,56 @@ export function AuthScreen() {
         setPendingVerification(true)
       }
     } catch (err: any) {
-      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Došlo k chybě při registraci.')
-    } finally {
-      setIsLoading(false)
+      setGlobalError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Došlo k chybě při registraci.')
     }
   }
 
-  const handleVerificationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleVerificationSubmit = async (data: VerificationCodeFormData) => {
     if (!isSignUpLoaded) return
-    setError('')
-    setIsLoading(true)
+    setGlobalError('')
 
     try {
-      const completeSignUp = await signUp.attemptEmailAddressVerification({ code })
+      const completeSignUp = await signUp.attemptEmailAddressVerification({ code: data.code })
       if (completeSignUp.status === 'complete') {
         await setSignUpActive({ session: completeSignUp.createdSessionId })
       } else {
-        setError('Nepodařilo se ověřit účet. Zkuste to prosím znovu.')
+        setGlobalError('Nepodařilo se ověřit účet. Zkuste to prosím znovu.')
       }
     } catch (err: any) {
-      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Neplatný ověřovací kód.')
-    } finally {
-      setIsLoading(false)
+      setGlobalError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Neplatný ověřovací kód.')
     }
   }
 
-  const handleSignInCodeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSignInCodeSubmit = async (data: VerificationCodeFormData) => {
     if (!isSignInLoaded || !pendingSignInCode) return
-    setError('')
-    setIsLoading(true)
+    setGlobalError('')
 
     try {
-      let result;
+      let result
       if (pendingSignInCode === 'totp') {
-        result = await signIn.attemptSecondFactor({ strategy: 'totp', code })
+        result = await signIn.attemptSecondFactor({ strategy: 'totp', code: data.code })
       } else if (pendingSignInCode === 'email_code') {
-        result = await signIn.attemptFirstFactor({ strategy: 'email_code', code })
+        result = await signIn.attemptFirstFactor({ strategy: 'email_code', code: data.code })
       }
 
       if (result?.status === 'complete') {
         await setSignInActive({ session: result.createdSessionId })
       } else {
-        setError('Nepodařilo se ověřit účet. Zkuste to prosím znovu.')
+        setGlobalError('Nepodařilo se ověřit účet. Zkuste to prosím znovu.')
       }
     } catch (err: any) {
-      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Neplatný kód.')
-    } finally {
-      setIsLoading(false)
+      setGlobalError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Neplatný kód.')
     }
   }
 
-  const handleSignInSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSignInSubmit = async (data: SignInFormData) => {
     if (!isSignInLoaded) return
-    setError('')
-    setIsLoading(true)
+    setGlobalError('')
 
     try {
       const result = await signIn.create({
-        identifier: email.trim(),
-        password,
+        identifier: data.email.trim(),
+        password: data.password,
       })
 
       if (result.status === 'complete') {
@@ -122,15 +133,13 @@ export function AuthScreen() {
         if (emailFactor) {
           await signIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: (emailFactor as any).emailAddressId })
           setPendingSignInCode('email_code')
-          setCode('')
+          verificationForm.reset()
         } else {
-          setError(`Účet vyžaduje dodatečné ověření, které není podporováno.`)
+          setGlobalError(`Účet vyžaduje dodatečné ověření, které není podporováno.`)
         }
       }
     } catch (err: any) {
-      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Nesprávné přihlašovací údaje.')
-    } finally {
-      setIsLoading(false)
+      setGlobalError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Nesprávné přihlašovací údaje.')
     }
   }
 
@@ -150,33 +159,35 @@ export function AuthScreen() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={pendingVerification ? handleVerificationSubmit : handleSignInCodeSubmit} className="space-y-5">
+              <form onSubmit={verificationForm.handleSubmit(pendingVerification ? handleVerificationSubmit : handleSignInCodeSubmit)} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="code">Ověřovací kód</Label>
                   <Input
                     id="code"
                     type="text"
                     placeholder="Zadej kód..."
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    required
-                    disabled={isLoading}
+                    {...verificationForm.register('code')}
+                    disabled={verificationForm.formState.isSubmitting}
                     className="h-12 text-lg text-center tracking-widest"
                   />
+                  {verificationForm.formState.errors.code && (
+                    <p className="text-sm font-medium text-destructive">{verificationForm.formState.errors.code.message}</p>
+                  )}
                 </div>
-                {error && <div className="text-sm font-medium text-destructive text-center">{error}</div>}
+                {globalError && <div className="text-sm font-medium text-destructive text-center">{globalError}</div>}
                 <div className="space-y-3 pt-2">
-                  <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={isLoading}>
-                    {isLoading ? 'Čekám...' : 'Ověřit'}
+                  <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={verificationForm.formState.isSubmitting}>
+                    {verificationForm.formState.isSubmitting ? 'Čekám...' : 'Ověřit'}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
                     className="w-full"
                     onClick={() => {
-                      setPendingVerification(false);
-                      setPendingSignInCode(null);
-                      setError('');
+                      setPendingVerification(false)
+                      setPendingSignInCode(null)
+                      setGlobalError('')
+                      verificationForm.reset()
                     }}
                   >
                     Zpět
@@ -186,7 +197,7 @@ export function AuthScreen() {
             </CardContent>
           </Card>
         ) : (
-          <Tabs defaultValue="login" className="w-full flex-col flex" onValueChange={() => setError('')}>
+          <Tabs defaultValue="login" className="w-full flex-col flex" onValueChange={() => setGlobalError('')}>
             <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-slate-800/40 rounded-2xl">
               <TabsTrigger value="login" className="text-sm rounded-xl transition-all duration-300 data-active:bg-[#242f49] data-active:text-white data-active:shadow-lg hover:bg-slate-700/50 py-2">Přihlášení</TabsTrigger>
               <TabsTrigger value="register" className="text-sm rounded-xl transition-all duration-300 data-active:bg-[#242f49] data-active:text-white data-active:shadow-lg hover:bg-slate-700/50 py-2">Registrace</TabsTrigger>
@@ -199,19 +210,20 @@ export function AuthScreen() {
                   <CardDescription>Přihlas se ke svému účtu.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSignInSubmit} className="space-y-5">
+                  <form onSubmit={signInForm.handleSubmit(handleSignInSubmit)} className="space-y-5">
                     <div className="space-y-2">
                       <Label htmlFor="login-email">E-mail</Label>
                       <Input
                         id="login-email"
                         type="email"
                         placeholder="tvuj.email@seznam.cz"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        disabled={isLoading}
+                        {...signInForm.register('email')}
+                        disabled={signInForm.formState.isSubmitting}
                         className="h-11"
                       />
+                      {signInForm.formState.errors.email && (
+                        <p className="text-sm font-medium text-destructive">{signInForm.formState.errors.email.message}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="login-password">Heslo</Label>
@@ -219,16 +231,17 @@ export function AuthScreen() {
                         id="login-password"
                         type="password"
                         placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
+                        {...signInForm.register('password')}
+                        disabled={signInForm.formState.isSubmitting}
                         className="h-11"
                       />
+                      {signInForm.formState.errors.password && (
+                        <p className="text-sm font-medium text-destructive">{signInForm.formState.errors.password.message}</p>
+                      )}
                     </div>
-                    {error && <div className="text-sm font-medium text-destructive">{error}</div>}
-                    <Button type="submit" className="w-full h-11 text-base font-bold mt-4 bg-[#242f49] text-white hover:bg-[#161e2f] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_20px_rgba(36,47,73,0.3)] rounded-xl" disabled={isLoading}>
-                      {isLoading ? 'Čekám...' : 'Přihlásit se'}
+                    {globalError && <div className="text-sm font-medium text-destructive">{globalError}</div>}
+                    <Button type="submit" className="w-full h-11 text-base font-bold mt-4 bg-[#242f49] text-white hover:bg-[#161e2f] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_20px_rgba(36,47,73,0.3)] rounded-xl" disabled={signInForm.formState.isSubmitting}>
+                      {signInForm.formState.isSubmitting ? 'Čekám...' : 'Přihlásit se'}
                     </Button>
                   </form>
                 </CardContent>
@@ -242,19 +255,20 @@ export function AuthScreen() {
                   <CardDescription>Vytvoř si účet a začni plánovat.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSignUpSubmit} className="space-y-5">
+                  <form onSubmit={signUpForm.handleSubmit(handleSignUpSubmit)} className="space-y-5">
                     <div className="space-y-2">
                       <Label htmlFor="register-name">Jméno a příjmení</Label>
                       <Input
                         id="register-name"
                         type="text"
                         placeholder="Křestní jméno a příjmení"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        required
-                        disabled={isLoading}
+                        {...signUpForm.register('fullName')}
+                        disabled={signUpForm.formState.isSubmitting}
                         className="h-11"
                       />
+                      {signUpForm.formState.errors.fullName && (
+                        <p className="text-sm font-medium text-destructive">{signUpForm.formState.errors.fullName.message}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="register-email">E-mail</Label>
@@ -262,12 +276,13 @@ export function AuthScreen() {
                         id="register-email"
                         type="email"
                         placeholder="tvuj.email@seznam.cz"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        disabled={isLoading}
+                        {...signUpForm.register('email')}
+                        disabled={signUpForm.formState.isSubmitting}
                         className="h-11"
                       />
+                      {signUpForm.formState.errors.email && (
+                        <p className="text-sm font-medium text-destructive">{signUpForm.formState.errors.email.message}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="register-password">Heslo</Label>
@@ -275,16 +290,17 @@ export function AuthScreen() {
                         id="register-password"
                         type="password"
                         placeholder="Zvol si silné heslo"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
+                        {...signUpForm.register('password')}
+                        disabled={signUpForm.formState.isSubmitting}
                         className="h-11"
                       />
+                      {signUpForm.formState.errors.password && (
+                        <p className="text-sm font-medium text-destructive">{signUpForm.formState.errors.password.message}</p>
+                      )}
                     </div>
-                    {error && <div className="text-sm font-medium text-destructive">{error}</div>}
-                    <Button type="submit" className="w-full h-11 text-base font-bold mt-4 bg-[#242f49] text-white hover:bg-[#161e2f] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_20px_rgba(36,47,73,0.3)] rounded-xl" disabled={isLoading}>
-                      {isLoading ? 'Čekám...' : 'Zaregistrovat se'}
+                    {globalError && <div className="text-sm font-medium text-destructive">{globalError}</div>}
+                    <Button type="submit" className="w-full h-11 text-base font-bold mt-4 bg-[#242f49] text-white hover:bg-[#161e2f] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_20px_rgba(36,47,73,0.3)] rounded-xl" disabled={signUpForm.formState.isSubmitting}>
+                      {signUpForm.formState.isSubmitting ? 'Čekám...' : 'Zaregistrovat se'}
                     </Button>
                   </form>
                 </CardContent>
