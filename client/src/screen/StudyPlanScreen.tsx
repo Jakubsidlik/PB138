@@ -58,6 +58,8 @@ type DesktopStudyPlanProps = {
   onToggleArchiveStudyPlan: (studyPlanId: number) => void
   onDeleteStudyPlan: (studyPlanId: number) => void
   onShareStudyPlan?: (studyPlanId: number, email: string) => Promise<void>
+  onRateLesson?: (lessonId: number, vote: 'LIKE' | 'DISLIKE' | null) => Promise<void>
+  onRateFile?: (fileId: number, vote: 'LIKE' | 'DISLIKE' | null) => Promise<void>
 }
 
 export function DesktopStudyPlan({
@@ -85,6 +87,8 @@ export function DesktopStudyPlan({
   onToggleArchiveStudyPlan,
   onDeleteStudyPlan,
   onShareStudyPlan,
+  onRateLesson,
+  onRateFile,
 }: DesktopStudyPlanProps) {
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
@@ -649,6 +653,8 @@ export function DesktopStudyPlan({
             onClose={() => setSelectedSubjectId(null)}
             onAddNote={handleAddNote}
             onAddFile={handleAddFile}
+            onRateLesson={onRateLesson}
+            onRateFile={onRateFile}
           />
         </section>
       )}

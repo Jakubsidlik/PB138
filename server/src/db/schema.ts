@@ -26,6 +26,10 @@ export const collaborationRoleValues = ['VIEWER', 'CONTRIBUTOR'] as const
 export type CollaborationRole = (typeof collaborationRoleValues)[number]
 export const collaborationRoleEnum = pgEnum('CollaborationRole', collaborationRoleValues)
 
+export const voteTypeValues = ['LIKE', 'DISLIKE'] as const
+export type VoteType = (typeof voteTypeValues)[number]
+export const voteTypeEnum = pgEnum('VoteType', voteTypeValues)
+
 
 
 export const users = pgTable('User', {
@@ -153,6 +157,17 @@ export const fileSharesRelations = relations(fileShares, ({ one }) => ({
   user: one(users, { fields: [fileShares.userId], references: [users.id] }),
 }))
 
+export const fileRatings = pgTable('FileRating', {
+  fileId: bigint('fileId', { mode: 'bigint' }).notNull().references(() => fileRecords.id, { onDelete: 'cascade' }),
+  userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  vote: voteTypeEnum('vote').notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.fileId, table.userId] }),
+  fileIdIdx: index('FileRating_fileId_idx').on(table.fileId),
+  userIdIdx: index('FileRating_userId_idx').on(table.userId),
+}))
+
 
 
 export const lessons = pgTable('Lesson', {
@@ -171,6 +186,17 @@ export const lessons = pgTable('Lesson', {
   userIdIdx: index('Lesson_userId_idx').on(table.userId),
   isSharedIdx: index('Lesson_isShared_idx').on(table.isShared),
   deletedAtIdx: index('Lesson_deletedAt_idx').on(table.deletedAt),
+}))
+
+export const lessonRatings = pgTable('LessonRating', {
+  lessonId: bigint('lessonId', { mode: 'bigint' }).notNull().references(() => lessons.id, { onDelete: 'cascade' }),
+  userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  vote: voteTypeEnum('vote').notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.lessonId, table.userId] }),
+  lessonIdIdx: index('LessonRating_lessonId_idx').on(table.lessonId),
+  userIdIdx: index('LessonRating_userId_idx').on(table.userId),
 }))
 
 

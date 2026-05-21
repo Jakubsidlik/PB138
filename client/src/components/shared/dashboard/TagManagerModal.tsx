@@ -59,9 +59,9 @@ export function TagManagerModal({ tags, onCreateTag, onDeleteTag }: TagManagerMo
             <div className="flex flex-wrap gap-2">
               {tags.map(tag => (
                 <div key={tag.id} className="flex items-center gap-1 bg-muted/50 rounded-full pl-2 pr-1 py-1 border">
-                  <Badge variant="outline" className="text-xs h-5 px-1.5 leading-none">
+                  <span className="text-xs font-medium px-1">
                     {tag.name}
-                  </Badge>
+                  </span>
                   {!tag.isSystem && (
                     <button
                       onClick={() => handleDelete(tag.id)}

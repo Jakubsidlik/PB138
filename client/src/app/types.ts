@@ -171,6 +171,9 @@ export interface FileRecord {
   userId?: number
   subjectId?: number | null
   deletedAt?: string | null
+  likes?: number
+  dislikes?: number
+  userVote?: 'LIKE' | 'DISLIKE' | null
 }
 
 export interface ManagedFile extends FileRecord {
@@ -205,6 +208,9 @@ export interface Lesson {
   updatedAt?: string
   notesCount?: number
   filesCount?: number
+  likes?: number
+  dislikes?: number
+  userVote?: 'LIKE' | 'DISLIKE' | null
 }
 
 export interface CreateLessonRequest {

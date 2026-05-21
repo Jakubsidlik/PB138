@@ -21,12 +21,25 @@ export class LessonsService {
       orderIndex: row.orderIndex,
       notesCount: 0,
       filesCount: 0,
+      likes: row.likes ?? 0,
+      dislikes: row.dislikes ?? 0,
+      userVote: row.userVote,
       deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     }))
 
     return mappedLessons
+  }
+
+  async setLessonVote(lessonId: bigint, actor: { id: number, role: string }, vote: 'LIKE' | 'DISLIKE' | null) {
+    const canView = await lessonsRepository.findById(lessonId, actor.id)
+    if (!canView) {
+      throw new AppError('Nemate opravneni k teto lekci.', 403)
+    }
+
+    await lessonsRepository.setVote(lessonId, BigInt(actor.id), vote)
+    return { success: true }
   }
 
   async createLesson(actorId: number, data: any) {

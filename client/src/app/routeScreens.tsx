@@ -132,6 +132,8 @@ export function StudyComponent() {
       onToggleArchiveStudyPlan={state.toggleStudyPlanArchived}
       onDeleteStudyPlan={state.deleteStudyPlan}
       onShareStudyPlan={state.shareStudyPlan}
+      onRateLesson={state.rateLesson}
+      onRateFile={state.rateFile}
     />
   )
 }

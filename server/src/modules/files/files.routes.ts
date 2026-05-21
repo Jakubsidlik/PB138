@@ -126,18 +126,36 @@ filesRouter.post('/:id/share', asyncHandler(async (req, res) => {
   res.status(201).json(result)
 }))
 
-filesRouter.delete('/:id/share/:userId', asyncHandler(async (req, res) => {
+filesRouter.delete('/:id/shares/:userId', asyncHandler(async (req, res) => {
   const actor = await requireRegisteredActor(req, res)
   if (!actor) return
 
   const fileId = asBigInt(req.params.id)
-  const userId = asBigInt(req.params.userId)
-  if (!fileId || !userId) throw new AppError('Neplatne ID souboru nebo uzivatele.', 400)
+  const targetUserId = asBigInt(req.params.userId)
+  if (!fileId || !targetUserId) throw new AppError('Neplatné parametry.', 400)
 
-  const result = await filesService.unshareFile(fileId, userId, actor)
+  const result = await filesService.unshareFile(fileId, targetUserId, actor)
   res.json(result)
 }))
 
+import { z } from 'zod'
+const voteSchema = z.object({ vote: z.enum(['LIKE', 'DISLIKE']).nullable() })
+
+filesRouter.post('/:id/vote', asyncHandler(async (req, res) => {
+  const actor = await requireRegisteredActor(req, res)
+  if (!actor) return
+
+  const fileId = asBigInt(req.params.id)
+  if (!fileId) throw new AppError('Neplatné ID souboru.', 400)
+
+  const parsed = voteSchema.safeParse(req.body)
+  if (!parsed.success) {
+    throw new AppError('Neplatný hlas.', 400)
+  }
+
+  const result = await filesService.setFileVote(fileId, actor, parsed.data.vote)
+  res.json(result)
+}))
 
 // adminFilesRouter
 adminFilesRouter.get('/', asyncHandler(async (req, res) => {

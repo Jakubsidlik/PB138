@@ -138,8 +138,12 @@ export const mapFileRecord = (file: any) => ({
   addedLabel: file.addedLabel,
   isShared: file.isShared,
   shared: file.isShared,
+  likes: file.likes ?? 0,
+  dislikes: file.dislikes ?? 0,
+  userVote: file.userVote ?? null,
   deletedAt: file.deletedAt ? file.deletedAt.toISOString() : null,
 })
+
 
 export const parseCursorPagination = (req: express.Request, options?: { defaultLimit?: number, maxLimit?: number }): CursorPagination => {
   const defaultLimit = options?.defaultLimit ?? 25

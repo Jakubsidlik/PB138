@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, exists, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { lessons, studyPlans, studyPlanCollaborators, subjects, users } from '../../db/schema.js'
+import { lessons, studyPlans, studyPlanCollaborators, subjects, users, lessonRatings } from '../../db/schema.js'
 
 // Used for INSERT/UPDATE RETURNING — only columns from the Lesson table itself
 const lessonBaseSelect = {
@@ -16,11 +16,14 @@ const lessonBaseSelect = {
   updatedAt: lessons.updatedAt,
 }
 
-// Used for SELECT with LEFT JOIN users — includes authorFullName
-const lessonSelect = {
+// Used for SELECT with LEFT JOIN users — includes authorFullName and ratings
+const lessonSelect = (actorId: number) => ({
   ...lessonBaseSelect,
   authorFullName: users.fullName,
-}
+  likes: sql<number>`count(case when ${lessonRatings.vote} = 'LIKE' then 1 end)::int`,
+  dislikes: sql<number>`count(case when ${lessonRatings.vote} = 'DISLIKE' then 1 end)::int`,
+  userVote: sql<string | null>`max(case when ${lessonRatings.userId} = ${actorId} then ${lessonRatings.vote}::text else null end)`,
+})
 
 export class LessonsRepository {
   async findAll(actor: { id: number, role: string }, filters: {
@@ -53,20 +56,27 @@ export class LessonsRepository {
     const whereClause = and(...(whereParts as any))
 
     return db
-      .select(lessonSelect)
+      .select(lessonSelect(actor.id))
       .from(lessons)
       .leftJoin(subjects, eq(lessons.subjectId, subjects.id))
       .leftJoin(studyPlans, eq(subjects.studyPlanId, studyPlans.id))
       .leftJoin(users, eq(lessons.userId, users.id))
+      .leftJoin(lessonRatings, eq(lessons.id, lessonRatings.lessonId))
       .where(whereClause)
+      .groupBy(lessons.id, subjects.id, studyPlans.id, users.id)
       .orderBy(asc(lessons.orderIndex), asc(lessons.createdAt))
   }
 
-  async findById(lessonId: bigint) {
-    const [lesson] = await db.select(lessonSelect)
+  async findById(lessonId: bigint, actorId: number = 0) {
+    const [lesson] = await db.select(lessonSelect(actorId))
       .from(lessons)
+      .leftJoin(subjects, eq(lessons.subjectId, subjects.id))
+      .leftJoin(studyPlans, eq(subjects.studyPlanId, studyPlans.id))
       .leftJoin(users, eq(lessons.userId, users.id))
-      .where(eq(lessons.id, lessonId)).limit(1)
+      .leftJoin(lessonRatings, eq(lessons.id, lessonRatings.lessonId))
+      .where(eq(lessons.id, lessonId))
+      .groupBy(lessons.id, subjects.id, studyPlans.id, users.id)
+      .limit(1)
     return lesson || null
   }
 
@@ -110,6 +120,21 @@ export class LessonsRepository {
     }
 
     return false
+  }
+
+  async setVote(lessonId: bigint, userId: bigint, vote: 'LIKE' | 'DISLIKE' | null) {
+    if (vote === null) {
+      await db.delete(lessonRatings).where(and(eq(lessonRatings.lessonId, lessonId), eq(lessonRatings.userId, userId)))
+    } else {
+      await db.insert(lessonRatings).values({
+        lessonId,
+        userId,
+        vote
+      }).onConflictDoUpdate({
+        target: [lessonRatings.lessonId, lessonRatings.userId],
+        set: { vote }
+      })
+    }
   }
 
 }

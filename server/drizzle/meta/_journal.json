@@ -64,6 +64,20 @@
       "when": 1779360582132,
       "tag": "0008_fantastic_ultragirl",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779388976112,
+      "tag": "0009_lame_maggott",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779389827826,
+      "tag": "0010_hard_exodus",
+      "breakpoints": true
     }
   ]
 }

@@ -212,6 +212,16 @@ export class FilesService {
     return filesRepository.deleteShare(fileId, userId)
   }
 
+  async setFileVote(fileId: bigint, actor: { id: number, role: string }, vote: 'LIKE' | 'DISLIKE' | null) {
+    const canView = await filesRepository.findById(fileId, actor.id)
+    if (!canView) {
+      throw new AppError('Nemate opravneni k tomuto souboru.', 403)
+    }
+
+    await filesRepository.setVote(fileId, BigInt(actor.id), vote)
+    return { success: true }
+  }
+
 }
 
 export const filesService = new FilesService()

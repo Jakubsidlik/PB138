@@ -59,3 +59,21 @@ lessonsRouter.delete('/:id', asyncHandler(async (req, res) => {
   res.json(result)
 }))
 
+import { z } from 'zod'
+const voteSchema = z.object({ vote: z.enum(['LIKE', 'DISLIKE']).nullable() })
+
+lessonsRouter.post('/:id/vote', asyncHandler(async (req, res) => {
+  const actor = await requireRegisteredActor(req, res)
+  if (!actor) return
+
+  const lessonId = asBigInt(req.params.id)
+  if (!lessonId) throw new AppError('Neplatne ID lekce.', 400)
+
+  const parsed = voteSchema.safeParse(req.body)
+  if (!parsed.success) {
+    throw new AppError('Neplatný hlas.', 400)
+  }
+
+  const result = await lessonsService.setLessonVote(lessonId, actor, parsed.data.vote)
+  res.json(result)
+}))

@@ -1,3 +1,4 @@
+import { Subject } from "./types"
 import React from 'react'
 import { toast } from 'sonner'
 import {
@@ -91,7 +92,7 @@ const toEventMeta = (event: CalendarEvent, fallbackTitle: string): EventMeta => 
 export function useDashboardState(fetchAll = false) {
   const [tasks, setTasks] = React.useState<Task[]>(() => readTasksFromStorage() ?? [])
   const [events, setEvents] = React.useState<CalendarEvent[]>(() => readEventsFromStorage() ?? [])
-  const [subjects, setSubjects] = React.useState<typeof subjectsSeed>([])
+  const [subjects, setSubjects] = React.useState<Subject[]>([])
   const [themeMode, setThemeMode] = React.useState<ThemeMode>(() => readThemeFromStorage())
   const [lessons, setLessons] = React.useState<Lesson[]>([])
   const [accentPalette, setAccentPalette] = React.useState<AccentPalette>(() => readPaletteFromStorage())
@@ -215,7 +216,7 @@ export function useDashboardState(fetchAll = false) {
 
       let loadedTasks = localTasks
       let loadedEvents = localEvents
-    let loadedSubjects: typeof subjectsSeed = []
+    let loadedSubjects: Subject[] = []
     let loadedFiles: ManagedFile[] = []
       let loadedLessons: Lesson[] = []
       let loadedStudyPlans: StudyPlan[] = []
@@ -252,7 +253,7 @@ export function useDashboardState(fetchAll = false) {
         }
         if (subjectsRes.status === 'fulfilled' && subjectsRes.value.ok) {
           const serverSubjects = await subjectsRes.value.json()
-          if (Array.isArray(serverSubjects)) loadedSubjects = serverSubjects as typeof subjectsSeed
+          if (Array.isArray(serverSubjects)) loadedSubjects = serverSubjects as Subject[]
         }
         if (studyPlansRes.status === 'fulfilled' && studyPlansRes.value.ok) {
           const serverStudyPlans = await studyPlansRes.value.json()
@@ -372,7 +373,7 @@ export function useDashboardState(fetchAll = false) {
 
     const payload: unknown = await response.json()
     if (Array.isArray(payload)) {
-      setSubjects(payload as typeof subjectsSeed)
+      setSubjects(payload as Subject[])
     }
   }
 
@@ -675,14 +676,96 @@ export function useDashboardState(fetchAll = false) {
 
     const title = note.length > 50 ? note.slice(0, 50) + '...' : note
     
-    await apiFetch('/api/lessons', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subjectId, title, content: note }),
-    })
+    try {
+      const res = await apiFetch('/api/lessons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subjectId, title, content: note }),
+      })
 
-    await refreshLessons()
-    await refreshSubjects()
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        toast.error(errorData?.error || 'Nepodařilo se přidat poznámku.')
+        console.error('Failed to add note:', errorData)
+        return
+      }
+
+      await refreshLessons()
+      await refreshSubjects()
+    } catch (e) {
+      toast.error('Došlo k chybě při přidávání poznámky.')
+      console.error('Failed to add note:', e)
+    }
+  }
+
+  const rateLesson = async (lessonId: number, vote: 'LIKE' | 'DISLIKE' | null) => {
+    if (!ensureAuthenticated()) return
+
+    const prevLessons = lessons
+    // Optimistic UI update
+    setLessons((prev) => prev.map(l => {
+      if (l.id === lessonId) {
+        let likes = Number(l.likes ?? 0)
+        let dislikes = Number(l.dislikes ?? 0)
+        const oldVote = l.userVote
+        
+        if (oldVote === 'LIKE') likes--
+        if (oldVote === 'DISLIKE') dislikes--
+        if (vote === 'LIKE') likes++
+        if (vote === 'DISLIKE') dislikes++
+        
+        return { ...l, userVote: vote, likes: Math.max(0, likes), dislikes: Math.max(0, dislikes) }
+      }
+      return l
+    }))
+
+    try {
+      const res = await apiFetch(`/api/lessons/${lessonId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote }),
+      })
+      if (!res.ok) throw new Error('Nepodařilo se uložit hodnocení.')
+    } catch (e) {
+      toast.error('Došlo k chybě při ukládání hodnocení.')
+      console.error('Failed to rate lesson:', e)
+      setLessons(prevLessons) // Revert on failure
+    }
+  }
+
+  const rateFile = async (fileId: number, vote: 'LIKE' | 'DISLIKE' | null) => {
+    if (!ensureAuthenticated()) return
+
+    const prevFiles = managedFiles
+    // Optimistic UI update
+    setManagedFiles((prev) => prev.map(f => {
+      if (f.id === fileId) {
+        let likes = Number(f.likes ?? 0)
+        let dislikes = Number(f.dislikes ?? 0)
+        const oldVote = f.userVote
+        
+        if (oldVote === 'LIKE') likes--
+        if (oldVote === 'DISLIKE') dislikes--
+        if (vote === 'LIKE') likes++
+        if (vote === 'DISLIKE') dislikes++
+        
+        return { ...f, userVote: vote, likes: Math.max(0, likes), dislikes: Math.max(0, dislikes) }
+      }
+      return f
+    }))
+
+    try {
+      const res = await apiFetch(`/api/files/${fileId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote }),
+      })
+      if (!res.ok) throw new Error('Nepodařilo se uložit hodnocení.')
+    } catch (e) {
+      toast.error('Došlo k chybě při ukládání hodnocení.')
+      console.error('Failed to rate file:', e)
+      setManagedFiles(prevFiles) // Revert on failure
+    }
   }
 
   const onDropToUpload = (event: React.DragEvent<HTMLDivElement>) => {
@@ -1100,7 +1183,7 @@ export function useDashboardState(fetchAll = false) {
         }
 
         if (tagFilter !== null) {
-          if (!subject.tags?.some((t) => t.id === tagFilter)) {
+          if (!subject.tags?.some((t: any) => t.id === tagFilter)) {
             return false
           }
         }
@@ -1219,5 +1302,7 @@ export function useDashboardState(fetchAll = false) {
     tags,
     createTag,
     deleteTag,
+    rateLesson,
+    rateFile,
   }
 }

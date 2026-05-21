@@ -1,8 +1,26 @@
 import { and, asc, desc, eq, exists, gt, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { fileRecords, fileShares, users, subjects, studyPlans, studyPlanCollaborators } from '../../db/schema.js'
+import { fileRecords, fileShares, users, subjects, studyPlans, studyPlanCollaborators, fileRatings } from '../../db/schema.js'
 
-const fileSelect = {
+const fileSelect = (actorId: number) => ({
+  id: fileRecords.id,
+  userId: fileRecords.userId,
+  subjectId: fileRecords.subjectId,
+  fileKey: fileRecords.fileKey,
+  fileUrl: fileRecords.fileUrl,
+  name: fileRecords.name,
+  size: fileRecords.size,
+  addedLabel: fileRecords.addedLabel,
+  isShared: fileRecords.isShared,
+  deletedAt: fileRecords.deletedAt,
+  createdAt: fileRecords.createdAt,
+  updatedAt: fileRecords.updatedAt,
+  likes: sql<number>`count(case when ${fileRatings.vote} = 'LIKE' then 1 end)::int`,
+  dislikes: sql<number>`count(case when ${fileRatings.vote} = 'DISLIKE' then 1 end)::int`,
+  userVote: sql<string | null>`max(case when ${fileRatings.userId} = ${actorId} then ${fileRatings.vote}::text else null end)`,
+})
+
+const fileSelectBasic = {
   id: fileRecords.id,
   userId: fileRecords.userId,
   subjectId: fileRecords.subjectId,
@@ -61,10 +79,12 @@ export class FilesRepository {
         
     const whereClause = and(...([visibility, sharedFilter, ...baseConditions] as any).filter(Boolean))
 
-    const query = db.select(fileSelect)
+    const query = db.select(fileSelect(actor.id))
       .from(fileRecords)
       .leftJoin(subjects, eq(fileRecords.subjectId, subjects.id))
       .leftJoin(studyPlans, eq(subjects.studyPlanId, studyPlans.id))
+      .leftJoin(fileRatings, eq(fileRecords.id, fileRatings.fileId))
+      .groupBy(fileRecords.id, subjects.id, studyPlans.id)
       
     const rows = pagination.enabled
       ? await query.where(whereClause).orderBy(asc(fileRecords.id)).limit(pagination.limit + 1).offset(pagination.cursor ? 1 : 0)
@@ -75,32 +95,41 @@ export class FilesRepository {
 
   async findPublic() {
     return db
-      .select(fileSelect)
+      .select(fileSelect(0))
       .from(fileRecords)
+      .leftJoin(fileRatings, eq(fileRecords.id, fileRatings.fileId))
       .where(and(eq(fileRecords.isShared, true), isNull(fileRecords.deletedAt)))
+      .groupBy(fileRecords.id)
       .orderBy(desc(fileRecords.updatedAt), desc(fileRecords.createdAt))
   }
 
   async findAdminAll(includeDeleted: boolean) {
     return db
-      .select(fileSelect)
+      .select(fileSelect(0))
       .from(fileRecords)
+      .leftJoin(fileRatings, eq(fileRecords.id, fileRatings.fileId))
       .where(includeDeleted ? undefined : isNull(fileRecords.deletedAt))
+      .groupBy(fileRecords.id)
       .orderBy(desc(fileRecords.updatedAt), desc(fileRecords.createdAt))
   }
 
-  async findById(fileId: bigint) {
-    const [file] = await db.select(fileSelect).from(fileRecords).where(eq(fileRecords.id, fileId)).limit(1)
+  async findById(fileId: bigint, actorId: number = 0) {
+    const [file] = await db.select(fileSelect(actorId))
+      .from(fileRecords)
+      .leftJoin(fileRatings, eq(fileRecords.id, fileRatings.fileId))
+      .where(eq(fileRecords.id, fileId))
+      .groupBy(fileRecords.id)
+      .limit(1)
     return file || null
   }
 
   async create(data: any) {
-    const [created] = await db.insert(fileRecords).values(data).returning(fileSelect)
+    const [created] = await db.insert(fileRecords).values(data).returning(fileSelectBasic)
     return created
   }
 
   async update(fileId: bigint, data: any) {
-    const [updated] = await db.update(fileRecords).set(data).where(eq(fileRecords.id, fileId)).returning(fileSelect)
+    const [updated] = await db.update(fileRecords).set(data).where(eq(fileRecords.id, fileId)).returning(fileSelectBasic)
     return updated
   }
 
@@ -130,6 +159,21 @@ export class FilesRepository {
   async findUserByEmail(email: string) {
     const [user] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1)
     return user || null
+  }
+
+  async setVote(fileId: bigint, userId: bigint, vote: 'LIKE' | 'DISLIKE' | null) {
+    if (vote === null) {
+      await db.delete(fileRatings).where(and(eq(fileRatings.fileId, fileId), eq(fileRatings.userId, userId)))
+    } else {
+      await db.insert(fileRatings).values({
+        fileId,
+        userId,
+        vote
+      }).onConflictDoUpdate({
+        target: [fileRatings.fileId, fileRatings.userId],
+        set: { vote }
+      })
+    }
   }
 }
 
