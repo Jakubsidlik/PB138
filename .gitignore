@@ -24,3 +24,8 @@ yarn-error.log*
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.auth/

@@ -15,8 +15,11 @@
     "client"
   ],
   "devDependencies": {
+    "@clerk/testing": "^2.0.31",
+    "@playwright/test": "^1.60.0",
     "@tanstack/router-vite-plugin": "*",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "dotenv": "^17.4.2"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.169.2",
