@@ -158,6 +158,7 @@ export const fileSharesRelations = relations(fileShares, ({ one }) => ({
 export const lessons = pgTable('Lesson', {
   id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
   subjectId: bigint('subjectId', { mode: 'bigint' }).references(() => subjects.id, { onDelete: 'set null' }),
+  userId: bigint('userId', { mode: 'bigint' }).references(() => users.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   content: text('content'),
   isShared: boolean('isShared').notNull().default(false),
@@ -167,6 +168,7 @@ export const lessons = pgTable('Lesson', {
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 }, (table) => ({
   subjectIdIdx: index('Lesson_subjectId_idx').on(table.subjectId),
+  userIdIdx: index('Lesson_userId_idx').on(table.userId),
   isSharedIdx: index('Lesson_isShared_idx').on(table.isShared),
   deletedAtIdx: index('Lesson_deletedAt_idx').on(table.deletedAt),
 }))

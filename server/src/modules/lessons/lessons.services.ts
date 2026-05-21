@@ -13,6 +13,8 @@ export class LessonsService {
     const mappedLessons = rows.map((row) => ({
       id: Number(row.id),
       subjectId: asNumberId(row.subjectId),
+      authorId: asNumberId(row.userId),
+      authorFullName: row.authorFullName ?? null,
       title: row.title,
       content: row.content,
       isShared: row.isShared,
@@ -30,6 +32,7 @@ export class LessonsService {
   async createLesson(actorId: number, data: any) {
     const created = await lessonsRepository.create({
       subjectId: data.subjectId ? BigInt(data.subjectId) : null,
+      userId: BigInt(actorId),
       title: data.title,
       content: data.content ?? null,
       isShared: data.isShared,
@@ -39,6 +42,8 @@ export class LessonsService {
     return {
       id: Number(created.id),
       subjectId: asNumberId(created.subjectId),
+      authorId: actorId,
+      authorFullName: null as string | null,
       title: created.title,
       content: created.content,
       isShared: created.isShared,

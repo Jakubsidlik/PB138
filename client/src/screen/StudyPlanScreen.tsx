@@ -637,7 +637,7 @@ export function DesktopStudyPlan({
             </div>
             <DialogFooter className="pt-2">
               <Button type="submit" disabled={isSharingPlanSubmitting || !sharePlanEmail.trim()} className="w-full">
-                {isSharingPlanSubmitting ? 'Sdílím...' : 'Sdílet a odeslat e-mail'}
+                {isSharingPlanSubmitting ? 'Sdílím...' : 'Sdílet'}
               </Button>
             </DialogFooter>
           </form>
@@ -690,11 +690,8 @@ export function DesktopStudyPlan({
 
             <div className="flex flex-col gap-2 pt-2">
               <Button type="submit" disabled={isSharingSubjectSubmitting || !shareSubjectEmail.trim()} className="w-full">
-                {isSharingSubjectSubmitting ? 'Sdílím a odesílám...' : 'Sdílet a odeslat e-mail'}
+                {isSharingSubjectSubmitting ? 'Sdílím...' : 'Sdílet'}
               </Button>
-              <p className="text-[10px] text-muted-foreground text-center mt-2">
-                Uživateli bude v aplikaci nasdílen předmět a zároveň mu přijde e-mailové upozornění s odkazem.
-              </p>
             </div>
           </form>
         </DialogContent>

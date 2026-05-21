@@ -21,7 +21,7 @@ export function HomeComponent() {
 
   return (
     <DashboardHomeContent
-      profileName={state.profile.fullName}
+      profileName={state.authSession?.fullName || state.profile.fullName}
       tasksDone={state.tasksDone}
       tasks={state.tasks}
       upcomingEvents={state.upcomingEvents}

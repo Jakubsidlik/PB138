@@ -1,10 +1,12 @@
 import { and, asc, desc, eq, exists, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { lessons, studyPlans, studyPlanCollaborators, subjects } from '../../db/schema.js'
+import { lessons, studyPlans, studyPlanCollaborators, subjects, users } from '../../db/schema.js'
 
-const lessonSelect = {
+// Used for INSERT/UPDATE RETURNING — only columns from the Lesson table itself
+const lessonBaseSelect = {
   id: lessons.id,
   subjectId: lessons.subjectId,
+  userId: lessons.userId,
   title: lessons.title,
   content: lessons.content,
   isShared: lessons.isShared,
@@ -12,6 +14,12 @@ const lessonSelect = {
   deletedAt: lessons.deletedAt,
   createdAt: lessons.createdAt,
   updatedAt: lessons.updatedAt,
+}
+
+// Used for SELECT with LEFT JOIN users — includes authorFullName
+const lessonSelect = {
+  ...lessonBaseSelect,
+  authorFullName: users.fullName,
 }
 
 export class LessonsRepository {
@@ -22,10 +30,18 @@ export class LessonsRepository {
     const { subjectId, includeDeleted } = filters
 
     const visibility = actor.role === 'PUBLIC'
-      ? eq(lessons.isShared, true)
+      ? or(eq(lessons.isShared, true), eq(subjects.isShared, true), eq(studyPlans.isShared, true))
       : or(
           eq(lessons.isShared, true),
           eq(subjects.userId, BigInt(actor.id)),
+          eq(subjects.isShared, true),
+          eq(studyPlans.isShared, true),
+          exists(
+            db
+              .select({ id: studyPlanCollaborators.id })
+              .from(studyPlanCollaborators)
+              .where(and(eq(studyPlanCollaborators.studyPlanId, subjects.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
+          )
         )
 
     const whereParts = [
@@ -40,22 +56,27 @@ export class LessonsRepository {
       .select(lessonSelect)
       .from(lessons)
       .leftJoin(subjects, eq(lessons.subjectId, subjects.id))
+      .leftJoin(studyPlans, eq(subjects.studyPlanId, studyPlans.id))
+      .leftJoin(users, eq(lessons.userId, users.id))
       .where(whereClause)
       .orderBy(asc(lessons.orderIndex), asc(lessons.createdAt))
   }
 
   async findById(lessonId: bigint) {
-    const [lesson] = await db.select(lessonSelect).from(lessons).where(eq(lessons.id, lessonId)).limit(1)
+    const [lesson] = await db.select(lessonSelect)
+      .from(lessons)
+      .leftJoin(users, eq(lessons.userId, users.id))
+      .where(eq(lessons.id, lessonId)).limit(1)
     return lesson || null
   }
 
   async create(data: any) {
-    const [created] = await db.insert(lessons).values(data).returning(lessonSelect)
+    const [created] = await db.insert(lessons).values(data).returning(lessonBaseSelect)
     return created
   }
 
   async update(lessonId: bigint, data: any) {
-    const [updated] = await db.update(lessons).set(data).where(eq(lessons.id, lessonId)).returning(lessonSelect)
+    const [updated] = await db.update(lessons).set(data).where(eq(lessons.id, lessonId)).returning(lessonBaseSelect)
     return updated
   }
 
@@ -79,6 +100,13 @@ export class LessonsRepository {
     if (lesson.subjectId !== null) {
       const [ownSubject] = await db.select({ id: subjects.id }).from(subjects).where(and(eq(subjects.id, lesson.subjectId), eq(subjects.userId, BigInt(actorId)))).limit(1)
       if (ownSubject) return true
+      
+      const [collab] = await db.select({ id: studyPlanCollaborators.id })
+        .from(subjects)
+        .innerJoin(studyPlanCollaborators, eq(subjects.studyPlanId, studyPlanCollaborators.studyPlanId))
+        .where(and(eq(subjects.id, lesson.subjectId), eq(studyPlanCollaborators.userId, BigInt(actorId))))
+        .limit(1)
+      if (collab) return true
     }
 
     return false

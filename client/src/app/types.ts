@@ -198,6 +198,8 @@ export interface Lesson {
   isShared?: boolean
   orderIndex: number
   subjectId?: number | null
+  authorId?: number | null
+  authorFullName?: string | null
   deletedAt?: string | null
   createdAt?: string
   updatedAt?: string

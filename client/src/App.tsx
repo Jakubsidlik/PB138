@@ -17,15 +17,26 @@ function DashboardSync() {
 
   // Synchronizace Clerk stavu do lokálního Dashboard stavu aplikace
   React.useEffect(() => {
-    if (isSignedIn && user && !state.authSession) {
+    if (!isSignedIn || !user) return
+
+    const newUserId = user.id
+
+    // Pokud přihlášený Clerk uživatel neodpovídá uloženému záznamu (nebo žádný uložený není),
+    // okamžitě vyčistíme veškerá data z předchozí session a nastavíme novou
+    if (!state.authSession || state.authSession.userId !== newUserId) {
+      // Smažeme stará data z localStorage (i kdyby tam zbyla po smazaném účtu)
+      localStorage.removeItem('pb138.profile')
+      localStorage.removeItem('pb138-auth-session')
+      // Okamžitě vyresetujeme React state (profil, tagy, předměty...) ať se stará data nezobrazí
+      state.clearUserData()
       state.setAuthSession({
-        userId: user.id as any, // Clerk vrací textové ID
-        role: 'REGISTROVANÝ UŽIVATEL', // Role pro registrované uživatele
+        userId: user.id as any,
+        role: 'REGISTROVANÝ UŽIVATEL',
         fullName: user.fullName || 'Uživatel',
         email: user.primaryEmailAddress?.emailAddress || '',
       })
     }
-  }, [isSignedIn, user, state.authSession])
+  }, [isSignedIn, user?.id])
 
   return null
 }

@@ -43,7 +43,7 @@ export function RootLayout() {
             isTasksScreen={isTasksScreen}
             isStudyPlanScreen={isStudyPlanScreen}
             isProfileScreen={isProfileScreen}
-            profileName={state.profile.fullName}
+            profileName={state.authSession?.fullName || state.profile.fullName}
             profileAvatarDataUrl={state.profile.avatarDataUrl}
             onOpenProfile={() => window.location.href = '/profile'}
           />

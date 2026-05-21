@@ -41,7 +41,24 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
       .where(eq(users.clerkId, auth.userId))
       .limit(1)
 
-    if (existingUser && existingUser.deletedAt === null) return toAuthActor(existingUser)
+    if (existingUser && existingUser.deletedAt === null) {
+      // Synchronizujeme jméno z Clerku do DB při každém přihlášení
+      try {
+        const clerkUser = await clerkClient.users.getUser(auth.userId)
+        const clerkFullName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim()
+        if (clerkFullName && clerkFullName !== existingUser.fullName) {
+          const [synced] = await db
+            .update(users)
+            .set({ fullName: clerkFullName })
+            .where(eq(users.id, existingUser.id))
+            .returning({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+          return toAuthActor(synced)
+        }
+      } catch {
+        // Ignorujeme chybu synchronizace — použijeme data z DB
+      }
+      return toAuthActor(existingUser)
+    }
 
     let user = existingUser ?? null
 
@@ -85,6 +102,7 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
       }
     }
   }
+
 
   return { id: 0, fullName: 'Verejnost', email: '', role: 'PUBLIC' }
 }

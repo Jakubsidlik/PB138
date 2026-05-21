@@ -4,7 +4,6 @@ import { Button } from '../../ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../ui/dialog'
 import { Textarea } from '../../ui/textarea'
 import { Hash, User, FileText, Upload, Plus, MessageSquare, Paperclip, Clock, UserCircle2, ThumbsUp, ThumbsDown, Share } from 'lucide-react'
-import { useUser } from '@clerk/clerk-react'
 import { useDashboard } from '../../../app/DashboardContext'
 import { ShareFileModal } from '../files/ShareFileModal'
 
@@ -25,7 +24,6 @@ export function SubjectDetailModal({
   onAddNote,
   onAddFile,
 }: SubjectDetailModalProps) {
-  const { user } = useUser()
   const { toggleFileShared } = useDashboard()
   const [noteText, setNoteText] = React.useState('')
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -289,13 +287,14 @@ export function SubjectDetailModal({
                         <div className="flex flex-wrap items-center gap-3">
                           <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-md">
                             <UserCircle2 className="w-3.5 h-3.5 text-primary/70" />
-                            <span className="truncate max-w-[120px]">{user?.fullName || user?.firstName || 'Autor neznámý'}</span>
+                            <span className="truncate max-w-[120px]">{lesson.authorFullName || 'Autor neznámý'}</span>
                           </div>
                           
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-muted-foreground/70" />
                             <span>
-                              {new Date(lesson.createdAt!).toLocaleDateString('cs-CZ')} 
+                              {new Date(lesson.createdAt!).toLocaleDateString('cs-CZ')}{' '}
+                              {new Date(lesson.createdAt!).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
                         </div>

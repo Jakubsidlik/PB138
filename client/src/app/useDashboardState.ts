@@ -111,12 +111,8 @@ export function useDashboardState(fetchAll = false) {
   const [isDragActive, setIsDragActive] = React.useState(false)
   const [isHydrated, setIsHydrated] = React.useState(false)
   const [tags, setTags] = React.useState<Tag[]>([])
-  const [profile, setProfile] = React.useState<UserProfile>(() =>
-    readProfileFromStorage() ?? userProfileSeed,
-  )
-  const [savedProfile, setSavedProfile] = React.useState<UserProfile>(() =>
-    readProfileFromStorage() ?? userProfileSeed,
-  )
+  const [profile, setProfile] = React.useState<UserProfile>(userProfileSeed)
+  const [savedProfile, setSavedProfile] = React.useState<UserProfile>(userProfileSeed)
   const [authSession, setAuthSession] = React.useState<AuthSession | null>(() =>
     readAuthSessionFromStorage(),
   )
@@ -760,18 +756,25 @@ export function useDashboardState(fetchAll = false) {
     setProfile(userProfileSeed)
   }
 
-  const logout = async () => {
-    setAuthSession(null)
+  const clearUserData = () => {
     setIsHydrated(false)
     setTasks([])
     setEvents([])
     setSubjects([])
     setManagedFiles([])
     setLessons([])
+    setStudyPlans([])
+    setTags([])
     setProfile(userProfileSeed)
+    setSavedProfile(userProfileSeed)
     localStorage.removeItem(TASKS_STORAGE_KEY)
     localStorage.removeItem(EVENTS_STORAGE_KEY)
     localStorage.removeItem(PROFILE_STORAGE_KEY)
+  }
+
+  const logout = async () => {
+    clearUserData()
+    setAuthSession(null)
     await signOut()
   }
 
@@ -1196,6 +1199,7 @@ export function useDashboardState(fetchAll = false) {
     hasUnsavedProfileChanges,
     isSavingProfile,
     logout,
+    clearUserData,
     setAuthSession,
     createSubject,
     updateSubject,

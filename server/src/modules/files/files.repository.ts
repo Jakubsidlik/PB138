@@ -1,6 +1,6 @@
-import { and, asc, desc, eq, gt, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, gt, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { fileRecords, fileShares, users } from '../../db/schema.js'
+import { fileRecords, fileShares, users, subjects, studyPlans, studyPlanCollaborators } from '../../db/schema.js'
 
 const fileSelect = {
   id: fileRecords.id,
@@ -37,11 +37,20 @@ export class FilesRepository {
       : undefined
 
     const visibility = actor.role === 'PUBLIC'
-      ? eq(fileRecords.isShared, true)
+      ? or(eq(fileRecords.isShared, true), eq(subjects.isShared, true), eq(studyPlans.isShared, true))
       : or(
           eq(fileRecords.userId, BigInt(actor.id)),
           eq(fileRecords.isShared, true),
-          explicitShares ? sql`${fileRecords.id} IN ${explicitShares}` : undefined
+          explicitShares ? sql`${fileRecords.id} IN ${explicitShares}` : undefined,
+          eq(subjects.userId, BigInt(actor.id)),
+          eq(subjects.isShared, true),
+          eq(studyPlans.isShared, true),
+          exists(
+            db
+              .select({ id: studyPlanCollaborators.id })
+              .from(studyPlanCollaborators)
+              .where(and(eq(studyPlanCollaborators.studyPlanId, subjects.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
+          )
         )
 
     const sharedFilter = shared === 'true' 
@@ -52,7 +61,11 @@ export class FilesRepository {
         
     const whereClause = and(...([visibility, sharedFilter, ...baseConditions] as any).filter(Boolean))
 
-    const query = db.select(fileSelect).from(fileRecords)
+    const query = db.select(fileSelect)
+      .from(fileRecords)
+      .leftJoin(subjects, eq(fileRecords.subjectId, subjects.id))
+      .leftJoin(studyPlans, eq(subjects.studyPlanId, studyPlans.id))
+      
     const rows = pagination.enabled
       ? await query.where(whereClause).orderBy(asc(fileRecords.id)).limit(pagination.limit + 1).offset(pagination.cursor ? 1 : 0)
       : await query.where(whereClause).orderBy(desc(fileRecords.createdAt))
