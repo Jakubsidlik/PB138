@@ -36,13 +36,11 @@ export const users = pgTable('User', {
   passwordHash: text('passwordHash'),
   role: userRoleEnum('role').notNull().default('REGISTERED'),
   school: text('school'),
-  faculty: text('faculty'),
   studyMajor: text('studyMajor'),
   studyYear: text('studyYear'),
   studyType: text('studyType'),
 
   avatarDataUrl: text('avatarDataUrl'),
-  contactEmail: text('contactEmail'),
   deletedAt: timestamp('deletedAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
@@ -101,21 +99,15 @@ export const subjects = pgTable('Subject', {
 export const tasks = pgTable('Task', {
   id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
   userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
-  subjectId: bigint('subjectId', { mode: 'bigint' }).references(() => subjects.id, { onDelete: 'set null' }),
-  studyPlanId: bigint('studyPlanId', { mode: 'bigint' }).references(() => studyPlans.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   done: boolean('done').notNull().default(false),
 
   priority: taskPriorityEnum('priority').notNull().default('NONE'),
-  deadline: timestamp('deadline', { withTimezone: true, mode: 'date' }),
   deletedAt: timestamp('deletedAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 }, (table) => ({
   userIdIdx: index('Task_userId_idx').on(table.userId),
-  subjectIdIdx: index('Task_subjectId_idx').on(table.subjectId),
-  studyPlanIdIdx: index('Task_studyPlanId_idx').on(table.studyPlanId),
-  deadlineIdx: index('Task_deadline_idx').on(table.deadline),
   deletedAtIdx: index('Task_deletedAt_idx').on(table.deletedAt),
 }))
 
@@ -123,7 +115,6 @@ export const fileRecords = pgTable('FileRecord', {
   id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
   userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
   subjectId: bigint('subjectId', { mode: 'bigint' }).references(() => subjects.id, { onDelete: 'set null' }),
-  lessonId: bigint('lessonId', { mode: 'bigint' }).references(() => lessons.id, { onDelete: 'set null' }),
   fileKey: text('fileKey').unique(),
   fileUrl: text('fileUrl'),
   name: text('name').notNull(),
@@ -136,7 +127,6 @@ export const fileRecords = pgTable('FileRecord', {
 }, (table) => ({
   userIdIdx: index('FileRecord_userId_idx').on(table.userId),
   subjectIdIdx: index('FileRecord_subjectId_idx').on(table.subjectId),
-  lessonIdIdx: index('FileRecord_lessonId_idx').on(table.lessonId),
   isSharedIdx: index('FileRecord_isShared_idx').on(table.isShared),
   deletedAtIdx: index('FileRecord_deletedAt_idx').on(table.deletedAt),
 }))
@@ -168,7 +158,6 @@ export const fileSharesRelations = relations(fileShares, ({ one }) => ({
 export const lessons = pgTable('Lesson', {
   id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
   subjectId: bigint('subjectId', { mode: 'bigint' }).references(() => subjects.id, { onDelete: 'set null' }),
-  studyPlanId: bigint('studyPlanId', { mode: 'bigint' }).references(() => studyPlans.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   content: text('content'),
   isShared: boolean('isShared').notNull().default(false),
@@ -178,7 +167,6 @@ export const lessons = pgTable('Lesson', {
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 }, (table) => ({
   subjectIdIdx: index('Lesson_subjectId_idx').on(table.subjectId),
-  studyPlanIdIdx: index('Lesson_studyPlanId_idx').on(table.studyPlanId),
   isSharedIdx: index('Lesson_isShared_idx').on(table.isShared),
   deletedAtIdx: index('Lesson_deletedAt_idx').on(table.deletedAt),
 }))
@@ -188,7 +176,6 @@ export const lessons = pgTable('Lesson', {
 export const events = pgTable('Event', {
   id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
   userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
-  subjectId: bigint('subjectId', { mode: 'bigint' }).references(() => subjects.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   date: date('date', { mode: 'date' }).notNull(),
   time: text('time'),
@@ -200,7 +187,6 @@ export const events = pgTable('Event', {
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 }, (table) => ({
   userIdIdx: index('Event_userId_idx').on(table.userId),
-  subjectIdIdx: index('Event_subjectId_idx').on(table.subjectId),
   isSharedIdx: index('Event_isShared_idx').on(table.isShared),
   dateIdx: index('Event_date_idx').on(table.date),
   deletedAtIdx: index('Event_deletedAt_idx').on(table.deletedAt),

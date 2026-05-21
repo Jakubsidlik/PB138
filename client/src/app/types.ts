@@ -13,12 +13,10 @@ export interface User {
   email: string
   role: 'REGISTROVANÝ UŽIVATEL' | 'ADMIN'
   school?: string
-  faculty?: string
   studyMajor?: string
   studyYear?: string
   studyType?: string
   avatarDataUrl?: string | null
-  contactEmail?: string | null
   createdAt?: string
   updatedAt?: string
 }
@@ -28,7 +26,6 @@ export interface RegisterRequest {
   email: string
   password: string
   school?: string
-  faculty?: string
   studyMajor?: string
   studyYear?: string
   studyType?: string
@@ -50,28 +47,20 @@ export interface Task {
   id: number
   title: string
   done: boolean
-  subjectId?: number | null
   userId?: number
-  studyPlanId?: number | null
-  deadline?: string | null
   priority?: TaskPriority
   deletedAt?: string | null
 }
 
 export interface CreateTaskRequest {
   title: string
-  subjectId?: number | null
-  studyPlanId?: number | null
   priority?: TaskPriority
-  deadline?: string | null
 }
 
 export interface UpdateTaskRequest {
   title?: string
   done?: boolean
-  deadline?: string | null
   priority?: TaskPriority
-  subjectId?: number | null
 }
 
 // Event types
@@ -83,7 +72,6 @@ export interface CalendarEvent {
   date: string
   time?: string | null
   location?: string | null
-  subjectId?: number | null
   isShared?: boolean
   userId?: number
   deletedAt?: string | null
@@ -95,7 +83,6 @@ export interface CreateEventRequest {
   date: string
   time?: string | null
   location?: string | null
-  subjectId?: number | null
   priority?: EventPriority
 }
 
@@ -104,7 +91,6 @@ export interface UpdateEventRequest {
   date?: string
   time?: string | null
   location?: string | null
-  subjectId?: number | null
   priority?: EventPriority
 }
 
@@ -174,7 +160,6 @@ export interface FileRecord {
   isShared?: boolean
   userId?: number
   subjectId?: number | null
-  lessonId?: number | null
   deletedAt?: string | null
 }
 
@@ -186,7 +171,6 @@ export interface CreateFileRequest {
   name: string
   addedLabel: string
   subjectId?: number | null
-  lessonId?: number | null
 }
 
 export interface UpdateFileRequest {
@@ -204,7 +188,6 @@ export interface Lesson {
   isShared?: boolean
   orderIndex: number
   subjectId?: number | null
-  studyPlanId?: number | null
   deletedAt?: string | null
   createdAt?: string
   updatedAt?: string
@@ -216,7 +199,6 @@ export interface CreateLessonRequest {
   title: string
   content?: string | null
   subjectId?: number | null
-  studyPlanId?: number | null
 }
 
 export interface UpdateLessonRequest {
@@ -288,12 +270,10 @@ export type UserProfile = {
   fullName: string
   email: string
   school: string
-  faculty: string
   studyMajor: string
   studyYear: string
   studyType: string
   avatarDataUrl: string | null
-  contactEmail: string | null
 }
 
 export type SubjectVisual = {

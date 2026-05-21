@@ -23,11 +23,7 @@ export const updateSubjectSchema = subjectSchema.partial().extend({
 export const taskSchema = z.object({
   title: z.string().trim().min(1, 'Pole title je povinne.'),
   done: z.boolean().optional().default(false),
-  subjectId: z.number().nullable().optional(),
-  studyPlanId: z.number().nullable().optional(),
-
   priority: z.enum(['NONE', 'LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
-  deadline: z.string().nullable().optional(),
 })
 export const updateTaskSchema = taskSchema.partial()
 
@@ -36,7 +32,6 @@ export const eventSchema = z.object({
   date: z.string().trim().min(1, 'Pole title a date jsou povinna.'),
   time: z.string().nullable().optional(),
   location: z.string().nullable().optional(),
-  subjectId: z.number().nullable().optional(),
 
   isShared: z.boolean().optional().default(false),
 })
@@ -49,7 +44,6 @@ export const fileSchema = z.object({
   shared: z.boolean().optional(),
   isShared: z.boolean().optional(),
   subjectId: z.number().nullable().optional(),
-  lessonId: z.number().nullable().optional(),
   fileKey: z.string().nullable().optional(),
   fileUrl: z.string().nullable().optional(),
 })
@@ -66,7 +60,6 @@ export const lessonSchema = z.object({
   title: z.string().trim().min(1, 'Pole title je povinne.'),
   content: z.string().nullable().optional(),
   subjectId: z.number().nullable().optional(),
-  studyPlanId: z.number().nullable().optional(),
   isShared: z.boolean().optional().default(false),
   orderIndex: z.number().optional().default(0),
 })
@@ -79,13 +72,11 @@ export const profileSchema = z.object({
   password: z.string().optional(),
   role: z.enum(['REGISTERED', 'ADMIN']).optional(),
   school: z.string().trim().nullable().optional(),
-  faculty: z.string().trim().nullable().optional(),
   studyMajor: z.string().trim().nullable().optional(),
   studyYear: z.string().trim().nullable().optional(),
   studyType: z.string().trim().nullable().optional(),
 
   avatarDataUrl: z.string().nullable().optional(),
-  contactEmail: z.string().email('Neplatný formát e-mailu').nullable().optional(),
 })
 export const updateProfileSchema = profileSchema.partial()
 
@@ -109,7 +100,6 @@ export const bulkTasksSchema = z.object({
     id: z.number(),
     title: z.string().trim().min(1, 'Nazev ukolu nesmi byt prazdny.'),
     done: z.boolean(),
-    subjectId: z.number().nullable().optional()
   }))
 })
 
@@ -121,6 +111,5 @@ export const bulkEventsSchema = z.object({
     time: z.string().nullable().optional(),
     location: z.string().nullable().optional(),
     isShared: z.boolean().optional().default(false),
-    subjectId: z.number().nullable().optional()
   }))
 })

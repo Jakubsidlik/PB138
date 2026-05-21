@@ -5,7 +5,6 @@ import { AppError } from '../../middleware/error-handler.js'
 export class EventsService {
   async getEvents(actor: { id: number, role: string }, filters: {
     pagination: CursorPagination
-    subjectId?: bigint | null
     includeDeleted?: boolean
   }) {
     return eventRepository.findAll(actor, filters)
@@ -16,7 +15,6 @@ export class EventsService {
     date: string
     time?: string | null
     location?: string | null
-    subjectId?: number | null
     isShared?: boolean
   }) {
     const parsedDate = new Date(data.date)
@@ -31,7 +29,6 @@ export class EventsService {
       time: typeof data.time === 'string' ? data.time : null,
       location: typeof data.location === 'string' ? data.location : null,
       isShared: typeof data.isShared === 'boolean' ? data.isShared : false,
-      subjectId: data.subjectId ? BigInt(data.subjectId) : null,
     }
 
     return eventRepository.create([eventToCreate])
@@ -48,9 +45,6 @@ export class EventsService {
         throw new AppError('Neplatny format data.', 400)
       }
       updateData.date = parsedDate
-    }
-    if (data.subjectId !== undefined) {
-      updateData.subjectId = data.subjectId ? BigInt(data.subjectId) : null
     }
 
     return eventRepository.update(eventId, updateData)

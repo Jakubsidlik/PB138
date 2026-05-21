@@ -103,15 +103,13 @@ export const inferFileCategory = (fileName: string): 'folder' | 'pdf' | 'image' 
   return 'other'
 }
 
-export const mapTask = (task: any): ApiTask & { userId: number, studyPlanId: number | null, deadline: string | null, deletedAt: string | null } => ({
+export const mapTask = (task: any): ApiTask & { userId: number, deletedAt: string | null } => ({
   id: Number(task.id),
   userId: Number(task.userId),
   title: task.title,
   done: task.done,
-  subjectId: asNumberId(task.subjectId),
-  studyPlanId: asNumberId(task.studyPlanId),
+  priority: task.priority,
 
-  deadline: task.deadline ? task.deadline.toISOString() : null,
   deletedAt: task.deletedAt ? task.deletedAt.toISOString() : null,
 })
 
@@ -124,7 +122,6 @@ export const mapEvent = (event: any): ApiEvent & { userId: number, deletedAt: st
   location: event.location,
   isShared: event.isShared,
 
-  subjectId: asNumberId(event.subjectId),
   deletedAt: event.deletedAt ? event.deletedAt.toISOString() : null,
 })
 
@@ -132,7 +129,6 @@ export const mapFileRecord = (file: any) => ({
   id: Number(file.id),
   userId: Number(file.userId),
   subjectId: asNumberId(file.subjectId),
-  lessonId: asNumberId(file.lessonId),
   name: file.name,
   category: inferFileCategory(file.name),
   size: formatFileSize(file.size),

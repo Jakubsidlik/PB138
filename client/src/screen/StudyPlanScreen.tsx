@@ -37,7 +37,7 @@ type DesktopStudyPlanProps = {
   onToggleArchiveSubject: (subjectId: number) => void
   onDeleteSubject: (subjectId: number) => void
   managedFiles: ManagedFile[]
-  onUploadFiles: (files: FileList | File[] | null, options?: { subjectId?: number; lessonId?: number }) => Promise<void>
+  onUploadFiles: (files: FileList | File[] | null, options?: { subjectId?: number }) => Promise<void>
   lessons: Lesson[]
   onAddNote: (subjectId: number, note: string) => Promise<void>
   studyPlans: StudyPlan[]

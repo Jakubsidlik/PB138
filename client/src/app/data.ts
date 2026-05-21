@@ -55,10 +55,8 @@ export const userProfileSeed: UserProfile = {
   fullName: '',
   email: '',
   school: 'Masarykova Univerzita',
-  faculty: 'Fakulta informatiky',
   studyMajor: 'Aplikovaná informatika',
   studyYear: '2.',
   studyType: 'Bakalářské',
   avatarDataUrl: null,
-  contactEmail: null,
 }

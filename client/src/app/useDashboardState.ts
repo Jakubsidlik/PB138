@@ -452,8 +452,10 @@ export function useDashboardState(fetchAll = false) {
         })
       }
       console.error('Failed to create task, status:', res.status)
+      setTasks((prev) => prev.filter((t) => t.id !== tempId))
     }).catch((e) => {
       console.error('Failed to create task:', e)
+      setTasks((prev) => prev.filter((t) => t.id !== tempId))
     })
   }
 
@@ -525,7 +527,6 @@ export function useDashboardState(fetchAll = false) {
       date: selectedDateIso,
       time: time?.trim() || defaultMeta.time,
       location: location?.trim() || '',
-      subjectId: null,
       priority,
     }
 
@@ -565,12 +566,24 @@ export function useDashboardState(fetchAll = false) {
         })
       }
       console.error('Failed to create event, status:', res.status)
+      setEvents((prev) => prev.filter((e) => e.id !== tempId))
+      setEventMetaById((prevMeta) => {
+        const updated = { ...prevMeta }
+        delete updated[tempId]
+        return updated
+      })
     }).catch((e) => {
       console.error('Failed to create event:', e)
+      setEvents((prev) => prev.filter((e) => e.id !== tempId))
+      setEventMetaById((prevMeta) => {
+        const updated = { ...prevMeta }
+        delete updated[tempId]
+        return updated
+      })
     })
   }
 
-  const onUploadFiles = async (incomingFiles: FileList | File[] | null, options?: { subjectId?: number; lessonId?: number }) => {
+  const onUploadFiles = async (incomingFiles: FileList | File[] | null, options?: { subjectId?: number }) => {
     if (!ensureAuthenticated()) {
       return
     }
@@ -593,7 +606,6 @@ export function useDashboardState(fetchAll = false) {
       category: getManagedFileCategory(file.name),
       shared: false,
       subjectId: options?.subjectId ?? null,
-      lessonId: options?.lessonId ?? null,
     }))
 
     setManagedFiles((prevFiles) => [...tempFiles, ...prevFiles])
@@ -631,7 +643,6 @@ export function useDashboardState(fetchAll = false) {
             fileKey,
             fileUrl,
             subjectId: options?.subjectId,
-            lessonId: options?.lessonId,
           }),
         })
       } catch (err) {

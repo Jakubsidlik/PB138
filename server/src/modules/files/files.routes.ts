@@ -19,7 +19,6 @@ filesRouter.get('/', asyncHandler(async (req, res) => {
   const filters = {
     pagination,
     subjectId: asBigInt(req.query.subjectId),
-    lessonId: asBigInt(req.query.lessonId),
     shared: req.query.shared as string | undefined,
     includeDeleted: req.query.includeDeleted === 'true',
   }

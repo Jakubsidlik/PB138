@@ -24,8 +24,6 @@ export class SubjectsService {
       archived: subject.isArchived,
       deletedAt: subject.deletedAt ? subject.deletedAt.toISOString() : null,
       files: await subjectsRepository.countRows(fileRecords, subject.id),
-      tasks: await subjectsRepository.countRows(tasks, subject.id),
-      events: await subjectsRepository.countRows(events, subject.id),
       notes: await subjectsRepository.countRows(lessons, subject.id),
       createdAt: subject.createdAt.toISOString(),
       updatedAt: subject.updatedAt.toISOString(),

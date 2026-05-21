@@ -76,10 +76,8 @@ export class SubjectsRepository {
     const deletedAt = new Date()
     await db.transaction(async (transaction) => {
       await transaction.update(subjects).set({ deletedAt }).where(eq(subjects.id, subjectId))
-      await transaction.update(tasks).set({ deletedAt }).where(eq(tasks.subjectId, subjectId))
       await transaction.update(fileRecords).set({ deletedAt }).where(eq(fileRecords.subjectId, subjectId))
       await transaction.update(lessons).set({ deletedAt }).where(eq(lessons.subjectId, subjectId))
-      await transaction.update(events).set({ deletedAt }).where(eq(events.subjectId, subjectId))
     })
     return { success: true }
   }

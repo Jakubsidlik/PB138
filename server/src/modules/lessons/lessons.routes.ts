@@ -12,7 +12,6 @@ lessonsRouter.get('/', asyncHandler(async (req, res) => {
   const actor = await getActorFromRequest(req)
   const filters = {
     subjectId: asBigInt(req.query.subjectId),
-    studyPlanId: asBigInt(req.query.studyPlanId),
     includeDeleted: req.query.includeDeleted === 'true',
   }
 

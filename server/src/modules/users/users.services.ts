@@ -25,7 +25,7 @@ export class UsersService {
             email,
             fullName,
             role: 'REGISTERED'
-          })
+          }).onConflictDoNothing()
           dbEmails.add(email)
           dbClerkIds.add(cu.id)
         }
@@ -56,13 +56,11 @@ export class UsersService {
       email: user.email,
       role: user.role,
       school: user.school ?? '',
-      faculty: user.faculty,
       studyMajor: user.studyMajor ?? '',
       studyYear: user.studyYear ?? '',
       studyType: user.studyType ?? '',
 
       avatarDataUrl: user.avatarDataUrl,
-      contactEmail: user.contactEmail,
       updatedAt: user.updatedAt.toISOString(),
     }
   }
@@ -79,7 +77,6 @@ export class UsersService {
       passwordHash: 'demo-password',
       role: 'REGISTERED' as UserRole,
       school: null as string | null,
-      faculty: null as string | null,
       studyMajor: null as string | null,
       studyYear: null as string | null,
       studyType: null as string | null,
@@ -98,13 +95,11 @@ export class UsersService {
       passwordHash: data.password ?? defaultUserPayload.passwordHash,
       role: role,
       school: data.school ?? null,
-      faculty: data.faculty ?? null,
       studyMajor: data.studyMajor ?? null,
       studyYear: data.studyYear ?? null,
       studyType: data.studyType ?? null,
 
       avatarDataUrl: data.avatarDataUrl ?? null,
-      contactEmail: data.contactEmail ?? null,
     })
 
     return {
@@ -113,13 +108,11 @@ export class UsersService {
       email: created.email,
       role: created.role,
       school: created.school ?? '',
-      faculty: created.faculty,
       studyMajor: created.studyMajor ?? '',
       studyYear: created.studyYear ?? '',
       studyType: created.studyType ?? '',
 
       avatarDataUrl: created.avatarDataUrl,
-      contactEmail: created.contactEmail,
     }
   }
 
@@ -129,13 +122,11 @@ export class UsersService {
     const updatePayload: any = {
       fullName: data.fullName,
       school: data.school,
-      faculty: data.faculty,
       studyMajor: data.studyMajor,
       studyYear: data.studyYear,
       studyType: data.studyType,
 
       avatarDataUrl: data.avatarDataUrl,
-      contactEmail: data.contactEmail,
     }
 
     if (actorRole === 'ADMIN' && data.role !== undefined) {
@@ -150,13 +141,11 @@ export class UsersService {
       email: updated.email,
       role: updated.role,
       school: updated.school ?? '',
-      faculty: updated.faculty,
       studyMajor: updated.studyMajor ?? '',
       studyYear: updated.studyYear ?? '',
       studyType: updated.studyType ?? '',
 
       avatarDataUrl: updated.avatarDataUrl,
-      contactEmail: updated.contactEmail,
       updatedAt: updated.updatedAt.toISOString(),
     }
   }

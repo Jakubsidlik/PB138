@@ -6,7 +6,6 @@ const fileSelect = {
   id: fileRecords.id,
   userId: fileRecords.userId,
   subjectId: fileRecords.subjectId,
-  lessonId: fileRecords.lessonId,
   fileKey: fileRecords.fileKey,
   fileUrl: fileRecords.fileUrl,
   name: fileRecords.name,
@@ -22,15 +21,13 @@ export class FilesRepository {
   async findAll(actor: { id: number, role: string }, filters: {
     pagination: any
     subjectId?: bigint | null
-    lessonId?: bigint | null
     shared?: string
     includeDeleted?: boolean
   }) {
-    const { pagination, subjectId, lessonId, shared, includeDeleted } = filters
+    const { pagination, subjectId, shared, includeDeleted } = filters
 
     const baseConditions = [
       subjectId ? eq(fileRecords.subjectId, subjectId) : undefined,
-      lessonId ? eq(fileRecords.lessonId, lessonId) : undefined,
       includeDeleted ? undefined : isNull(fileRecords.deletedAt),
       pagination.enabled && pagination.cursor ? gt(fileRecords.id, pagination.cursor) : undefined,
     ].filter(Boolean)

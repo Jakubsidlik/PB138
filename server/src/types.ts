@@ -4,7 +4,6 @@ export type ApiTask = {
   id: number
   title: string
   done: boolean
-  subjectId: number | null
   priority?: string | null
 }
 
@@ -14,9 +13,7 @@ export type ApiEvent = {
   date: string
   time: string | null
   location: string | null
-  subjectId: number | null
   isShared?: boolean
-
 }
 
 export type AuthActor = {

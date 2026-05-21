@@ -7,13 +7,9 @@ import { CursorPagination } from '../../types.js'
 const taskSelect = {
   id: tasks.id,
   userId: tasks.userId,
-  subjectId: tasks.subjectId,
-  studyPlanId: tasks.studyPlanId,
   title: tasks.title,
   done: tasks.done,
-
   priority: tasks.priority,
-  deadline: tasks.deadline,
   deletedAt: tasks.deletedAt,
   createdAt: tasks.createdAt,
   updatedAt: tasks.updatedAt,
@@ -22,30 +18,16 @@ const taskSelect = {
 export class TaskRepository {
   async findAll(actorId: number, filters: {
     pagination: CursorPagination
-    subjectId?: bigint | null
-    studyPlanId?: bigint | null
     includeDeleted?: boolean
     done?: string | null
-
     search?: string
-    deadlineFrom?: Date | null | undefined
-    deadlineTo?: Date | null | undefined
   }) {
-    const { pagination, subjectId, studyPlanId, includeDeleted, done, search, deadlineFrom, deadlineTo } = filters
+    const { pagination, includeDeleted, done, search } = filters
 
     const whereParts = [
       eq(tasks.userId, BigInt(actorId)),
-      subjectId ? eq(tasks.subjectId, subjectId) : undefined,
-      studyPlanId ? eq(tasks.studyPlanId, studyPlanId) : undefined,
       done === 'true' ? eq(tasks.done, true) : done === 'false' ? eq(tasks.done, false) : undefined,
-
       search ? ilike(tasks.title, `%${search}%`) : undefined,
-      deadlineFrom || deadlineTo
-        ? and(
-            deadlineFrom ? gte(tasks.deadline, deadlineFrom) : undefined,
-            deadlineTo ? lte(tasks.deadline, deadlineTo) : undefined,
-          )
-        : undefined,
       includeDeleted ? undefined : isNull(tasks.deletedAt),
       pagination.enabled && pagination.cursor ? gt(tasks.id, pagination.cursor) : undefined,
     ].filter(Boolean)
@@ -72,24 +54,13 @@ export class TaskRepository {
   async create(actorId: number, data: {
     title: string
     done?: boolean
-    subjectId?: number | null
-    studyPlanId?: number | null
-
     priority?: string
-    deadline?: string | null
   }) {
-    const parsedDeadline = data.deadline ? new Date(data.deadline) : null
-
-
     const [created] = await db.insert(tasks).values({
       userId: BigInt(actorId),
       title: data.title,
       done: data.done,
-      subjectId: asBigInt(data.subjectId),
-      studyPlanId: asBigInt(data.studyPlanId),
-
       priority: data.priority ? parseTaskPriority(data.priority) ?? 'NONE' : 'NONE',
-      deadline: parsedDeadline,
     }).returning(taskSelect)
 
     return mapTask(created)
@@ -106,25 +77,14 @@ export class TaskRepository {
   async update(taskId: bigint, data: {
     title?: string
     done?: boolean
-    subjectId?: number | null
-    studyPlanId?: number | null
-
     priority?: string
-    deadline?: string | null
   }) {
-    const parsedDeadline = data.deadline ? new Date(data.deadline) : undefined
-
-
     const [updated] = await db
       .update(tasks)
       .set({
         title: data.title,
         done: data.done,
-        subjectId: data.subjectId !== undefined ? asBigInt(data.subjectId) : undefined,
-        studyPlanId: data.studyPlanId !== undefined ? asBigInt(data.studyPlanId) : undefined,
-
         priority: data.priority ? parseTaskPriority(data.priority) : undefined,
-        deadline: parsedDeadline,
       })
       .where(eq(tasks.id, taskId))
       .returning(taskSelect)
@@ -144,26 +104,15 @@ export class TaskRepository {
     return { success: true }
   }
 
-  async bulkSync(actorId: number, incomingTasks: Array<{ id: number; title: string; done: boolean; subjectId?: number | null }>) {
+  async bulkSync(actorId: number, incomingTasks: Array<{ id: number; title: string; done: boolean }>) {
     const existingTasks = await db.select({ id: tasks.id })
       .from(tasks)
       .where(and(eq(tasks.userId, BigInt(actorId)), isNull(tasks.deletedAt)))
     const incomingIdSet = new Set(incomingTasks.map((task) => BigInt(task.id).toString()))
 
     await db.transaction(async (transaction) => {
-      const subjectIds = Array.from(new Set(incomingTasks.map((task) => task.subjectId).filter((id) => id != null))) as number[]
-      const validSubjects = subjectIds.length > 0
-        ? await transaction.select({ id: subjects.id }).from(subjects).where(inArray(subjects.id, subjectIds.map((id) => BigInt(id))))
-        : []
-      const validSubjectIds = new Set(validSubjects.map((subject) => subject.id.toString()))
-
       for (const task of incomingTasks) {
         const taskId = BigInt(task.id)
-        let nextSubjectId = asBigInt(task.subjectId)
-
-        if (nextSubjectId !== null && !validSubjectIds.has(nextSubjectId.toString())) {
-          nextSubjectId = null
-        }
 
         await transaction
           .insert(tasks)
@@ -171,9 +120,7 @@ export class TaskRepository {
             id: taskId,
             title: task.title,
             done: task.done,
-            subjectId: nextSubjectId,
             userId: BigInt(actorId),
-
             priority: 'NONE',
             deletedAt: null,
           })
@@ -182,7 +129,6 @@ export class TaskRepository {
             set: {
               title: task.title,
               done: task.done,
-              subjectId: nextSubjectId,
               userId: BigInt(actorId),
               deletedAt: null,
             },

@@ -6,7 +6,6 @@ import { fileRecords } from '../../db/schema.js'
 export class LessonsService {
   async getLessons(actor: { id: number, role: string }, filters: {
     subjectId?: bigint | null
-    studyPlanId?: bigint | null
     includeDeleted?: boolean
   }) {
     const rows = await lessonsRepository.findAll(actor, filters)
@@ -14,7 +13,6 @@ export class LessonsService {
     const mappedLessons = rows.map((row) => ({
       id: Number(row.id),
       subjectId: asNumberId(row.subjectId),
-      studyPlanId: asNumberId(row.studyPlanId),
       title: row.title,
       content: row.content,
       isShared: row.isShared,
@@ -32,7 +30,6 @@ export class LessonsService {
   async createLesson(actorId: number, data: any) {
     const created = await lessonsRepository.create({
       subjectId: data.subjectId ? BigInt(data.subjectId) : null,
-      studyPlanId: data.studyPlanId ? BigInt(data.studyPlanId) : null,
       title: data.title,
       content: data.content ?? null,
       isShared: data.isShared,
@@ -42,7 +39,6 @@ export class LessonsService {
     return {
       id: Number(created.id),
       subjectId: asNumberId(created.subjectId),
-      studyPlanId: asNumberId(created.studyPlanId),
       title: created.title,
       content: created.content,
       isShared: created.isShared,
@@ -61,7 +57,6 @@ export class LessonsService {
 
     const updated = await lessonsRepository.update(lessonId, {
       subjectId: data.subjectId !== undefined ? (data.subjectId ? BigInt(data.subjectId) : null) : undefined,
-      studyPlanId: data.studyPlanId !== undefined ? (data.studyPlanId ? BigInt(data.studyPlanId) : null) : undefined,
       title: data.title,
       content: data.content,
       isShared: data.isShared,
@@ -71,7 +66,6 @@ export class LessonsService {
     return {
       id: Number(updated.id),
       subjectId: asNumberId(updated.subjectId),
-      studyPlanId: asNumberId(updated.studyPlanId),
       title: updated.title,
       content: updated.content,
       isShared: updated.isShared,

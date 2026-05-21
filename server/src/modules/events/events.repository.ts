@@ -7,7 +7,6 @@ import { CursorPagination } from '../../types.js'
 const eventSelect = {
   id: events.id,
   userId: events.userId,
-  subjectId: events.subjectId,
   title: events.title,
   date: events.date,
   time: events.time,
@@ -21,13 +20,11 @@ const eventSelect = {
 export class EventRepository {
   async findAll(actor: { id: number, role: string }, filters: {
     pagination: CursorPagination
-    subjectId?: bigint | null
     includeDeleted?: boolean
   }) {
-    const { pagination, subjectId, includeDeleted } = filters
+    const { pagination, includeDeleted } = filters
 
     const whereParts = [
-      subjectId ? eq(events.subjectId, subjectId) : undefined,
       includeDeleted ? undefined : isNull(events.deletedAt),
       actor.role === 'PUBLIC'
         ? eq(events.isShared, true)
@@ -90,21 +87,9 @@ export class EventRepository {
     const incomingIdSet = new Set(incomingEvents.map((event) => BigInt(event.id).toString()))
 
     await db.transaction(async (transaction) => {
-      const subjectIds = Array.from(new Set(incomingEvents.map((event) => event.subjectId).filter((id) => id != null))) as number[]
-      const validSubjects = subjectIds.length > 0
-        ? await transaction.select({ id: subjects.id }).from(subjects).where(inArray(subjects.id, subjectIds.map((id) => BigInt(id))))
-        : []
-      const validSubjectIds = new Set(validSubjects.map((subject) => subject.id.toString()))
-
       for (const event of incomingEvents) {
         const eventId = BigInt(event.id)
         const parsedDate = new Date(event.date)
-        let nextSubjectId = asBigInt(event.subjectId)
-
-        if (nextSubjectId !== null && !validSubjectIds.has(nextSubjectId.toString())) {
-          nextSubjectId = null
-        }
-
         await transaction
           .insert(events)
           .values({
@@ -115,7 +100,6 @@ export class EventRepository {
             time: event.time,
             location: event.location,
             isShared: typeof event.isShared === 'boolean' ? event.isShared : false,
-            subjectId: nextSubjectId,
             deletedAt: null,
           })
           .onConflictDoUpdate({
@@ -127,7 +111,6 @@ export class EventRepository {
               time: event.time,
               location: event.location,
               isShared: typeof event.isShared === 'boolean' ? event.isShared : false,
-              subjectId: nextSubjectId,
               deletedAt: null,
             },
           })

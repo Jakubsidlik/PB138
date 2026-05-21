@@ -16,14 +16,9 @@ tasksRouter.get('/', asyncHandler(async (req, res) => {
   
   const filters = {
     pagination,
-    subjectId: asBigInt(req.query.subjectId),
-    studyPlanId: asBigInt(req.query.studyPlanId),
     includeDeleted: req.query.includeDeleted === 'true',
     done: req.query.done as string | null,
-
     search: typeof req.query.search === 'string' ? req.query.search.trim() : '',
-    deadlineFrom: parseOptionalDate(req.query.deadlineFrom),
-    deadlineTo: parseOptionalDate(req.query.deadlineTo),
   }
 
   const result = await tasksService.getTasks(actor.id, filters)
@@ -33,14 +28,6 @@ tasksRouter.get('/', asyncHandler(async (req, res) => {
 tasksRouter.post('/', validate(taskSchema), asyncHandler(async (req, res) => {
   const actor = await requireRegisteredActor(req, res)
   if (!actor) return
-
-  const { deadline } = req.body
-  if (deadline !== undefined && deadline !== null) {
-    const d = new Date(deadline)
-    if (Number.isNaN(d.getTime())) {
-      throw new AppError('Neplatny format deadline.', 400)
-    }
-  }
 
   const created = await tasksService.createTask(actor.id, req.body)
   res.status(201).json(created)
@@ -52,14 +39,6 @@ tasksRouter.patch('/:id', validate(updateTaskSchema), asyncHandler(async (req, r
 
   const taskId = asBigInt(req.params.id)
   if (!taskId) throw new AppError('Neplatne ID ukolu.', 400)
-
-  const { deadline } = req.body
-  if (deadline !== undefined && deadline !== null) {
-    const d = new Date(deadline)
-    if (Number.isNaN(d.getTime())) {
-      throw new AppError('Neplatny format deadline.', 400)
-    }
-  }
 
   const updated = await tasksService.updateTask(taskId, actor.id, req.body)
   res.json(updated)

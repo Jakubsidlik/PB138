@@ -183,9 +183,8 @@ class ApiClient {
   }
 
   // Task endpoints
-  async getTasks(studyPlanId?: number | null) {
-    const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
-    return this.request<PaginatedResponse<Task>>('GET', `/api/tasks${query}`)
+  async getTasks() {
+    return this.request<PaginatedResponse<Task>>('GET', `/api/tasks?paginated=true`)
   }
 
   async createTask(payload: CreateTaskRequest) {
@@ -213,9 +212,8 @@ class ApiClient {
   }
 
   // Event endpoints
-  async getEvents(studyPlanId?: number | null) {
-    const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
-    return this.request<PaginatedResponse<CalendarEvent>>('GET', `/api/events${query}`)
+  async getEvents() {
+    return this.request<PaginatedResponse<CalendarEvent>>('GET', `/api/events?paginated=true`)
   }
 
   async createEvent(payload: CreateEventRequest) {
@@ -235,9 +233,8 @@ class ApiClient {
   }
 
   // File endpoints
-  async getFiles(studyPlanId?: number | null) {
-    const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
-    return this.request<PaginatedResponse<FileRecord>>('GET', `/api/files${query}`)
+  async getFiles() {
+    return this.request<PaginatedResponse<FileRecord>>('GET', `/api/files?paginated=true`)
   }
 
   async getPublicFiles() {
@@ -274,9 +271,8 @@ class ApiClient {
   }
 
   // Lesson endpoints
-  async getLessons(studyPlanId?: number | null) {
-    const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
-    return this.request<PaginatedResponse<Lesson>>('GET', `/api/lessons${query}`)
+  async getLessons() {
+    return this.request<PaginatedResponse<Lesson>>('GET', `/api/lessons?paginated=true`)
   }
 
   async createLesson(payload: CreateLessonRequest) {

@@ -27,12 +27,10 @@ entity "USER" as USER {
   passwordHash : text <<NULLABLE>>
   role : UserRole
   school : text <<NULLABLE>>
-  faculty : text <<NULLABLE>>
   studyMajor : text <<NULLABLE>>
   studyYear : text <<NULLABLE>>
   studyType : text <<NULLABLE>>
   avatarDataUrl : text <<NULLABLE>>
-  contactEmail : text <<NULLABLE>>
   deletedAt : timestamptz <<NULLABLE>>
   createdAt : timestamptz
   updatedAt : timestamptz
@@ -66,12 +64,9 @@ entity "TASK" as TASK {
   * id : bigint <<PK>>
   --
   userId : bigint <<FK>>
-  subjectId : bigint <<FK, NULLABLE>>
-  studyPlanId : bigint <<FK, NULLABLE>>
   title : text
   done : boolean
   priority : TaskPriority
-  deadline : timestamptz <<NULLABLE>>
   deletedAt : timestamptz <<NULLABLE>>
   createdAt : timestamptz
   updatedAt : timestamptz
@@ -89,7 +84,6 @@ entity "LESSON" as LESSON {
   * id : bigint <<PK>>
   --
   subjectId : bigint <<FK, NULLABLE>>
-  studyPlanId : bigint <<FK, NULLABLE>>
   title : text
   content : text <<NULLABLE>>
   isShared : boolean
@@ -135,7 +129,6 @@ entity "FILE_RECORD" as FILE_RECORD {
   --
   userId : bigint <<FK>>
   subjectId : bigint <<FK, NULLABLE>>
-  lessonId : bigint <<FK, NULLABLE>>
   fileKey : text <<UNIQUE, NULLABLE>>
   fileUrl : text <<NULLABLE>>
   name : text
@@ -161,7 +154,6 @@ entity "EVENT" as EVENT {
   * id : bigint <<PK>>
   --
   userId : bigint <<FK>>
-  subjectId : bigint <<FK, NULLABLE>>
   title : text
   date : date
   time : text <<NULLABLE>>
@@ -185,15 +177,10 @@ USER ||--o{ SPC : collaborates
 USER ||--o{ FILE_SHARE : receives
 
 'Core domain relationships
-SUBJECT ||--o{ TASK : categorizes
 SUBJECT ||--o{ FILE_RECORD : contains
 SUBJECT ||--o{ LESSON : teaches
-SUBJECT ||--o{ EVENT : schedules
-LESSON ||--o{ FILE_RECORD : contains_files
 STUDY_PLAN ||--o{ SPC : shared_via
 STUDY_PLAN ||--o{ SUBJECT : includes
-STUDY_PLAN ||--o{ TASK : monitors
-STUDY_PLAN ||--o{ LESSON : plans
 
 'File relationships
 FILE_RECORD ||--o{ FILE_SHARE : shared_via

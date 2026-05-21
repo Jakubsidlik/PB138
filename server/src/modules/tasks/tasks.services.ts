@@ -5,14 +5,9 @@ import { AppError } from '../../middleware/error-handler.js'
 export class TasksService {
   async getTasks(actorId: number, filters: {
     pagination: CursorPagination
-    subjectId?: bigint | null
-    studyPlanId?: bigint | null
     includeDeleted?: boolean
     done?: string | null
-
     search?: string
-    deadlineFrom?: Date | null | undefined
-    deadlineTo?: Date | null | undefined
   }) {
     return taskRepository.findAll(actorId, filters)
   }

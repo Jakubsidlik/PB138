@@ -180,7 +180,7 @@ export function useSubjects(studyPlanId?: number | null) {
   return usePaginatedQuery(() => apiClient.getSubjects(studyPlanId), [studyPlanId])
 }
 
-export function useTasks(studyPlanId?: number | null) {
+export function useTasks() {
   const [tasks, setTasks] = React.useState<Task[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<Error | null>(null)
@@ -190,7 +190,7 @@ export function useTasks(studyPlanId?: number | null) {
 
     const load = async () => {
       try {
-        const response = await apiClient.getTasks(studyPlanId)
+        const response = await apiClient.getTasks()
         if (isMounted) {
           setTasks(response.data)
           setLoading(false)
@@ -210,7 +210,7 @@ export function useTasks(studyPlanId?: number | null) {
     return () => {
       isMounted = false
     }
-  }, [studyPlanId])
+  }, [])
 
   const createTask = useMutation<Task, CreateTaskRequest>((variables) =>
     apiClient.createTask(variables),
@@ -229,7 +229,7 @@ export function useTasks(studyPlanId?: number | null) {
   }
 }
 
-export function useEvents(studyPlanId?: number | null) {
+export function useEvents() {
   const [events, setEvents] = React.useState<CalendarEvent[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<Error | null>(null)
@@ -239,7 +239,7 @@ export function useEvents(studyPlanId?: number | null) {
 
     const load = async () => {
       try {
-        const response = await apiClient.getEvents(studyPlanId)
+        const response = await apiClient.getEvents()
         if (isMounted) {
           setEvents(response.data)
           setLoading(false)
@@ -259,7 +259,7 @@ export function useEvents(studyPlanId?: number | null) {
     return () => {
       isMounted = false
     }
-  }, [studyPlanId])
+  }, [])
 
   const createEvent = useMutation<CalendarEvent, CreateEventRequest>((variables) =>
     apiClient.createEvent(variables),
@@ -278,12 +278,12 @@ export function useEvents(studyPlanId?: number | null) {
   }
 }
 
-export function useFiles(studyPlanId?: number | null) {
-  return usePaginatedQuery(() => apiClient.getFiles(studyPlanId), [studyPlanId])
+export function useFiles() {
+  return usePaginatedQuery(() => apiClient.getFiles(), [])
 }
 
-export function useLessons(studyPlanId?: number | null) {
-  return usePaginatedQuery(() => apiClient.getLessons(studyPlanId), [studyPlanId])
+export function useLessons() {
+  return usePaginatedQuery(() => apiClient.getLessons(), [])
 }
 
 export function useUsers() {

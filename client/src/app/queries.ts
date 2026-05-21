@@ -52,12 +52,10 @@ const fetchProfile = async (): Promise<UserProfile> => {
     fullName: 'Uživatel',
     email: '',
     school: '',
-    faculty: '',
     studyMajor: '',
     studyYear: '',
     studyType: '',
     avatarDataUrl: '',
-    contactEmail: '',
   }
 }
 

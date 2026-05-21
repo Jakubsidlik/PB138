@@ -8,13 +8,11 @@ const userSelect = {
   email: users.email,
   role: users.role,
   school: users.school,
-  faculty: users.faculty,
   studyMajor: users.studyMajor,
   studyYear: users.studyYear,
   studyType: users.studyType,
 
   avatarDataUrl: users.avatarDataUrl,
-  contactEmail: users.contactEmail,
   createdAt: users.createdAt,
   updatedAt: users.updatedAt,
 }

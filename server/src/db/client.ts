@@ -6,7 +6,7 @@ import * as schema from './schema.js'
 const connectionString = process.env.DATABASE_URL ?? ''
 
 const client = postgres(connectionString, {
-  max: 1,
+  max: 10,
   prepare: false,
 })
 

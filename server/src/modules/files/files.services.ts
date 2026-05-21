@@ -25,7 +25,6 @@ export class FilesService {
   async getFiles(actor: { id: number, role: string }, filters: {
     pagination: any
     subjectId?: bigint | null
-    lessonId?: bigint | null
     shared?: string
     includeDeleted?: boolean
   }) {
@@ -84,7 +83,6 @@ export class FilesService {
     const created = await filesRepository.create({
       userId: BigInt(actorId),
       subjectId: data.subjectId ? BigInt(data.subjectId) : null,
-      lessonId: data.lessonId ? BigInt(data.lessonId) : null,
       name: data.name,
       size: parsedSize,
       addedLabel: data.addedLabel,
@@ -117,7 +115,6 @@ export class FilesService {
       addedLabel: data.addedLabel,
       isShared: data.isShared !== undefined ? data.isShared : data.shared !== undefined ? data.shared : undefined,
       subjectId: data.subjectId !== undefined ? (data.subjectId ? BigInt(data.subjectId) : null) : undefined,
-      lessonId: data.lessonId !== undefined ? (data.lessonId ? BigInt(data.lessonId) : null) : undefined,
     })
 
     return mapFileRecord(updated)

@@ -13,7 +13,6 @@ eventsRouter.get('/', asyncHandler(async (req, res) => {
   
   const filters = {
     pagination,
-    subjectId: asBigInt(req.query.subjectId),
     includeDeleted: req.query.includeDeleted === 'true',
   }
 

@@ -7,7 +7,7 @@ const client = postgres(process.env.DIRECT_URL!);
 
 async function run() {
   try {
-    const sqlContent = fs.readFileSync('drizzle/0006_fixed_odin.sql', 'utf8');
+    const sqlContent = fs.readFileSync('drizzle/0007_sleepy_forgotten_one.sql', 'utf8');
     const statements = sqlContent.split('--> statement-breakpoint');
     
     for (const statement of statements) {

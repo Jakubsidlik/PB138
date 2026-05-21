@@ -28,8 +28,6 @@ export class StudyPlansService {
             plan.userId === BigInt(actor.id) ||
             collaboratorRole === 'CONTRIBUTOR'),
         subjectsCount: await studyPlanRepository.countByStudyPlan(subjects, plan.id),
-        tasksCount: await studyPlanRepository.countByStudyPlan(tasks, plan.id),
-        lessonsCount: await studyPlanRepository.countByStudyPlan(lessons, plan.id),
         createdAt: plan.createdAt.toISOString(),
         updatedAt: plan.updatedAt.toISOString(),
       }
