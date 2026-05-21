@@ -155,7 +155,6 @@ export function AdminDashboardScreen() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-3 text-left">ID</th>
                   <th className="px-4 py-3 text-left">Jméno</th>
                   <th className="px-4 py-3 text-left">Email</th>
                   <th className="px-4 py-3 text-right">Akce</th>
@@ -164,7 +163,6 @@ export function AdminDashboardScreen() {
               <tbody className="divide-y">
                 {users.map(user => (
                   <tr key={user.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs">{user.id}</td>
                     <td className="px-4 py-3 font-medium">{user.fullName}</td>
                     <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
                     <td className="px-4 py-3 text-right flex justify-end gap-1">
@@ -221,27 +219,25 @@ export function AdminDashboardScreen() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-3 text-left">ID</th>
                   <th className="px-4 py-3 text-left">Název</th>
                   <th className="px-4 py-3 text-left">Velikost</th>
-                  <th className="px-4 py-3 text-left">Vlastník (ID)</th>
+                  <th className="px-4 py-3 text-left">Vlastník</th>
                   <th className="px-4 py-3 text-right">Akce</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {files.length === 0 && !loadingFiles && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
                       Žádné soubory nebyly nalezeny.
                     </td>
                   </tr>
                 )}
                 {files.map(file => (
                   <tr key={file.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs">{file.id}</td>
                     <td className="px-4 py-3 font-medium">{file.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{file.size}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{file.userId}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{file.userEmail || file.userId}</td>
                     <td className="px-4 py-3 text-right">
                       <Button 
                         variant="ghost"
@@ -257,7 +253,7 @@ export function AdminDashboardScreen() {
                 ))}
                 {files.length === 0 && !loadingFiles && !error && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
                       Žádné soubory nenalezeny.
                     </td>
                   </tr>

@@ -113,9 +113,9 @@ export function useDashboardState(fetchAll = false) {
   const [tags, setTags] = React.useState<Tag[]>([])
   const [profile, setProfile] = React.useState<UserProfile>(userProfileSeed)
   const [savedProfile, setSavedProfile] = React.useState<UserProfile>(userProfileSeed)
-  const [authSession, setAuthSession] = React.useState<AuthSession | null>(() =>
-    readAuthSessionFromStorage(),
-  )
+  const [authSession, setAuthSession] = React.useState<AuthSession | null>(null)
+  const [authAlertOpen, setAuthAlertOpen] = React.useState(false)
+  const [isBanned, setIsBanned] = React.useState(false)
   const [isSavingProfile, setIsSavingProfile] = React.useState(false)
   const { getToken, isLoaded, isSignedIn, signOut } = useAuth()
 
@@ -210,14 +210,14 @@ export function useDashboardState(fetchAll = false) {
         return
       }
 
-    const localTasks = authSession ? (readTasksFromStorage() ?? []) : []
-    const localEvents = authSession ? (readEventsFromStorage() ?? []) : []
+      const localTasks = authSession ? (readTasksFromStorage() ?? []) : []
+      const localEvents = authSession ? (readEventsFromStorage() ?? []) : []
       const localProfile = readProfileFromStorage() ?? userProfileSeed
 
       let loadedTasks = localTasks
       let loadedEvents = localEvents
-    let loadedSubjects: Subject[] = []
-    let loadedFiles: ManagedFile[] = []
+      let loadedSubjects: Subject[] = []
+      let loadedFiles: ManagedFile[] = []
       let loadedLessons: Lesson[] = []
       let loadedStudyPlans: StudyPlan[] = []
       let loadedProfile = localProfile
@@ -269,9 +269,21 @@ export function useDashboardState(fetchAll = false) {
         }
         if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
           const serverProfile = await profileRes.value.json()
-          if (typeof serverProfile === 'object' && serverProfile !== null) {
-            loadedProfile = { ...userProfileSeed, ...(serverProfile as Partial<UserProfile>) }
-          }
+          setAuthSession({
+            userId: serverProfile.id,
+            fullName: serverProfile.fullName,
+            email: serverProfile.email,
+            role: serverProfile.role
+          })
+          loadedProfile = serverProfile
+        } else if (profileRes.status === 'fulfilled' && profileRes.value.status === 401) {
+            setAuthSession(null)
+            if (isSignedIn) {
+              setIsBanned(true)
+              localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
+              localStorage.removeItem(PROFILE_STORAGE_KEY)
+              localStorage.removeItem(TASKS_STORAGE_KEY)
+            }
         }
         if (tagsRes.status === 'fulfilled' && tagsRes.value.ok) {
           const serverTags = await tagsRes.value.json()
@@ -299,7 +311,7 @@ export function useDashboardState(fetchAll = false) {
     }
 
     void hydrateData()
-  }, [apiFetch, authSession, isLoaded, isSignedIn, isHydrated])
+  }, [apiFetch, authSession, isLoaded, isSignedIn, isHydrated, signOut])
 
   // Save tasks/events to localStorage whenever they change (for offline fallback)
   React.useEffect(() => {
@@ -357,12 +369,11 @@ export function useDashboardState(fetchAll = false) {
   }
 
   const ensureAuthenticated = () => {
-    if (authSession) {
-      return true
+    if (!authSession) {
+      setAuthAlertOpen(true)
+      return false
     }
-
-    toast.error('Tato akce vyžaduje přihlášení.')
-    return false
+    return true
   }
 
   const refreshSubjects = async () => {
@@ -1290,6 +1301,10 @@ export function useDashboardState(fetchAll = false) {
     renameFile,
     removeFile,
     toggleFileShared,
+    authAlertOpen,
+    setAuthAlertOpen,
+    isBanned,
+    setIsBanned,
     changeFileSubject,
     studyPlans,
     activeStudyPlanId,

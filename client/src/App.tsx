@@ -10,6 +10,8 @@ import { useUser } from '@clerk/clerk-react'
 import { Toaster } from './components/ui/sonner'
 
 import { DashboardProvider, useDashboard } from './app/DashboardContext'
+import { AuthRequiredDialog } from './components/shared/dashboard/AuthRequiredDialog'
+import { BannedAccountDialog } from './components/shared/dashboard/BannedAccountDialog'
 
 function DashboardSync() {
   const state = useDashboard()
@@ -17,7 +19,7 @@ function DashboardSync() {
 
   // Synchronizace Clerk stavu do lokálního Dashboard stavu aplikace
   React.useEffect(() => {
-    if (!isSignedIn || !user) return
+    if (!isSignedIn || !user || state.isBanned) return
 
     const newUserId = user.id
 
@@ -49,6 +51,8 @@ function AppContent() {
       <DashboardSync />
       <RouterProvider router={router} />
       <Toaster theme={state.themeMode} />
+      <AuthRequiredDialog />
+      <BannedAccountDialog />
     </>
   )
 }

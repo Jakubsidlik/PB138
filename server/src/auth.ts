@@ -89,11 +89,31 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
             .returning({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
           user = updatedUser ?? null
         } else {
-          const [createdUser] = await db
-            .insert(users)
-            .values({ clerkId: auth.userId, email, fullName, role: 'REGISTERED' })
-            .returning({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
-          user = createdUser ?? null
+          try {
+            const [createdUser] = await db
+              .insert(users)
+              .values({ clerkId: auth.userId, email, fullName, role: 'REGISTERED' })
+              .onConflictDoNothing({ target: users.clerkId })
+              .returning({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+            user = createdUser ?? null
+            
+            if (!user) {
+              const [fallbackUser] = await db
+                .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+                .from(users)
+                .where(eq(users.clerkId, auth.userId))
+                .limit(1)
+              user = fallbackUser ?? null
+            }
+          } catch (insertErr) {
+            console.error('Konflikt při vkládání:', insertErr)
+            const [fallbackUser] = await db
+              .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+              .from(users)
+              .where(eq(users.clerkId, auth.userId))
+              .limit(1)
+            user = fallbackUser ?? null
+          }
         }
 
         if (user) return toAuthActor(user)

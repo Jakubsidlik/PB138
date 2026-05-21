@@ -128,6 +128,7 @@ export const mapEvent = (event: any): ApiEvent & { userId: number, deletedAt: st
 export const mapFileRecord = (file: any) => ({
   id: Number(file.id),
   userId: Number(file.userId),
+  userEmail: file.userEmail,
   subjectId: asNumberId(file.subjectId),
   name: file.name,
   category: inferFileCategory(file.name),

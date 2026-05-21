@@ -105,11 +105,15 @@ export class FilesRepository {
 
   async findAdminAll(includeDeleted: boolean) {
     return db
-      .select(fileSelect(0))
+      .select({
+        ...fileSelect(0),
+        userEmail: users.email,
+      })
       .from(fileRecords)
+      .leftJoin(users, eq(fileRecords.userId, users.id))
       .leftJoin(fileRatings, eq(fileRecords.id, fileRatings.fileId))
       .where(includeDeleted ? undefined : isNull(fileRecords.deletedAt))
-      .groupBy(fileRecords.id)
+      .groupBy(fileRecords.id, users.email)
       .orderBy(desc(fileRecords.updatedAt), desc(fileRecords.createdAt))
   }
 
