@@ -4,7 +4,7 @@ import './App.css'
 import { RouterProvider } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { router } from './app/router'
-import { queryClient } from './app/queries'
+import { queryClient } from './app/query-client'
 
 import { useUser } from '@clerk/clerk-react'
 import { Toaster } from './components/ui/sonner'

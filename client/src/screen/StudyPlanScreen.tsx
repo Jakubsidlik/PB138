@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '../components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '../components/ui/dialog'
 import {
@@ -22,6 +24,7 @@ import { Badge } from '../components/ui/badge'
 import { Separator } from '../components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { toast } from 'sonner'
+import { createStudyPlanSchema, editStudyPlanSchema, createSubjectSchema, editSubjectSchema, shareStudyPlanSchema, shareSubjectSchema, type CreateStudyPlanFormData, type EditStudyPlanFormData, type CreateSubjectFormData, type EditSubjectFormData, type ShareStudyPlanFormData, type ShareSubjectFormData } from '../app/schemas'
 
 type DesktopSubject = Subject & {
   meta: DesktopSubjectMeta
@@ -86,69 +89,134 @@ export function DesktopStudyPlan({
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
 
-  const [sharingPlanId, setSharingPlanId] = useState<number | null>(null)
-  const [sharePlanEmail, setSharePlanEmail] = useState('')
-  const [isSharingPlanSubmitting, setIsSharingPlanSubmitting] = useState(false)
+  // Study Plan forms
+  const createPlanForm = useForm<CreateStudyPlanFormData>({
+    resolver: zodResolver(createStudyPlanSchema),
+    defaultValues: { name: '', description: '' },
+  })
 
-  const [sharingSubjectId, setSharingSubjectId] = useState<number | null>(null)
-  const [shareSubjectEmail, setShareSubjectEmail] = useState('')
-  const [isSharingSubjectSubmitting, setIsSharingSubjectSubmitting] = useState(false)
+  const editPlanForm = useForm<EditStudyPlanFormData>({
+    resolver: zodResolver(editStudyPlanSchema),
+    defaultValues: { name: '', description: '' },
+  })
 
-  const handleShareSubject = (subjectId: number) => {
-    setSharingSubjectId(subjectId)
-  }
+  const sharePlanForm = useForm<ShareStudyPlanFormData>({
+    resolver: zodResolver(shareStudyPlanSchema),
+    defaultValues: { email: '' },
+  })
+
+  // Subject forms
+  const createSubjectForm = useForm<CreateSubjectFormData>({
+    resolver: zodResolver(createSubjectSchema),
+    defaultValues: { name: '', teacher: '', code: '', tagIds: [] },
+  })
+
+  const editSubjectForm = useForm<EditSubjectFormData>({
+    resolver: zodResolver(editSubjectSchema),
+    defaultValues: { name: '', teacher: '', code: '', tagIds: [] },
+  })
+
+  const shareSubjectForm = useForm<ShareSubjectFormData>({
+    resolver: zodResolver(shareSubjectSchema),
+    defaultValues: { email: '' },
+  })
 
   const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false)
   const [isAddPlanOpen, setIsAddPlanOpen] = useState(false)
-  const [newPlan, setNewPlan] = useState({ name: '', description: '' })
-  const [newSubject, setNewSubject] = useState({ name: '', teacher: '', code: '', tagIds: [] as number[] })
   const [planFilter, setPlanFilter] = useState<'all' | 'active' | 'archived'>('active')
+
+  const [sharingPlanId, setSharingPlanId] = useState<number | null>(null)
+  const [sharingSubjectId, setSharingSubjectId] = useState<number | null>(null)
 
   const [editingSubjectId, setEditingSubjectId] = useState<number | null>(null)
   const [subjectToDelete, setSubjectToDelete] = useState<number | null>(null)
   const [planToDelete, setPlanToDelete] = useState<number | null>(null)
-  const [editSubjectData, setEditSubjectData] = useState({ name: '', teacher: '', code: '', tagIds: [] as number[] })
-
-  const editingSubject = desktopSubjects.find(s => s.id === editingSubjectId)
-
-  useEffect(() => {
-    if (editingSubject) {
-      setEditSubjectData({ name: editingSubject.name, teacher: editingSubject.teacher, code: editingSubject.code, tagIds: editingSubject.tags?.map(t => t.id) || [] })
-    }
-  }, [editingSubject])
 
   const [editingPlanId, setEditingPlanId] = useState<number | null>(null)
-  const [editPlanData, setEditPlanData] = useState({ name: '', description: '' })
 
+  const editingSubject = desktopSubjects.find(s => s.id === editingSubjectId)
   const editingPlan = studyPlans.find(p => p.id === editingPlanId)
 
   useEffect(() => {
-    if (editingPlan) {
-      setEditPlanData({ name: editingPlan.name, description: editingPlan.description || '' })
+    if (editingSubject) {
+      editSubjectForm.reset({
+        name: editingSubject.name,
+        teacher: editingSubject.teacher,
+        code: editingSubject.code,
+        tagIds: editingSubject.tags?.map(t => t.id) || [],
+      })
     }
-  }, [editingPlan])
+  }, [editingSubject, editSubjectForm])
 
-  const handleCreateSubject = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newSubject.name.trim() || !newSubject.teacher.trim() || !newSubject.code.trim()) return
-    onCreateSubject(newSubject)
-    setNewSubject({ name: '', teacher: '', code: '', tagIds: [] })
-    setIsAddSubjectOpen(false)
-  }
+  useEffect(() => {
+    if (editingPlan) {
+      editPlanForm.reset({
+        name: editingPlan.name,
+        description: editingPlan.description || '',
+      })
+    }
+  }, [editingPlan, editPlanForm])
 
-  const handleCreatePlan = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newPlan.name.trim()) return
-    onCreateStudyPlan(newPlan)
-    setNewPlan({ name: '', description: '' })
+  useEffect(() => {
+    if (sharingPlanId) {
+      sharePlanForm.reset({ email: '' })
+    }
+  }, [sharingPlanId, sharePlanForm])
+
+  useEffect(() => {
+    if (sharingSubjectId) {
+      shareSubjectForm.reset({ email: '' })
+    }
+  }, [sharingSubjectId, shareSubjectForm])
+
+  const handleCreatePlan = async (data: CreateStudyPlanFormData) => {
+    onCreateStudyPlan(data)
+    createPlanForm.reset()
     setIsAddPlanOpen(false)
   }
 
-  const handleEditSubject = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (editingSubjectId && editSubjectData.name.trim() && editSubjectData.teacher.trim() && editSubjectData.code.trim()) {
-      onEditSubject(editingSubjectId, editSubjectData)
+  const handleCreateSubject = async (data: CreateSubjectFormData) => {
+    onCreateSubject(data)
+    createSubjectForm.reset()
+    setIsAddSubjectOpen(false)
+  }
+
+  const handleEditSubject = async (data: EditSubjectFormData) => {
+    if (editingSubjectId) {
+      onEditSubject(editingSubjectId, data)
       setEditingSubjectId(null)
+    }
+  }
+
+  const handleEditPlan = async (data: EditStudyPlanFormData) => {
+    if (editingPlanId) {
+      onEditStudyPlan(editingPlanId, data)
+      setEditingPlanId(null)
+    }
+  }
+
+  const handleSharePlan = async (data: ShareStudyPlanFormData) => {
+    if (sharingPlanId) {
+      try {
+        await onShareStudyPlan?.(sharingPlanId, data.email)
+        setSharingPlanId(null)
+      } catch (err: any) {
+        toast.error(err.message || 'Nepodařilo se nasdílet studijní plán.')
+      }
+    }
+  }
+
+  const handleShareSubject = async (data: ShareSubjectFormData) => {
+    if (sharingSubjectId) {
+      try {
+        const subject = desktopSubjects.find(s => s.id === sharingSubjectId)
+        if (!subject || !subject.studyPlanId) return
+        await onShareStudyPlan?.(subject.studyPlanId, data.email)
+        toast.success(`Předmět ${subject.name} byl úspěšně nasdílen uživateli ${data.email}`)
+        setSharingSubjectId(null)
+      } catch (err: any) {
+        toast.error(err.message || 'Nepodařilo se nasdílet předmět.')
+      }
     }
   }
 
@@ -158,6 +226,14 @@ export function DesktopStudyPlan({
 
   const handleAddFile = (subjectId: number, file: File) => {
     void onUploadFiles([file], { subjectId })
+  }
+
+  const openSharePlan = (planId: number) => {
+    setSharingPlanId(planId)
+  }
+
+  const openShareSubject = (subjectId: number) => {
+    setSharingSubjectId(subjectId)
   }
 
   const getToneClasses = (tone: string) => {
@@ -209,22 +285,28 @@ export function DesktopStudyPlan({
                   + Nový studijní plán
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
-                  <form onSubmit={handleCreatePlan}>
+                  <form onSubmit={createPlanForm.handleSubmit(handleCreatePlan)}>
                     <DialogHeader>
                       <DialogTitle>Nový studijní plán</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-medium">Název plánu</label>
-                        <Input value={newPlan.name} onChange={e => setNewPlan({ ...newPlan, name: e.target.value })} autoFocus />
+                        <Input {...createPlanForm.register('name')} autoFocus />
+                        {createPlanForm.formState.errors.name && (
+                          <p className="text-sm font-medium text-destructive">{createPlanForm.formState.errors.name.message}</p>
+                        )}
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-medium">Popis</label>
-                        <Input value={newPlan.description} onChange={e => setNewPlan({ ...newPlan, description: e.target.value })} />
+                        <Input {...createPlanForm.register('description')} />
+                        {createPlanForm.formState.errors.description && (
+                          <p className="text-sm font-medium text-destructive">{createPlanForm.formState.errors.description.message}</p>
+                        )}
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button type="submit" disabled={!newPlan.name.trim()}>Vytvořit</Button>
+                      <Button type="submit" disabled={createPlanForm.formState.isSubmitting}>Vytvořit</Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -276,7 +358,7 @@ export function DesktopStudyPlan({
                     onEditSubject={(id) => setEditingPlanId(id)}
                     onToggleArchiveSubject={onToggleArchiveStudyPlan}
                     onDeleteSubject={() => setPlanToDelete(plan.id)}
-                    onShare={(id) => setSharingPlanId(id)}
+                    onShare={openSharePlan}
                   />
                 </CardFooter>
               </Card>
@@ -284,28 +366,28 @@ export function DesktopStudyPlan({
 
             <Dialog open={!!editingPlanId} onOpenChange={(open) => !open && setEditingPlanId(null)}>
               <DialogContent className="sm:max-w-[425px]">
-                <form onSubmit={(e) => {
-                  e.preventDefault()
-                  if (editingPlanId && editPlanData.name.trim()) {
-                    onEditStudyPlan(editingPlanId, editPlanData)
-                    setEditingPlanId(null)
-                  }
-                }}>
+                <form onSubmit={editPlanForm.handleSubmit(handleEditPlan)}>
                   <DialogHeader>
                     <DialogTitle>Upravit studijní plán</DialogTitle>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium">Název plánu</label>
-                      <Input value={editPlanData.name} onChange={e => setEditPlanData({ ...editPlanData, name: e.target.value })} autoFocus />
+                      <Input {...editPlanForm.register('name')} autoFocus />
+                      {editPlanForm.formState.errors.name && (
+                        <p className="text-sm font-medium text-destructive">{editPlanForm.formState.errors.name.message}</p>
+                      )}
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium">Popis</label>
-                      <Input value={editPlanData.description} onChange={e => setEditPlanData({ ...editPlanData, description: e.target.value })} />
+                      <Input {...editPlanForm.register('description')} />
+                      {editPlanForm.formState.errors.description && (
+                        <p className="text-sm font-medium text-destructive">{editPlanForm.formState.errors.description.message}</p>
+                      )}
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button type="submit" disabled={!editPlanData.name.trim()}>Uložit změny</Button>
+                    <Button type="submit" disabled={editPlanForm.formState.isSubmitting}>Uložit změny</Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
@@ -368,38 +450,45 @@ export function DesktopStudyPlan({
                   + Zapsat předmět
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
-                  <form onSubmit={handleCreateSubject}>
+                  <form onSubmit={createSubjectForm.handleSubmit(handleCreateSubject)}>
                     <DialogHeader>
                       <DialogTitle>Nový předmět</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-medium">Název předmětu</label>
-                        <Input value={newSubject.name} onChange={e => setNewSubject({ ...newSubject, name: e.target.value })} autoFocus />
+                        <Input {...createSubjectForm.register('name')} autoFocus />
+                        {createSubjectForm.formState.errors.name && (
+                          <p className="text-sm font-medium text-destructive">{createSubjectForm.formState.errors.name.message}</p>
+                        )}
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-medium">Vyučující</label>
-                        <Input value={newSubject.teacher} onChange={e => setNewSubject({ ...newSubject, teacher: e.target.value })} />
+                        <Input {...createSubjectForm.register('teacher')} />
+                        {createSubjectForm.formState.errors.teacher && (
+                          <p className="text-sm font-medium text-destructive">{createSubjectForm.formState.errors.teacher.message}</p>
+                        )}
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-medium">Kód předmětu (např. PB138)</label>
-                        <Input value={newSubject.code} onChange={e => setNewSubject({ ...newSubject, code: e.target.value })} />
+                        <Input {...createSubjectForm.register('code')} />
+                        {createSubjectForm.formState.errors.code && (
+                          <p className="text-sm font-medium text-destructive">{createSubjectForm.formState.errors.code.message}</p>
+                        )}
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-medium">Štítky</label>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {tags.map(tag => {
-                            const isSelected = newSubject.tagIds.includes(tag.id)
+                            const isSelected = createSubjectForm.watch('tagIds')?.includes(tag.id) || false
                             return (
                               <Badge
                                 key={tag.id}
                                 variant={isSelected ? "default" : "outline"}
                                 className="cursor-pointer"
                                 onClick={() => {
-                                  setNewSubject(prev => ({
-                                    ...prev,
-                                    tagIds: isSelected ? prev.tagIds.filter(id => id !== tag.id) : [...prev.tagIds, tag.id]
-                                  }))
+                                  const current = createSubjectForm.watch('tagIds') || []
+                                  createSubjectForm.setValue('tagIds', isSelected ? current.filter(id => id !== tag.id) : [...current, tag.id])
                                 }}
                               >
                                 {tag.name}
@@ -410,7 +499,7 @@ export function DesktopStudyPlan({
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button type="submit" disabled={!newSubject.name.trim() || !newSubject.teacher.trim() || !newSubject.code.trim()}>Zapsat</Button>
+                      <Button type="submit" disabled={createSubjectForm.formState.isSubmitting}>Zapsat</Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -488,7 +577,7 @@ export function DesktopStudyPlan({
                       onEditSubject={() => setEditingSubjectId(subject.id)}
                       onToggleArchiveSubject={onToggleArchiveSubject}
                       onDeleteSubject={() => setSubjectToDelete(subject.id)}
-                      onShare={handleShareSubject}
+                      onShare={openShareSubject}
                     />
                   </CardFooter>
                 </Card>
@@ -498,38 +587,45 @@ export function DesktopStudyPlan({
 
           <Dialog open={!!editingSubjectId} onOpenChange={(open) => !open && setEditingSubjectId(null)}>
             <DialogContent className="sm:max-w-[425px]">
-              <form onSubmit={handleEditSubject}>
+              <form onSubmit={editSubjectForm.handleSubmit(handleEditSubject)}>
                 <DialogHeader>
                   <DialogTitle>Upravit předmět</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Název předmětu</label>
-                    <Input value={editSubjectData.name} onChange={e => setEditSubjectData({ ...editSubjectData, name: e.target.value })} autoFocus />
+                    <Input {...editSubjectForm.register('name')} autoFocus />
+                    {editSubjectForm.formState.errors.name && (
+                      <p className="text-sm font-medium text-destructive">{editSubjectForm.formState.errors.name.message}</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Vyučující</label>
-                    <Input value={editSubjectData.teacher} onChange={e => setEditSubjectData({ ...editSubjectData, teacher: e.target.value })} />
+                    <Input {...editSubjectForm.register('teacher')} />
+                    {editSubjectForm.formState.errors.teacher && (
+                      <p className="text-sm font-medium text-destructive">{editSubjectForm.formState.errors.teacher.message}</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Kód předmětu</label>
-                    <Input value={editSubjectData.code} onChange={e => setEditSubjectData({ ...editSubjectData, code: e.target.value })} />
+                    <Input {...editSubjectForm.register('code')} />
+                    {editSubjectForm.formState.errors.code && (
+                      <p className="text-sm font-medium text-destructive">{editSubjectForm.formState.errors.code.message}</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Štítky</label>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {tags.map(tag => {
-                        const isSelected = editSubjectData.tagIds.includes(tag.id)
+                        const isSelected = editSubjectForm.watch('tagIds')?.includes(tag.id) || false
                         return (
                           <Badge
                             key={tag.id}
                             variant={isSelected ? "default" : "outline"}
                             className="cursor-pointer"
                             onClick={() => {
-                              setEditSubjectData(prev => ({
-                                ...prev,
-                                tagIds: isSelected ? prev.tagIds.filter(id => id !== tag.id) : [...prev.tagIds, tag.id]
-                              }))
+                              const current = editSubjectForm.watch('tagIds') || []
+                              editSubjectForm.setValue('tagIds', isSelected ? current.filter(id => id !== tag.id) : [...current, tag.id])
                             }}
                           >
                             {tag.name}
@@ -540,7 +636,7 @@ export function DesktopStudyPlan({
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" disabled={!editSubjectData.name.trim() || !editSubjectData.teacher.trim() || !editSubjectData.code.trim()}>Uložit změny</Button>
+                  <Button type="submit" disabled={editSubjectForm.formState.isSubmitting}>Uložit změny</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -604,20 +700,7 @@ export function DesktopStudyPlan({
         <DialogContent 
           style={{ maxWidth: '425px', width: '100%' }}
         >
-          <form onSubmit={async (e) => {
-            e.preventDefault()
-            if (!sharingPlanId || !sharePlanEmail.trim()) return
-            setIsSharingPlanSubmitting(true)
-            try {
-              await onShareStudyPlan?.(sharingPlanId, sharePlanEmail.trim())
-              setSharingPlanId(null)
-              setSharePlanEmail('')
-            } catch (err: any) {
-              toast.error(err.message || 'Nepodařilo se nasdílet studijní plán.')
-            } finally {
-              setIsSharingPlanSubmitting(false)
-            }
-          }} className="space-y-4">
+          <form onSubmit={sharePlanForm.handleSubmit(handleSharePlan)} className="space-y-4">
             <DialogHeader>
               <DialogTitle>Sdílet studijní plán</DialogTitle>
               <DialogDescription>
@@ -629,15 +712,16 @@ export function DesktopStudyPlan({
               <Input
                 type="email"
                 placeholder="např. spolužák@skola.cz"
-                value={sharePlanEmail}
-                onChange={(e) => setSharePlanEmail(e.target.value)}
-                required
+                {...sharePlanForm.register('email')}
                 autoFocus
               />
+              {sharePlanForm.formState.errors.email && (
+                <p className="text-sm font-medium text-destructive">{sharePlanForm.formState.errors.email.message}</p>
+              )}
             </div>
             <DialogFooter className="pt-2">
-              <Button type="submit" disabled={isSharingPlanSubmitting || !sharePlanEmail.trim()} className="w-full">
-                {isSharingPlanSubmitting ? 'Sdílím...' : 'Sdílet'}
+              <Button type="submit" disabled={sharePlanForm.formState.isSubmitting} className="w-full">
+                {sharePlanForm.formState.isSubmitting ? 'Sdílím...' : 'Sdílet'}
               </Button>
             </DialogFooter>
           </form>
@@ -649,26 +733,7 @@ export function DesktopStudyPlan({
         <DialogContent 
           style={{ maxWidth: '425px', width: '100%' }}
         >
-          <form onSubmit={async (e) => {
-            e.preventDefault()
-            if (!sharingSubjectId || !shareSubjectEmail.trim()) return
-            setIsSharingSubjectSubmitting(true)
-            try {
-              const subject = desktopSubjects.find(s => s.id === sharingSubjectId)
-              if (!subject) return
-              
-              if (subject.studyPlanId) {
-                await onShareStudyPlan?.(subject.studyPlanId, shareSubjectEmail.trim())
-              }
-              toast.success(`Předmět ${subject.name} byl úspěšně nasdílen uživateli ${shareSubjectEmail}`)
-              setSharingSubjectId(null)
-              setShareSubjectEmail('')
-            } catch (err: any) {
-              toast.error(err.message || 'Nepodařilo se nasdílet předmět.')
-            } finally {
-              setIsSharingSubjectSubmitting(false)
-            }
-          }} className="space-y-4">
+          <form onSubmit={shareSubjectForm.handleSubmit(handleShareSubject)} className="space-y-4">
             <DialogHeader>
               <DialogTitle>Sdílet předmět</DialogTitle>
               <DialogDescription>
@@ -681,16 +746,17 @@ export function DesktopStudyPlan({
               <Input
                 type="email"
                 placeholder="např. jan.novak@skola.cz"
-                value={shareSubjectEmail}
-                onChange={(e) => setShareSubjectEmail(e.target.value)}
-                required
+                {...shareSubjectForm.register('email')}
                 autoFocus
               />
+              {shareSubjectForm.formState.errors.email && (
+                <p className="text-sm font-medium text-destructive">{shareSubjectForm.formState.errors.email.message}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-2 pt-2">
-              <Button type="submit" disabled={isSharingSubjectSubmitting || !shareSubjectEmail.trim()} className="w-full">
-                {isSharingSubjectSubmitting ? 'Sdílím...' : 'Sdílet'}
+              <Button type="submit" disabled={shareSubjectForm.formState.isSubmitting} className="w-full">
+                {shareSubjectForm.formState.isSubmitting ? 'Sdílím...' : 'Sdílet'}
               </Button>
             </div>
           </form>

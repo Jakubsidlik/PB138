@@ -5,7 +5,6 @@ import {
   EVENTS_STORAGE_KEY,
   PALETTE_STORAGE_KEY,
   PROFILE_STORAGE_KEY,
-  subjectsSeed,
   TASKS_STORAGE_KEY,
   THEME_STORAGE_KEY,
   userProfileSeed,

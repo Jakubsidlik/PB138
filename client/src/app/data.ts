@@ -1,15 +1,7 @@
 import {
-  CalendarEvent,
   DesktopSubjectMeta,
-  EventMeta,
-  FileFolder,
-  Subject,
   SubjectVisual,
-  Task,
   UserProfile,
-  Lesson,
-  StudyPlan,
-  ManagedFile,
 } from './types'
 
 export const TASKS_STORAGE_KEY = 'pb138.tasks'
@@ -18,24 +10,7 @@ export const THEME_STORAGE_KEY = 'pb138.theme'
 export const PALETTE_STORAGE_KEY = 'pb138.palette'
 export const PROFILE_STORAGE_KEY = 'pb138.profile'
 
-// STUDY PLANS - Studijní plány
-export const studyPlansSeed: StudyPlan[] = []
 
-// SUBJECTS - Předměty
-export const subjectsSeed: Subject[] = []
-
-// LESSONS - Lekce
-export const lessonsSeed: Lesson[] = []
-
-export const foldersSeed: FileFolder[] = []
-
-export const managedFilesSeed: ManagedFile[] = []
-
-export const tasksSeed: Task[] = []
-
-export const eventsSeed: CalendarEvent[] = []
-
-export const eventMetaSeed: Record<number, EventMeta> = {}
 
 export const subjectVisualByCode: Record<string, SubjectVisual> = {
   SE: { icon: '🧩', tone: 'blue' },

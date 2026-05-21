@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Dialog,
   DialogContent,
@@ -10,6 +12,7 @@ import { Button } from '../../ui/button'
 import { Input } from '../../ui/input'
 import { Badge } from '../../ui/badge'
 import { Tag } from '../../../app/types'
+import { createTagSchema, type CreateTagFormData } from '../../../app/schemas'
 
 type TagManagerModalProps = {
   tags: Tag[]
@@ -19,18 +22,18 @@ type TagManagerModalProps = {
 
 export function TagManagerModal({ tags, onCreateTag, onDeleteTag }: TagManagerModalProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [newTagName, setNewTagName] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newTagName.trim()) return
-    setIsSubmitting(true)
+  const form = useForm<CreateTagFormData>({
+    resolver: zodResolver(createTagSchema),
+    defaultValues: { name: '', color: '#888888' },
+  })
+
+  const handleCreate = async (data: CreateTagFormData) => {
     try {
-      await onCreateTag({ name: newTagName.trim(), color: '#888888' })
-      setNewTagName('')
-    } finally {
-      setIsSubmitting(false)
+      await onCreateTag({ name: data.name.trim(), color: '#888888' })
+      form.reset()
+    } catch (err) {
+      // Error is handled by parent
     }
   }
 
@@ -74,25 +77,27 @@ export function TagManagerModal({ tags, onCreateTag, onDeleteTag }: TagManagerMo
             </div>
           </div>
 
-          <form onSubmit={handleCreate} className="space-y-4 pt-4 border-t">
+          <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4 pt-4 border-t">
             <h3 className="text-sm font-medium">Vytvořit nový štítek</h3>
             <div className="grid grid-cols-1 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Název</label>
                 <Input
-                  value={newTagName}
-                  onChange={e => setNewTagName(e.target.value)}
+                  {...form.register('name')}
                   placeholder="Např. Důležité"
                   maxLength={30}
                 />
+                {form.formState.errors.name && (
+                  <p className="text-sm font-medium text-destructive">{form.formState.errors.name.message}</p>
+                )}
               </div>
             </div>
             <Button
               type="submit"
-              disabled={!newTagName.trim() || isSubmitting}
+              disabled={form.formState.isSubmitting}
               className="w-full"
             >
-              {isSubmitting ? 'Vytvářím...' : 'Přidat štítek'}
+              {form.formState.isSubmitting ? 'Vytvářím...' : 'Přidat štítek'}
             </Button>
           </form>
         </div>
