@@ -1,7 +1,9 @@
 import { AddressInfo } from 'node:net'
 import type { Server } from 'node:http'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { prisma } from '../prisma.js'
+import { eq } from 'drizzle-orm'
+import { db } from '../db/client.js'
+import { users } from '../db/schema.js'
 
 describe('api integration', () => {
   let app: { listen: (port: number) => Server }
@@ -26,20 +28,18 @@ describe('api integration', () => {
     const address = server.address() as AddressInfo
     baseUrl = `http://127.0.0.1:${address.port}`
 
-    const user = await prisma.user.create({
-      data: {
-        fullName: 'Integration User',
-        email: testEmail,
-        role: 'REGISTERED',
-        passwordHash: 'Integration1!',
-      },
-    })
+    const result = await db.insert(users).values({
+      fullName: 'Integration User',
+      email: testEmail,
+      role: 'REGISTERED',
+      passwordHash: 'Integration1!',
+    }).returning()
 
-    testUserId = String(user.id)
+    testUserId = String(result[0].id)
   })
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: testEmail } })
+    await db.delete(users).where(eq(users.email, testEmail))
 
     await new Promise<void>((resolve, reject) => {
       server.close((error) => {
