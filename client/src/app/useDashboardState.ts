@@ -133,12 +133,7 @@ export function useDashboardState(fetchAll = false) {
       if (token) {
         headers.set('Authorization', `Bearer ${token}`)
       } else {
-        // Zabráníme zbytečnému síťovému spamu a chybám 401 v konzoli
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          statusText: 'Unauthorized',
-          headers: { 'Content-Type': 'application/json' }
-        })
+        console.warn('apiFetch: Přístupový token nenalezen, přesto odesílám požadavek.');
       }
 
       return fetch(input, {

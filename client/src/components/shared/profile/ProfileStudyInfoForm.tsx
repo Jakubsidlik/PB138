@@ -27,20 +27,30 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
 
   React.useEffect(() => {
     // Sync the form values to the parent when they change
-    const school = watchedValues.school
-    const studyType = watchedValues.studyType
-    const studyMajor = watchedValues.studyMajor
-    const studyYear = watchedValues.studyYear
+    const school = watchedValues.school || undefined
+    const studyType = watchedValues.studyType || undefined
+    const studyMajor = watchedValues.studyMajor || undefined
+    const studyYear = watchedValues.studyYear || undefined
+
+    const hasChanges = 
+      profile.school !== school ||
+      profile.studyType !== studyType ||
+      profile.studyMajor !== studyMajor ||
+      profile.studyYear !== studyYear
+
+    if (!hasChanges) {
+      return
+    }
 
     const updates: Partial<UserProfile> = {
-      school: school || undefined,
-      studyType: studyType || undefined,
-      studyMajor: studyMajor || undefined,
-      studyYear: studyYear || undefined,
+      school,
+      studyType,
+      studyMajor,
+      studyYear,
     }
 
     onChangeProfile(updates)
-  }, [watchedValues, onChangeProfile])
+  }, [watchedValues, onChangeProfile, profile.school, profile.studyType, profile.studyMajor, profile.studyYear])
 
   const availableYears = getYearsForStudyType(form.watch('studyType'))
 
@@ -66,7 +76,7 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
             const newType = value || ''
             form.setValue('studyType', newType)
             const validYears = getYearsForStudyType(newType)
-            if (form.watch('studyYear') && !validYears.includes(form.watch('studyYear'))) {
+            if (form.watch('studyYear') && !validYears.includes(form.watch('studyYear') as string)) {
               form.setValue('studyYear', '')
             }
           }}
