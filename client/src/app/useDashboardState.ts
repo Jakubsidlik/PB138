@@ -1095,9 +1095,9 @@ export function useDashboardState(fetchAll = false) {
           const data = await res.json()
           throw new Error(data.error || 'Nepodařilo se nasdílet soubor.')
         }
-        alert(`Soubor úspěšně nasdílen uživateli ${email}`)
+        toast.success(`Soubor úspěšně nasdílen uživateli ${email}`)
       } catch (err: any) {
-        alert(err.message)
+        toast.error(err.message)
         throw err
       }
     } else {
