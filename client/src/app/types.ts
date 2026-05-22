@@ -1,7 +1,8 @@
 // Auth & User types
+export type UserRole = 'student' | 'registered' | 'public'
 export interface AuthSession {
   userId: number | string
-  role: 'REGISTERED' | 'ADMIN'
+  role: 'REGISTROVANÝ UŽIVATEL' | 'ADMIN'
   fullName: string
   email: string
 }
@@ -10,14 +11,11 @@ export interface User {
   id: number
   fullName: string
   email: string
-  role: 'REGISTERED' | 'ADMIN'
+  role: 'REGISTROVANÝ UŽIVATEL' | 'ADMIN'
   school?: string
-  faculty?: string
   studyMajor?: string
   studyYear?: string
   studyType?: string
-  birthDate?: string | null
-  bio?: string | null
   avatarDataUrl?: string | null
   createdAt?: string
   updatedAt?: string
@@ -28,12 +26,9 @@ export interface RegisterRequest {
   email: string
   password: string
   school?: string
-  faculty?: string
   studyMajor?: string
   studyYear?: string
   studyType?: string
-  birthDate?: string
-  bio?: string
 }
 
 export interface LoginRequest {
@@ -46,37 +41,29 @@ export interface AuthResponse {
 }
 
 // Task types
+export type TaskPriority = 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+
 export interface Task {
   id: number
   title: string
   done: boolean
-  subjectId?: number | null
   userId?: number
-  studyPlanId?: number | null
-  favorite?: boolean
-  tag?: string | null
-  deadline?: string | null
+  priority?: TaskPriority
   deletedAt?: string | null
 }
 
 export interface CreateTaskRequest {
   title: string
-  subjectId?: number | null
-  studyPlanId?: number | null
-  deadline?: string | null
+  priority?: TaskPriority
 }
 
 export interface UpdateTaskRequest {
   title?: string
   done?: boolean
-  favorite?: boolean
-  tag?: string | null
-  deadline?: string | null
-  subjectId?: number | null
+  priority?: TaskPriority
 }
 
 // Event types
-export type EventRecurrence = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
 export type EventPriority = 'low' | 'medium' | 'high'
 
 export interface CalendarEvent {
@@ -85,10 +72,7 @@ export interface CalendarEvent {
   date: string
   time?: string | null
   location?: string | null
-  subjectId?: number | null
   isShared?: boolean
-  recurrence?: EventRecurrence
-  recurrenceGroupId?: string | null
   userId?: number
   deletedAt?: string | null
   priority?: EventPriority
@@ -99,8 +83,6 @@ export interface CreateEventRequest {
   date: string
   time?: string | null
   location?: string | null
-  subjectId?: number | null
-  recurrence?: EventRecurrence
   priority?: EventPriority
 }
 
@@ -109,12 +91,17 @@ export interface UpdateEventRequest {
   date?: string
   time?: string | null
   location?: string | null
-  recurrence?: EventRecurrence
-  subjectId?: number | null
   priority?: EventPriority
 }
 
-// Subject types
+// Subject & Tag types
+export interface Tag {
+  id: number
+  name: string
+  color: string
+  isSystem: boolean
+}
+
 export interface Subject {
   id: number
   name: string
@@ -128,6 +115,7 @@ export interface Subject {
   notes?: number
   events?: number
   archived?: boolean
+  tags?: Tag[]
 }
 
 export interface CreateSubjectRequest {
@@ -135,12 +123,14 @@ export interface CreateSubjectRequest {
   teacher: string
   code: string
   studyPlanId?: number | null
+  tagIds?: number[]
 }
 
 export interface UpdateSubjectRequest {
   name?: string
   teacher?: string
   code?: string
+  tagIds?: number[]
 }
 
 // StudyPlan types
@@ -149,9 +139,6 @@ export interface StudyPlan {
   userId: number
   name: string
   description?: string
-  faculty?: string
-  startDate?: string | null
-  endDate?: string | null
   isActive?: boolean
   isShared?: boolean
   createdAt?: string
@@ -164,9 +151,6 @@ export interface StudyPlan {
 export interface CreateStudyPlanRequest {
   name: string
   description?: string
-  faculty?: string
-  startDate?: string | null
-  endDate?: string | null
 }
 
 export interface UpdateStudyPlanRequest {
@@ -181,13 +165,16 @@ export interface FileRecord {
   name: string
   size: string
   sizeBytes: number
-  category: 'pdf' | 'image' | 'document' | 'other' | 'folder'
+  category: 'pdf' | 'image' | 'document' | 'folder' | 'other'
   addedLabel: string
   isShared?: boolean
   userId?: number
   subjectId?: number | null
-  lessonId?: number | null
   deletedAt?: string | null
+  likes?: number
+  dislikes?: number
+  userVote?: 'LIKE' | 'DISLIKE' | null
+  userEmail?: string
 }
 
 export interface ManagedFile extends FileRecord {
@@ -198,7 +185,6 @@ export interface CreateFileRequest {
   name: string
   addedLabel: string
   subjectId?: number | null
-  lessonId?: number | null
 }
 
 export interface UpdateFileRequest {
@@ -206,23 +192,7 @@ export interface UpdateFileRequest {
   addedLabel?: string
 }
 
-// File Comment types
-export interface FileComment {
-  id: number
-  fileId: number
-  userId: number
-  comment: string
-  createdAt?: string
-  updatedAt?: string
-}
 
-export interface CreateFileCommentRequest {
-  comment: string
-}
-
-export interface UpdateFileCommentRequest {
-  comment: string
-}
 
 // Lesson types
 export interface Lesson {
@@ -232,19 +202,23 @@ export interface Lesson {
   isShared?: boolean
   orderIndex: number
   subjectId?: number | null
-  studyPlanId?: number | null
+  authorId?: number | null
+  authorFullName?: string | null
   deletedAt?: string | null
   createdAt?: string
   updatedAt?: string
   notesCount?: number
   filesCount?: number
+  likes?: number
+  dislikes?: number
+  userVote?: 'LIKE' | 'DISLIKE' | null
+  userEmail?: string
 }
 
 export interface CreateLessonRequest {
   title: string
   content?: string | null
   subjectId?: number | null
-  studyPlanId?: number | null
 }
 
 export interface UpdateLessonRequest {
@@ -253,51 +227,7 @@ export interface UpdateLessonRequest {
   orderIndex?: number
 }
 
-// Lesson Note types
-export interface LessonNote {
-  id: number
-  lessonId: number
-  userId: number
-  note: string
-  isPinned?: boolean
-  createdAt?: string
-  updatedAt?: string
-}
 
-export interface CreateLessonNoteRequest {
-  note: string
-  isPinned?: boolean
-}
-
-export interface UpdateLessonNoteRequest {
-  note?: string
-  isPinned?: boolean
-}
-
-// Annotation types
-export type AnnotationTargetType = 'LESSON' | 'LESSON_NOTE' | 'FILE_COMMENT'
-
-export interface TextAnnotation {
-  id: number
-  targetType: AnnotationTargetType
-  targetId: number
-  userId: number
-  startOffset: number
-  endOffset: number
-  selectedText: string
-  comment: string
-  createdAt?: string
-  updatedAt?: string
-}
-
-export interface CreateAnnotationRequest {
-  targetType: AnnotationTargetType
-  targetId: number
-  startOffset: number
-  endOffset: number
-  selectedText: string
-  comment: string
-}
 
 // Collaboration types
 export type CollaborationRole = 'VIEWER' | 'CONTRIBUTOR'
@@ -368,10 +298,10 @@ export type UserProfile = {
 
 export type SubjectVisual = {
   icon: string
-  tone: 'blue' | 'emerald' | 'violet' | 'amber'
+  tone: 'blue' | 'green' | 'violet' | 'orange' | 'emerald'
 }
 
-export type DesktopSubjectTone = 'blue' | 'emerald' | 'violet' | 'amber' | 'cyan'
+export type DesktopSubjectTone = 'blue' | 'green' | 'violet' | 'orange' | 'cyan' | 'emerald'
 
 export type DesktopSubjectMeta = {
   icon: string
@@ -381,7 +311,7 @@ export type DesktopSubjectMeta = {
 
 export type PlannerCalendarKind = 'lesson' | 'event'
 
-export type PlannerCalendarColor = 'blue' | 'emerald' | 'violet' | 'amber' | 'cyan' | 'rose'
+export type PlannerCalendarColor = 'blue' | 'green' | 'violet' | 'orange' | 'cyan' | 'pink'
 
 export type PlannerCalendarItem = {
   id: number

@@ -1,0 +1,188 @@
+@startuml PB138_ERD_Current
+
+hide methods
+hide stereotypes
+hide circle
+left to right direction
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam packageStyle rectangle
+
+skinparam class {
+  BackgroundColor White
+  BorderColor #334155
+  ArrowColor #475569
+  FontColor #0f172a
+}
+
+title PB138 - ERD Project LonelyStudent (aktuální stav)
+
+package "User base" #dfdc2b {
+entity "USER" as USER {
+  * id : bigint <<PK>>
+  --
+  clerkId : text <<UNIQUE, NULLABLE>>
+  fullName : text
+  email : text <<UNIQUE>>
+  passwordHash : text <<NULLABLE>>
+  role : UserRole
+  school : text <<NULLABLE>>
+  studyMajor : text <<NULLABLE>>
+  studyYear : text <<NULLABLE>>
+  studyType : text <<NULLABLE>>
+  avatarDataUrl : text <<NULLABLE>>
+  deletedAt : timestamptz <<NULLABLE>>
+  createdAt : timestamptz
+  updatedAt : timestamptz
+}
+
+enum "UserRole" as UserRole {
+  REGISTERED
+  ADMIN
+}
+}
+
+package "Core Domain" #d85e5e {
+entity "SUBJECT" as SUBJECT {
+  * id : bigint <<PK>>
+  --
+  userId : bigint <<FK>>
+  studyPlanId : bigint <<FK, NULLABLE>>
+  name : text
+  teacher : text
+  code : text
+  isShared : boolean
+  isArchived : boolean
+  deletedAt : timestamptz <<NULLABLE>>
+  createdAt : timestamptz
+  updatedAt : timestamptz
+  ..
+  <<UNIQUE: userId + code>>
+}
+
+entity "TASK" as TASK {
+  * id : bigint <<PK>>
+  --
+  userId : bigint <<FK>>
+  title : text
+  done : boolean
+  priority : TaskPriority
+  deletedAt : timestamptz <<NULLABLE>>
+  createdAt : timestamptz
+  updatedAt : timestamptz
+}
+
+enum "TaskPriority" as TaskPriority {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+entity "LESSON" as LESSON {
+  * id : bigint <<PK>>
+  --
+  subjectId : bigint <<FK, NULLABLE>>
+  title : text
+  content : text <<NULLABLE>>
+  isShared : boolean
+  orderIndex : integer
+  deletedAt : timestamptz <<NULLABLE>>
+  createdAt : timestamptz
+  updatedAt : timestamptz
+}
+
+entity "STUDY_PLAN" as STUDY_PLAN {
+  * id : bigint <<PK>>
+  --
+  userId : bigint <<FK>>
+  name : text
+  description : text <<NULLABLE>>
+  isActive : boolean
+  isShared : boolean
+  createdAt : timestamptz
+  updatedAt : timestamptz
+}
+
+entity "STUDY_PLAN_COLLABORATOR" as SPC {
+  * id : bigint <<PK>>
+  --
+  studyPlanId : bigint <<FK>>
+  userId : bigint <<FK>>
+  role : CollaborationRole
+  createdAt : timestamptz
+  updatedAt : timestamptz
+  ..
+  <<UNIQUE: studyPlanId + userId>>
+}
+
+enum "CollaborationRole" as CollaborationRole {
+  VIEWER
+  CONTRIBUTOR
+}
+}
+
+package "Files" #3b82f6 {
+entity "FILE_RECORD" as FILE_RECORD {
+  * id : bigint <<PK>>
+  --
+  userId : bigint <<FK>>
+  subjectId : bigint <<FK, NULLABLE>>
+  fileKey : text <<UNIQUE, NULLABLE>>
+  fileUrl : text <<NULLABLE>>
+  name : text
+  size : integer
+  addedLabel : text
+  isShared : boolean
+  deletedAt : timestamptz <<NULLABLE>>
+  createdAt : timestamptz
+  updatedAt : timestamptz
+}
+
+entity "FILE_SHARE" as FILE_SHARE {
+  * fileId : bigint <<PK, FK>>
+  * userId : bigint <<PK, FK>>
+  --
+  permission : text
+  createdAt : timestamptz
+}
+}
+
+package "Calendar and Time" #d08a34 {
+entity "EVENT" as EVENT {
+  * id : bigint <<PK>>
+  --
+  userId : bigint <<FK>>
+  title : text
+  date : date
+  time : text <<NULLABLE>>
+  location : text <<NULLABLE>>
+  isShared : boolean
+  deletedAt : timestamptz <<NULLABLE>>
+  createdAt : timestamptz
+  updatedAt : timestamptz
+}
+}
+
+'RELATIONSHIPS
+
+'User base relationships
+USER ||--o{ STUDY_PLAN : owns
+USER ||--o{ SUBJECT : creates
+USER ||--o{ TASK : manages
+USER ||--o{ FILE_RECORD : uploads
+USER ||--o{ EVENT : schedules
+USER ||--o{ SPC : collaborates
+USER ||--o{ FILE_SHARE : receives
+
+'Core domain relationships
+SUBJECT ||--o{ FILE_RECORD : contains
+SUBJECT ||--o{ LESSON : teaches
+STUDY_PLAN ||--o{ SPC : shared_via
+STUDY_PLAN ||--o{ SUBJECT : includes
+
+'File relationships
+FILE_RECORD ||--o{ FILE_SHARE : shared_via
+
+@enduml

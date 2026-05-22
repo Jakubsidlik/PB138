@@ -1,10 +1,11 @@
+import { Subject } from "./types"
 import React from 'react'
+import { toast } from 'sonner'
 import {
   desktopSubjectMetaByCode,
   EVENTS_STORAGE_KEY,
   PALETTE_STORAGE_KEY,
   PROFILE_STORAGE_KEY,
-  subjectsSeed,
   TASKS_STORAGE_KEY,
   THEME_STORAGE_KEY,
   userProfileSeed,
@@ -19,7 +20,10 @@ import {
   Lesson,
   ManagedFile,
   MobileNavItem,
+  StudyPlan,
   Task,
+  Tag,
+  TaskPriority,
   ThemeMode,
   UserProfile,
 } from './types'
@@ -36,7 +40,6 @@ import {
   formatFileSize,
   getDefaultMetaForTitle,
   getManagedFileCategory,
-  getNavFromHash,
 } from './utils'
 
 type SubjectFilter = 'all' | 'active' | 'archived'
@@ -57,7 +60,7 @@ const readAuthSessionFromStorage = (): AuthSession | null => {
     const session = parsed as Partial<AuthSession>
     if (
       (typeof session.userId !== 'number' && typeof session.userId !== 'string') ||
-      (session.role !== 'REGISTERED' && session.role !== 'ADMIN') ||
+      (session.role !== 'REGISTROVANÝ UŽIVATEL' && session.role !== 'ADMIN') ||
       typeof session.fullName !== 'string' ||
       typeof session.email !== 'string'
     ) {
@@ -86,37 +89,35 @@ const toEventMeta = (event: CalendarEvent, fallbackTitle: string): EventMeta => 
   }
 }
 
-export function useDashboardState() {
+export function useDashboardState(fetchAll = false) {
   const [tasks, setTasks] = React.useState<Task[]>(() => readTasksFromStorage() ?? [])
   const [events, setEvents] = React.useState<CalendarEvent[]>(() => readEventsFromStorage() ?? [])
-  const [subjects, setSubjects] = React.useState<typeof subjectsSeed>([])
+  const [subjects, setSubjects] = React.useState<Subject[]>([])
   const [themeMode, setThemeMode] = React.useState<ThemeMode>(() => readThemeFromStorage())
   const [lessons, setLessons] = React.useState<Lesson[]>([])
   const [accentPalette, setAccentPalette] = React.useState<AccentPalette>(() => readPaletteFromStorage())
-  const [activeMobileNav, setActiveMobileNav] = React.useState<MobileNavItem>(() =>
-    getNavFromHash(window.location.hash),
-  )
+  const [activeMobileNav, setActiveMobileNav] = React.useState<MobileNavItem>('home')
   const [displayMonth, setDisplayMonth] = React.useState(() => new Date())
   const [selectedDateIso, setSelectedDateIso] = React.useState(() => formatDateIso(new Date()))
   const [eventMetaById, setEventMetaById] = React.useState<Record<number, EventMeta>>({})
   const [fileTab, setFileTab] = React.useState<FileTab>('all')
   const [fileTypeFilter, setFileTypeFilter] = React.useState<'all' | 'folder' | 'pdf' | 'image'>('all')
   const [managedFiles, setManagedFiles] = React.useState<ManagedFile[]>([])
+  const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([])
+  const [activeStudyPlanId, setActiveStudyPlanId] = React.useState<number | null>(null)
   const [subjectSearch, setSubjectSearch] = React.useState('')
   const [subjectFilter, setSubjectFilter] = React.useState<SubjectFilter>('all')
+  const [tagFilter, setTagFilter] = React.useState<number | null>(null)
   const [isDragActive, setIsDragActive] = React.useState(false)
   const [isHydrated, setIsHydrated] = React.useState(false)
-  const [profile, setProfile] = React.useState<UserProfile>(() =>
-    readProfileFromStorage() ?? userProfileSeed,
-  )
-  const [savedProfile, setSavedProfile] = React.useState<UserProfile>(() =>
-    readProfileFromStorage() ?? userProfileSeed,
-  )
-  const [authSession, setAuthSession] = React.useState<AuthSession | null>(() =>
-    readAuthSessionFromStorage(),
-  )
+  const [tags, setTags] = React.useState<Tag[]>([])
+  const [profile, setProfile] = React.useState<UserProfile>(userProfileSeed)
+  const [savedProfile, setSavedProfile] = React.useState<UserProfile>(userProfileSeed)
+  const [authSession, setAuthSession] = React.useState<AuthSession | null>(null)
+  const [authAlertOpen, setAuthAlertOpen] = React.useState(false)
+  const [isBanned, setIsBanned] = React.useState(false)
   const [isSavingProfile, setIsSavingProfile] = React.useState(false)
-  const { getToken, isLoaded, isSignedIn } = useAuth()
+  const { getToken, isLoaded, isSignedIn, signOut } = useAuth()
 
   const apiFetch = React.useCallback(
     async (input: string, init?: RequestInit) => {
@@ -132,15 +133,11 @@ export function useDashboardState() {
       if (token) {
         headers.set('Authorization', `Bearer ${token}`)
       } else {
-        // Zabráníme zbytečnému síťovému spamu a chybám 401 v konzoli
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          statusText: 'Unauthorized',
-          headers: { 'Content-Type': 'application/json' }
-        })
+        console.warn('apiFetch: Přístupový token nenalezen, přesto odesílám požadavek.');
       }
 
       return fetch(input, {
+        cache: 'no-store',
         ...init,
         headers,
       })
@@ -149,22 +146,44 @@ export function useDashboardState() {
   )
 
   React.useEffect(() => {
-    const onHashChange = () => {
-      setActiveMobileNav(getNavFromHash(window.location.hash))
-    }
-
-    window.addEventListener('hashchange', onHashChange)
-    return () => {
-      window.removeEventListener('hashchange', onHashChange)
-    }
-  }, [])
-
-  React.useEffect(() => {
     localStorage.setItem(THEME_STORAGE_KEY, themeMode)
+    if (themeMode === 'dark') {
+      document.documentElement.classList.add('theme-dark', 'dark')
+      document.body.style.backgroundColor = '#161e2f'
+    } else {
+      document.documentElement.classList.remove('theme-dark', 'dark')
+      document.body.style.backgroundColor = '#fffdf6'
+    }
+    
+    // Force update the root element so we don't have to refresh the page
+    const rootEl = document.querySelector('.dashboard-root')
+    if (rootEl) {
+      rootEl.classList.remove('theme-light', 'theme-dark')
+      rootEl.classList.add(`theme-${themeMode}`)
+    }
   }, [themeMode])
 
   React.useEffect(() => {
     localStorage.setItem(PALETTE_STORAGE_KEY, accentPalette)
+    
+    // Force update the root element so we don't have to refresh the page
+    const rootEl = document.querySelector('.dashboard-root')
+    if (rootEl) {
+      rootEl.classList.forEach((cls) => {
+        if (cls.startsWith('palette-')) {
+          rootEl.classList.remove(cls)
+        }
+      })
+      rootEl.classList.add(`palette-${accentPalette}`)
+    }
+    
+    // Also apply to body so that portals (modals, popovers) inherit the variables
+    document.body.classList.forEach((cls) => {
+      if (cls.startsWith('palette-')) {
+        document.body.classList.remove(cls)
+      }
+    })
+    document.body.classList.add(`palette-${accentPalette}`)
   }, [accentPalette])
 
   React.useEffect(() => {
@@ -174,10 +193,11 @@ export function useDashboardState() {
     }
 
     localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
+    setIsHydrated(false)
   }, [authSession])
 
   React.useEffect(() => {
-    if (!isLoaded) return
+    if (!isLoaded || isHydrated || !fetchAll) return
 
     const hydrateData = async () => {
       if (!authSession && !isSignedIn) {
@@ -185,84 +205,87 @@ export function useDashboardState() {
         return
       }
 
-    const localTasks = authSession ? (readTasksFromStorage() ?? []) : []
-    const localEvents = authSession ? (readEventsFromStorage() ?? []) : []
+      const localTasks = authSession ? (readTasksFromStorage() ?? []) : []
+      const localEvents = authSession ? (readEventsFromStorage() ?? []) : []
       const localProfile = readProfileFromStorage() ?? userProfileSeed
 
       let loadedTasks = localTasks
       let loadedEvents = localEvents
-    let loadedSubjects: typeof subjectsSeed = []
-    let loadedFiles: ManagedFile[] = []
+      let loadedSubjects: Subject[] = []
+      let loadedFiles: ManagedFile[] = []
       let loadedLessons: Lesson[] = []
+      let loadedStudyPlans: StudyPlan[] = []
       let loadedProfile = localProfile
 
       try {
-        const tasksResponse = await apiFetch('/api/tasks')
-        if (tasksResponse.ok) {
-          const serverTasks: unknown = await tasksResponse.json()
-          if (Array.isArray(serverTasks)) {
-            loadedTasks = serverTasks as Task[]
-          }
-        }
-      } catch {
-      }
+        const [
+          tasksRes,
+          eventsRes,
+          subjectsRes,
+          filesRes,
+          lessonsRes,
+          studyPlansRes,
+          profileRes,
+          tagsRes
+        ] = await Promise.allSettled([
+          apiFetch('/api/tasks'),
+          apiFetch('/api/events'),
+          apiFetch('/api/subjects'),
+          apiFetch('/api/files'),
+          apiFetch('/api/lessons'),
+          apiFetch('/api/study-plans?includeInactive=true'),
+          apiFetch('/api/profile'),
+          apiFetch('/api/tags')
+        ])
 
-      try {
-        const eventsResponse = await apiFetch('/api/events')
-        if (eventsResponse.ok) {
-          const serverEvents: unknown = await eventsResponse.json()
-          if (Array.isArray(serverEvents)) {
-            loadedEvents = serverEvents as CalendarEvent[]
-          }
+        if (tasksRes.status === 'fulfilled' && tasksRes.value.ok) {
+          const serverTasks = await tasksRes.value.json()
+          if (Array.isArray(serverTasks)) loadedTasks = serverTasks as Task[]
         }
-      } catch {
-      }
-
-      try {
-        const subjectsResponse = await apiFetch('/api/subjects')
-        if (subjectsResponse.ok) {
-          const serverSubjects: unknown = await subjectsResponse.json()
-          if (Array.isArray(serverSubjects)) {
-            loadedSubjects = serverSubjects as typeof subjectsSeed
-          }
+        if (eventsRes.status === 'fulfilled' && eventsRes.value.ok) {
+          const serverEvents = await eventsRes.value.json()
+          if (Array.isArray(serverEvents)) loadedEvents = serverEvents as CalendarEvent[]
         }
-      } catch {
-      }
-
-      try {
-        const filesResponse = await apiFetch('/api/files')
-        if (filesResponse.ok) {
-          const serverFiles: unknown = await filesResponse.json()
-          if (Array.isArray(serverFiles)) {
-            loadedFiles = serverFiles as ManagedFile[]
-          }
+        if (subjectsRes.status === 'fulfilled' && subjectsRes.value.ok) {
+          const serverSubjects = await subjectsRes.value.json()
+          if (Array.isArray(serverSubjects)) loadedSubjects = serverSubjects as Subject[]
         }
-      } catch {
-      }
-
-      try {
-        const lessonsResponse = await apiFetch('/api/lessons')
-        if (lessonsResponse.ok) {
-          const serverLessons: unknown = await lessonsResponse.json()
-          if (Array.isArray(serverLessons)) {
-            loadedLessons = serverLessons as Lesson[]
-          }
+        if (studyPlansRes.status === 'fulfilled' && studyPlansRes.value.ok) {
+          const serverStudyPlans = await studyPlansRes.value.json()
+          if (Array.isArray(serverStudyPlans)) loadedStudyPlans = serverStudyPlans as StudyPlan[]
         }
-      } catch {
-      }
-
-      try {
-        const profileResponse = await apiFetch('/api/profile')
-        if (profileResponse.ok) {
-          const serverProfile: unknown = await profileResponse.json()
-          if (typeof serverProfile === 'object' && serverProfile !== null) {
-            loadedProfile = {
-              ...userProfileSeed,
-              ...(serverProfile as Partial<UserProfile>),
+        if (filesRes.status === 'fulfilled' && filesRes.value.ok) {
+          const serverFiles = await filesRes.value.json()
+          if (Array.isArray(serverFiles)) loadedFiles = serverFiles as ManagedFile[]
+        }
+        if (lessonsRes.status === 'fulfilled' && lessonsRes.value.ok) {
+          const serverLessons = await lessonsRes.value.json()
+          if (Array.isArray(serverLessons)) loadedLessons = serverLessons as Lesson[]
+        }
+        if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
+          const serverProfile = await profileRes.value.json()
+          setAuthSession({
+            userId: serverProfile.id,
+            fullName: serverProfile.fullName,
+            email: serverProfile.email,
+            role: serverProfile.role
+          })
+          loadedProfile = serverProfile
+        } else if (profileRes.status === 'fulfilled' && profileRes.value.status === 401) {
+            setAuthSession(null)
+            if (isSignedIn) {
+              setIsBanned(true)
+              localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
+              localStorage.removeItem(PROFILE_STORAGE_KEY)
+              localStorage.removeItem(TASKS_STORAGE_KEY)
             }
-          }
         }
-      } catch {
+        if (tagsRes.status === 'fulfilled' && tagsRes.value.ok) {
+          const serverTags = await tagsRes.value.json()
+          if (Array.isArray(serverTags)) setTags(serverTags)
+        }
+      } catch (e) {
+        console.error('Hydration error:', e)
       }
 
       const nextMetaById = loadedEvents.reduce<Record<number, EventMeta>>((acc, event) => {
@@ -275,6 +298,7 @@ export function useDashboardState() {
       setSubjects(loadedSubjects)
       setManagedFiles(loadedFiles)
       setLessons(loadedLessons)
+      setStudyPlans(loadedStudyPlans)
       setProfile(loadedProfile)
       setSavedProfile(loadedProfile)
       setEventMetaById(nextMetaById)
@@ -282,55 +306,36 @@ export function useDashboardState() {
     }
 
     void hydrateData()
-  }, [apiFetch, authSession, isLoaded, isSignedIn])
+  }, [apiFetch, authSession, isLoaded, isSignedIn, isHydrated, signOut])
 
+  // Save tasks/events to localStorage whenever they change (for offline fallback)
   React.useEffect(() => {
-    if (!isHydrated || !authSession) {
-      return
-    }
-
+    if (!isHydrated || !authSession) return
     localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks))
-
-    void apiFetch('/api/tasks', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ tasks }),
-    })
-  }, [tasks, isHydrated, apiFetch, authSession])
+  }, [tasks, isHydrated, authSession])
 
   React.useEffect(() => {
-    if (!isHydrated || !authSession) {
-      return
-    }
-
+    if (!isHydrated || !authSession) return
     localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events))
-
-    void apiFetch('/api/events', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ events }),
-    })
-  }, [events, isHydrated, apiFetch, authSession])
+  }, [events, isHydrated, authSession])
 
   React.useEffect(() => {
     if (!isHydrated || !authSession) {
       return
     }
 
-    // Inicializuj fullName z authSession pokud je prázdný
-    if (!profile.fullName && authSession.fullName) {
+    // Inicializuj fullName a email z authSession pokud jsou prázdné
+    if (authSession && (!profile.fullName || !profile.email)) {
       setProfile((prevProfile) => ({
         ...prevProfile,
-        fullName: authSession.fullName,
+        fullName: prevProfile.fullName || authSession.fullName || '',
+        email: prevProfile.email || authSession.email || '',
       }))
       return
     }
 
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+    const { avatarDataUrl: _, ...profileWithoutAvatar } = profile
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileWithoutAvatar))
   }, [profile, isHydrated, authSession])
 
   const onSaveProfile = async () => {
@@ -359,12 +364,11 @@ export function useDashboardState() {
   }
 
   const ensureAuthenticated = () => {
-    if (authSession) {
-      return true
+    if (!authSession) {
+      setAuthAlertOpen(true)
+      return false
     }
-
-    window.alert('Tato akce vyzaduje prihlaseni.')
-    return false
+    return true
   }
 
   const refreshSubjects = async () => {
@@ -375,7 +379,19 @@ export function useDashboardState() {
 
     const payload: unknown = await response.json()
     if (Array.isArray(payload)) {
-      setSubjects(payload as typeof subjectsSeed)
+      setSubjects(payload as Subject[])
+    }
+  }
+
+  const refreshStudyPlans = async () => {
+    const response = await apiFetch('/api/study-plans?includeInactive=true')
+    if (!response.ok) {
+      return
+    }
+
+    const payload: unknown = await response.json()
+    if (Array.isArray(payload)) {
+      setStudyPlans(payload as StudyPlan[])
     }
   }
 
@@ -396,110 +412,200 @@ export function useDashboardState() {
     if (!response.ok) {
       return
     }
-    const payload: unknown = await response.json()
+
+    const payload = await response.json()
     if (Array.isArray(payload)) {
-      setLessons(payload as Lesson[])
+      setLessons(payload)
     }
   }
 
-  const toggleTask = (taskId: number) => {
-    if (!ensureAuthenticated()) {
-      return
+  const refreshTags = async () => {
+    const response = await apiFetch('/api/tags')
+    if (!response.ok) return
+    const payload = await response.json()
+    if (Array.isArray(payload)) {
+      setTags(payload)
     }
-
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)),
-    )
   }
 
-  const addTask = () => {
-    if (!ensureAuthenticated()) {
-      return
-    }
 
-    const title = window.prompt('Název nového úkolu')?.trim()
-    if (!title) {
-      return
-    }
+  const toggleTask = async (taskId: number) => {
+    if (!ensureAuthenticated()) return
 
-    const newTask: Task = {
-      id: Math.max(...tasks.map(t => t.id), 0) + 1,
-      title,
-      done: false,
-    }
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task) return
 
-    setTasks((prevTasks) => [...prevTasks, newTask])
+    const newDone = !task.done
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: newDone } : t)))
+
+    try {
+      await apiFetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done: newDone }),
+      })
+    } catch (e) {
+      console.error('Failed to toggle task:', e)
+      // Revert on failure
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: !newDone } : t)))
+    }
   }
 
-  const deleteTask = (taskId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+  const addTask = (title: string, priority: TaskPriority = 'NONE') => {
+    if (!ensureAuthenticated()) return
 
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
+    const trimmedTitle = title.trim()
+    if (!trimmedTitle) return
+
+    // Show task immediately in UI
+    const tempId = Date.now()
+    const tempTask: Task = { id: tempId, title: trimmedTitle, done: false, priority }
+    setTasks((prev) => [...prev, tempTask])
+
+    // Persist to server in background (don't block render)
+    apiFetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, done: false, priority }),
+    }).then((res) => {
+      if (res.ok) {
+        return res.json().then((serverTask: Task) => {
+          setTasks((prev) => prev.map((t) => (t.id === tempId ? serverTask : t)))
+        })
+      }
+      console.error('Failed to create task, status:', res.status)
+      setTasks((prev) => prev.filter((t) => t.id !== tempId))
+    }).catch((e) => {
+      console.error('Failed to create task:', e)
+      setTasks((prev) => prev.filter((t) => t.id !== tempId))
+    })
   }
 
-  const removeEvent = (eventId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+  const updateTask = async (taskId: number, title: string, priority?: TaskPriority) => {
+    if (!ensureAuthenticated()) return
 
-    setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId))
+    const trimmedTitle = title.trim()
+    if (!trimmedTitle) return
+
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, title: trimmedTitle, ...(priority !== undefined && { priority }) } : t)))
+
+    try {
+      await apiFetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: trimmedTitle, ...(priority !== undefined && { priority }) }),
+      })
+    } catch (e) {
+      console.error('Failed to update task:', e)
+    }
+  }
+
+  const deleteTask = async (taskId: number) => {
+    if (!ensureAuthenticated()) return
+
+    const prev = tasks
+    setTasks((p) => p.filter((t) => t.id !== taskId))
+
+    try {
+      await apiFetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+    } catch (e) {
+      console.error('Failed to delete task:', e)
+      setTasks(prev) // Revert on failure
+    }
+  }
+
+  const removeEvent = async (eventId: number) => {
+    if (!ensureAuthenticated()) return
+
+    const prev = events
+    setEvents((p) => p.filter((e) => e.id !== eventId))
     setEventMetaById((prevMeta) => {
       const updatedMeta = { ...prevMeta }
       delete updatedMeta[eventId]
       return updatedMeta
     })
+
+    try {
+      await apiFetch(`/api/events/${eventId}`, { method: 'DELETE' })
+    } catch (e) {
+      console.error('Failed to delete event:', e)
+      setEvents(prev) // Revert on failure
+    }
   }
 
-  const addDesktopEvent = () => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+  const addDesktopEvent = (eventData: { title: string, time: string, location: string, priority: 'low' | 'medium' | 'high' }) => {
+    if (!ensureAuthenticated()) return
 
-    const title = window.prompt('Název události')?.trim()
-    if (!title) {
-      return
-    }
+    const title = eventData.title.trim()
+    if (!title) return
 
-    const time = window.prompt('Čas (např. 09:00 - 10:30)')
-    const location = window.prompt('Místo')
-    
-    let priority: 'low' | 'medium' | 'high' = 'medium'
-    const priorityInput = window.prompt('Priorita (nízká/střední/vysoká)')?.toLowerCase().trim()
-    if (priorityInput === 'nízká' || priorityInput === 'low') {
-      priority = 'low'
-    } else if (priorityInput === 'střední' || priorityInput === 'medium') {
-      priority = 'medium'
-    } else if (priorityInput === 'vysoká' || priorityInput === 'high') {
-      priority = 'high'
-    }
+    const { time, location, priority } = eventData
 
-    const newEventId = Date.now()
+    const tempId = Date.now()
     const defaultMeta = getDefaultMetaForTitle(title)
     const nextEvent: CalendarEvent = {
-      id: newEventId,
+      id: tempId,
       title,
       date: selectedDateIso,
       time: time?.trim() || defaultMeta.time,
-      location: location?.trim() || defaultMeta.location,
-      subjectId: null,
+      location: location?.trim() || '',
       priority,
     }
 
+    // Show event immediately in UI
     setEvents((prevEvents) => [...prevEvents, nextEvent])
-
     setEventMetaById((prevMeta) => ({
       ...prevMeta,
-      [newEventId]: {
+      [tempId]: {
         ...defaultMeta,
         time: time?.trim() || defaultMeta.time,
-        location: location?.trim() || defaultMeta.location,
+        location: location?.trim() || '',
       },
     }))
+
+    // Persist to server in background (don't block render)
+    apiFetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        date: selectedDateIso,
+        time: time?.trim() || null,
+        location: location?.trim() || null,
+      }),
+    }).then((res) => {
+      if (res.ok) {
+        return res.json().then((body: any) => {
+          const serverEvent: CalendarEvent = body.event ?? body
+          setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...serverEvent, priority } : e)))
+          setEventMetaById((prevMeta) => {
+            const updated = { ...prevMeta }
+            const meta = updated[tempId]
+            delete updated[tempId]
+            if (meta) updated[serverEvent.id] = meta
+            return updated
+          })
+        })
+      }
+      console.error('Failed to create event, status:', res.status)
+      setEvents((prev) => prev.filter((e) => e.id !== tempId))
+      setEventMetaById((prevMeta) => {
+        const updated = { ...prevMeta }
+        delete updated[tempId]
+        return updated
+      })
+    }).catch((e) => {
+      console.error('Failed to create event:', e)
+      setEvents((prev) => prev.filter((e) => e.id !== tempId))
+      setEventMetaById((prevMeta) => {
+        const updated = { ...prevMeta }
+        delete updated[tempId]
+        return updated
+      })
+    })
   }
 
-  const onUploadFiles = async (incomingFiles: FileList | File[] | null, options?: { subjectId?: number; lessonId?: number }) => {
+  const onUploadFiles = async (incomingFiles: FileList | File[] | null, options?: { subjectId?: number }) => {
     if (!ensureAuthenticated()) {
       return
     }
@@ -510,16 +616,18 @@ export function useDashboardState() {
 
     const filesArray = incomingFiles instanceof FileList ? Array.from(incomingFiles) : incomingFiles
 
+    const now = new Date()
+    const formattedTime = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+
     const tempFiles = filesArray.map((file) => ({
       id: Date.now() + Math.floor(Math.random() * 100000),
       name: file.name,
       size: formatFileSize(file.size),
       sizeBytes: file.size,
-      addedLabel: 'Nahrávám na S3...',
+      addedLabel: formattedTime,
       category: getManagedFileCategory(file.name),
       shared: false,
       subjectId: options?.subjectId ?? null,
-      lessonId: options?.lessonId ?? null,
     }))
 
     setManagedFiles((prevFiles) => [...tempFiles, ...prevFiles])
@@ -552,12 +660,11 @@ export function useDashboardState() {
           body: JSON.stringify({
             name: file.name,
             size: file.size,
-            addedLabel: 'Přidáno právě teď',
+            addedLabel: formattedTime,
             shared: false,
             fileKey,
             fileUrl,
             subjectId: options?.subjectId,
-            lessonId: options?.lessonId,
           }),
         })
       } catch (err) {
@@ -575,14 +682,96 @@ export function useDashboardState() {
 
     const title = note.length > 50 ? note.slice(0, 50) + '...' : note
     
-    await apiFetch('/api/lessons', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subjectId, title, content: note }),
-    })
+    try {
+      const res = await apiFetch('/api/lessons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subjectId, title, content: note }),
+      })
 
-    await refreshLessons()
-    await refreshSubjects()
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        toast.error(errorData?.error || 'Nepodařilo se přidat poznámku.')
+        console.error('Failed to add note:', errorData)
+        return
+      }
+
+      await refreshLessons()
+      await refreshSubjects()
+    } catch (e) {
+      toast.error('Došlo k chybě při přidávání poznámky.')
+      console.error('Failed to add note:', e)
+    }
+  }
+
+  const rateLesson = async (lessonId: number, vote: 'LIKE' | 'DISLIKE' | null) => {
+    if (!ensureAuthenticated()) return
+
+    const prevLessons = lessons
+    // Optimistic UI update
+    setLessons((prev) => prev.map(l => {
+      if (l.id === lessonId) {
+        let likes = Number(l.likes ?? 0)
+        let dislikes = Number(l.dislikes ?? 0)
+        const oldVote = l.userVote
+        
+        if (oldVote === 'LIKE') likes--
+        if (oldVote === 'DISLIKE') dislikes--
+        if (vote === 'LIKE') likes++
+        if (vote === 'DISLIKE') dislikes++
+        
+        return { ...l, userVote: vote, likes: Math.max(0, likes), dislikes: Math.max(0, dislikes) }
+      }
+      return l
+    }))
+
+    try {
+      const res = await apiFetch(`/api/lessons/${lessonId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote }),
+      })
+      if (!res.ok) throw new Error('Nepodařilo se uložit hodnocení.')
+    } catch (e) {
+      toast.error('Došlo k chybě při ukládání hodnocení.')
+      console.error('Failed to rate lesson:', e)
+      setLessons(prevLessons) // Revert on failure
+    }
+  }
+
+  const rateFile = async (fileId: number, vote: 'LIKE' | 'DISLIKE' | null) => {
+    if (!ensureAuthenticated()) return
+
+    const prevFiles = managedFiles
+    // Optimistic UI update
+    setManagedFiles((prev) => prev.map(f => {
+      if (f.id === fileId) {
+        let likes = Number(f.likes ?? 0)
+        let dislikes = Number(f.dislikes ?? 0)
+        const oldVote = f.userVote
+        
+        if (oldVote === 'LIKE') likes--
+        if (oldVote === 'DISLIKE') dislikes--
+        if (vote === 'LIKE') likes++
+        if (vote === 'DISLIKE') dislikes++
+        
+        return { ...f, userVote: vote, likes: Math.max(0, likes), dislikes: Math.max(0, dislikes) }
+      }
+      return f
+    }))
+
+    try {
+      const res = await apiFetch(`/api/files/${fileId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote }),
+      })
+      if (!res.ok) throw new Error('Nepodařilo se uložit hodnocení.')
+    } catch (e) {
+      toast.error('Došlo k chybě při ukládání hodnocení.')
+      console.error('Failed to rate file:', e)
+      setManagedFiles(prevFiles) // Revert on failure
+    }
   }
 
   const onDropToUpload = (event: React.DragEvent<HTMLDivElement>) => {
@@ -599,17 +788,16 @@ export function useDashboardState() {
 
   const onOpenProfile = () => {
     setActiveMobileNav('profile')
-    window.location.hash = 'profile'
   }
 
-  const onChangeProfile = (field: keyof Omit<UserProfile, 'avatarDataUrl'>, value: string) => {
+  const onChangeProfile = (updates: Partial<UserProfile>) => {
     if (!ensureAuthenticated()) {
       return
     }
 
     setProfile((prevProfile) => ({
       ...prevProfile,
-      [field]: value,
+      ...updates,
     }))
   }
 
@@ -656,83 +844,150 @@ export function useDashboardState() {
     setProfile(userProfileSeed)
   }
 
-  const logout = async () => {
-    setAuthSession(null)
+  const clearUserData = () => {
     setIsHydrated(false)
     setTasks([])
     setEvents([])
     setSubjects([])
     setManagedFiles([])
     setLessons([])
+    setStudyPlans([])
+    setTags([])
     setProfile(userProfileSeed)
+    setSavedProfile(userProfileSeed)
     localStorage.removeItem(TASKS_STORAGE_KEY)
     localStorage.removeItem(EVENTS_STORAGE_KEY)
     localStorage.removeItem(PROFILE_STORAGE_KEY)
+  }
+
+  const logout = async () => {
+    clearUserData()
+    setAuthSession(null)
     await signOut()
   }
 
-  const createSubject = () => {
-    if (!ensureAuthenticated()) {
-      return
-    }
+  // --- TAGS ---
+  const createTag = async (data: { name: string, color: string }) => {
+    if (!ensureAuthenticated()) return
+    const res = await apiFetch('/api/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    if (res.ok) void refreshTags()
+    return res
+  }
 
-    const name = window.prompt('Název předmětu')?.trim()
-    if (!name) {
-      return
-    }
+  const deleteTag = async (id: number) => {
+    if (!ensureAuthenticated()) return
+    const res = await apiFetch(`/api/tags/${id}`, { method: 'DELETE' })
+    if (res.ok) void refreshTags()
+    return res
+  }
 
-    const teacher = window.prompt('Vyučující')?.trim()
-    if (!teacher) {
-      return
-    }
+  const createSubject = (subjectData: { name: string, teacher: string, code: string, tagIds?: number[] }) => {
+    if (!ensureAuthenticated()) return
 
-    const code = window.prompt('Kód předmětu (např. PB138)')?.trim().toUpperCase()
-    if (!code) {
-      return
-    }
+    const name = subjectData.name.trim()
+    const teacher = subjectData.teacher.trim()
+    const code = subjectData.code.trim().toUpperCase()
+
+    if (!name || !teacher || !code) return
 
     void apiFetch('/api/subjects', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, teacher, code }),
+      body: JSON.stringify({ name, teacher, code, studyPlanId: activeStudyPlanId, tagIds: subjectData.tagIds || [] }),
     }).then(() => {
       void refreshSubjects()
     })
   }
 
-  const updateSubject = (subjectId: number) => {
-    if (!ensureAuthenticated()) {
-      return
+  const createStudyPlan = (studyPlanData: { name: string, description?: string }) => {
+    if (!ensureAuthenticated()) return
+
+    const name = studyPlanData.name.trim()
+    if (!name) return
+
+    void apiFetch('/api/study-plans', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, description: studyPlanData.description }),
+    }).then(() => {
+      void refreshStudyPlans()
+    })
+  }
+
+  const updateStudyPlan = (studyPlanId: number, data: { name: string, description?: string }) => {
+    if (!ensureAuthenticated()) return
+    void apiFetch(`/api/study-plans/${studyPlanId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(() => {
+      void refreshStudyPlans()
+    })
+  }
+
+  const toggleStudyPlanArchived = (studyPlanId: number) => {
+    if (!ensureAuthenticated()) return
+    const plan = studyPlans.find((item) => item.id === studyPlanId)
+    if (!plan) return
+    void apiFetch(`/api/study-plans/${studyPlanId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive: !plan.isActive }),
+    }).then(() => {
+      void refreshStudyPlans()
+    })
+  }
+
+  const deleteStudyPlan = (studyPlanId: number) => {
+    if (!ensureAuthenticated()) return
+    void apiFetch(`/api/study-plans/${studyPlanId}`, {
+      method: 'DELETE',
+    }).then(() => {
+      void refreshStudyPlans()
+    })
+  }
+
+  const shareStudyPlan = async (studyPlanId: number, email: string) => {
+    if (!ensureAuthenticated()) return
+
+    const res = await apiFetch(`/api/study-plans/${studyPlanId}/share`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role: 'VIEWER' }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      throw new Error(data?.error || 'Nepodařilo se nasdílet studijní plán.')
     }
+    toast.success(`Studijní plán byl úspěšně nasdílen uživateli ${email}`)
+  }
+
+  const updateSubject = (subjectId: number, subjectData: { name: string, teacher: string, code: string, tagIds?: number[] }) => {
+    if (!ensureAuthenticated()) return
 
     const subject = subjects.find((item) => item.id === subjectId)
-    if (!subject) {
-      return
-    }
+    if (!subject) return
 
-    const name = window.prompt('Název předmětu', subject.name)?.trim()
-    if (!name) {
-      return
-    }
+    const name = subjectData.name.trim()
+    const teacher = subjectData.teacher.trim()
+    const code = subjectData.code.trim().toUpperCase()
 
-    const teacher = window.prompt('Vyučující', subject.teacher)?.trim()
-    if (!teacher) {
-      return
-    }
-
-    const code = window.prompt('Kód předmětu', subject.code)?.trim().toUpperCase()
-    if (!code) {
-      return
-    }
+    if (!name || !teacher || !code) return
 
     void apiFetch(`/api/subjects/${subjectId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, teacher, code }),
+      body: JSON.stringify({ name, teacher, code, tagIds: subjectData.tagIds }),
     }).then(() => {
       void refreshSubjects()
     })
@@ -769,10 +1024,6 @@ export function useDashboardState() {
       return
     }
 
-    if (!window.confirm(`Opravdu smazat předmět "${subject.name}"?`)) {
-      return
-    }
-
     void apiFetch(`/api/subjects/${subjectId}`, { method: 'DELETE' }).then(() => {
       void refreshSubjects()
     })
@@ -782,6 +1033,8 @@ export function useDashboardState() {
     if (!ensureAuthenticated()) {
       return
     }
+
+    setManagedFiles(prev => prev.map(f => f.id === fileId ? { ...f, ...patch } : f))
 
     void apiFetch(`/api/files/${fileId}`, {
       method: 'PUT',
@@ -804,66 +1057,55 @@ export function useDashboardState() {
       return
     }
 
-    if (!window.confirm(`Opravdu smazat soubor \"${file.name}\"?`)) {
-      return
-    }
+    setManagedFiles(prev => prev.filter(f => f.id !== fileId))
 
     void apiFetch(`/api/files/${fileId}`, { method: 'DELETE' }).then(() => {
       void refreshFiles()
     })
   }
 
-  const renameFile = (fileId: number) => {
+  const renameFile = (fileId: number, newName: string) => {
     const file = managedFiles.find((item) => item.id === fileId)
-    if (!file) {
-      return
-    }
+    if (!file) return
 
-    const nextName = window.prompt('Nový název souboru', file.name)?.trim()
-    if (!nextName || nextName === file.name) {
-      return
-    }
+    const nextName = newName.trim()
+    if (!nextName || nextName === file.name) return
 
     updateFile(fileId, { name: nextName })
   }
 
-  const toggleFileShared = (fileId: number) => {
+  const changeFileSubject = (fileId: number, subjectId: number | null) => {
+    updateFile(fileId, { subjectId })
+  }
+
+  const toggleFileShared = async (fileId: number, email?: string) => {
     const file = managedFiles.find((item) => item.id === fileId)
     if (!file) {
       return
     }
 
-    updateFile(fileId, { shared: !file.shared })
-  }
-
-  const manageFile = (fileId: number) => {
-    const file = managedFiles.find((item) => item.id === fileId)
-    if (!file) {
-      return
-    }
-
-    const action = window
-      .prompt(
-        `Správa souboru: ${file.name}\nZadej akci: rename | share | delete`,
-        'rename',
-      )
-      ?.trim()
-      .toLowerCase()
-
-    if (action === 'rename') {
-      renameFile(fileId)
-      return
-    }
-
-    if (action === 'share') {
-      toggleFileShared(fileId)
-      return
-    }
-
-    if (action === 'delete') {
-      removeFile(fileId)
+    if (email) {
+      try {
+        const res = await apiFetch(`/api/files/${fileId}/share`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetUserEmail: email, permission: 'read' }),
+        })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Nepodařilo se nasdílet soubor.')
+        }
+        alert(`Soubor úspěšně nasdílen uživateli ${email}`)
+      } catch (err: any) {
+        alert(err.message)
+        throw err
+      }
+    } else {
+      updateFile(fileId, { shared: !file.shared })
     }
   }
+
+
 
   const tasksDone = tasks.filter((task) => task.done).length
   const isCalendarScreen = activeMobileNav === 'calendar'
@@ -941,6 +1183,17 @@ export function useDashboardState() {
           return false
         }
 
+        const matchesStudyPlan = activeStudyPlanId ? subject.studyPlanId === activeStudyPlanId : true
+        if (!matchesStudyPlan) {
+          return false
+        }
+
+        if (tagFilter !== null) {
+          if (!subject.tags?.some((t: any) => t.id === tagFilter)) {
+            return false
+          }
+        }
+
         if (subjectFilter === 'active') {
           return !subject.archived
         }
@@ -951,7 +1204,7 @@ export function useDashboardState() {
 
         return true
       }),
-    [subjects, subjectSearch, subjectFilter],
+    [subjects, subjectSearch, subjectFilter, activeStudyPlanId, tagFilter],
   )
 
   const desktopSubjects = React.useMemo(
@@ -995,6 +1248,8 @@ export function useDashboardState() {
     setSubjectSearch,
     subjectFilter,
     setSubjectFilter,
+    tagFilter,
+    setTagFilter,
     isDragActive,
     setIsDragActive,
     profile,
@@ -1015,6 +1270,7 @@ export function useDashboardState() {
     desktopSubjects,
     toggleTask,
     addTask,
+    updateTask,
     deleteTask,
     removeEvent,
     addDesktopEvent,
@@ -1031,13 +1287,32 @@ export function useDashboardState() {
     hasUnsavedProfileChanges,
     isSavingProfile,
     logout,
+    clearUserData,
     setAuthSession,
     createSubject,
     updateSubject,
     toggleSubjectArchived,
     deleteSubject,
-    manageFile,
+    renameFile,
     removeFile,
     toggleFileShared,
+    authAlertOpen,
+    setAuthAlertOpen,
+    isBanned,
+    setIsBanned,
+    changeFileSubject,
+    studyPlans,
+    activeStudyPlanId,
+    setActiveStudyPlanId,
+    createStudyPlan,
+    updateStudyPlan,
+    toggleStudyPlanArchived,
+    deleteStudyPlan,
+    shareStudyPlan,
+    tags,
+    createTag,
+    deleteTag,
+    rateLesson,
+    rateFile,
   }
 }

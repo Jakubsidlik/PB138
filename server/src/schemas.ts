@@ -3,9 +3,7 @@ import { z } from 'zod'
 export const studyPlanSchema = z.object({
   name: z.string().trim().min(1, 'Pole name je povinne.'),
   description: z.string().trim().nullable().optional(),
-  faculty: z.string().trim().nullable().optional(),
-  startDate: z.string().nullable().optional(),
-  endDate: z.string().nullable().optional(),
+
   isActive: z.boolean().optional().default(true),
   isShared: z.boolean().optional().default(false),
 })
@@ -17,20 +15,22 @@ export const subjectSchema = z.object({
   code: z.string().trim().min(1, 'Pole code je povinne.').toUpperCase(),
   studyPlanId: z.number().nullable().optional(),
   isShared: z.boolean().optional().default(false),
+  tagIds: z.array(z.number()).optional(),
 })
 export const updateSubjectSchema = subjectSchema.partial().extend({
-  archived: z.boolean().optional()
+  archived: z.boolean().optional(),
 })
+
+export const tagSchema = z.object({
+  name: z.string().trim().min(1, 'Pole name je povinne.'),
+  color: z.string().trim().min(1, 'Pole color je povinne.'),
+})
+
 
 export const taskSchema = z.object({
   title: z.string().trim().min(1, 'Pole title je povinne.'),
   done: z.boolean().optional().default(false),
-  subjectId: z.number().nullable().optional(),
-  studyPlanId: z.number().nullable().optional(),
-  favorite: z.boolean().optional().default(false),
-  tag: z.string().trim().nullable().optional(),
   priority: z.enum(['NONE', 'LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
-  deadline: z.string().nullable().optional(),
 })
 export const updateTaskSchema = taskSchema.partial()
 
@@ -39,9 +39,7 @@ export const eventSchema = z.object({
   date: z.string().trim().min(1, 'Pole title a date jsou povinna.'),
   time: z.string().nullable().optional(),
   location: z.string().nullable().optional(),
-  subjectId: z.number().nullable().optional(),
-  recurrence: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']).optional(),
-  repeatCount: z.number().optional(),
+
   isShared: z.boolean().optional().default(false),
 })
 export const updateEventSchema = eventSchema.partial()
@@ -53,40 +51,27 @@ export const fileSchema = z.object({
   shared: z.boolean().optional(),
   isShared: z.boolean().optional(),
   subjectId: z.number().nullable().optional(),
-  lessonId: z.number().nullable().optional(),
   fileKey: z.string().nullable().optional(),
   fileUrl: z.string().nullable().optional(),
 })
 export const updateFileSchema = fileSchema.partial()
 
-export const fileCommentSchema = z.object({
-  comment: z.string().trim().min(1, 'Pole comment je povinne.')
+export const shareFileSchema = z.object({
+  targetUserEmail: z.string().email('Neplatný formát e-mailu'),
+  permission: z.enum(['read', 'write']).default('read'),
 })
+
+
 
 export const lessonSchema = z.object({
   title: z.string().trim().min(1, 'Pole title je povinne.'),
   content: z.string().nullable().optional(),
   subjectId: z.number().nullable().optional(),
-  studyPlanId: z.number().nullable().optional(),
   isShared: z.boolean().optional().default(false),
   orderIndex: z.number().optional().default(0),
 })
 export const updateLessonSchema = lessonSchema.partial()
 
-export const lessonNoteSchema = z.object({
-  note: z.string().trim().min(1, 'Pole note je povinne.'),
-  isPinned: z.boolean().optional().default(false),
-})
-export const updateLessonNoteSchema = lessonNoteSchema.partial()
-
-export const textAnnotationSchema = z.object({
-  targetType: z.enum(['LESSON', 'LESSON_NOTE', 'FILE_COMMENT']),
-  targetId: z.union([z.string(), z.number()]),
-  startOffset: z.number().min(0, 'Neplatny interval oznaceni textu.'),
-  endOffset: z.number().min(0, 'Neplatny interval oznaceni textu.'),
-  selectedText: z.string().trim().min(1, 'Pole selectedText a comment jsou povinna.'),
-  comment: z.string().trim().min(1, 'Pole selectedText a comment jsou povinna.'),
-})
 
 export const profileSchema = z.object({
   fullName: z.string().trim().min(1, 'Pole fullName je povinne.'),
@@ -94,12 +79,10 @@ export const profileSchema = z.object({
   password: z.string().optional(),
   role: z.enum(['REGISTERED', 'ADMIN']).optional(),
   school: z.string().trim().nullable().optional(),
-  faculty: z.string().trim().nullable().optional(),
   studyMajor: z.string().trim().nullable().optional(),
   studyYear: z.string().trim().nullable().optional(),
   studyType: z.string().trim().nullable().optional(),
-  birthDate: z.string().nullable().optional(),
-  bio: z.string().trim().nullable().optional(),
+
   avatarDataUrl: z.string().nullable().optional(),
 })
 export const updateProfileSchema = profileSchema.partial()
@@ -124,7 +107,6 @@ export const bulkTasksSchema = z.object({
     id: z.number(),
     title: z.string().trim().min(1, 'Nazev ukolu nesmi byt prazdny.'),
     done: z.boolean(),
-    subjectId: z.number().nullable().optional()
   }))
 })
 
@@ -136,6 +118,5 @@ export const bulkEventsSchema = z.object({
     time: z.string().nullable().optional(),
     location: z.string().nullable().optional(),
     isShared: z.boolean().optional().default(false),
-    subjectId: z.number().nullable().optional()
   }))
 })

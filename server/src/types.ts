@@ -1,11 +1,10 @@
-import { EventRecurrence, UserRole } from '@prisma/client'
+import { type UserRole } from './db/schema.js'
 
 export type ApiTask = {
   id: number
   title: string
   done: boolean
-  subjectId: number | null
-  tag?: string | null
+  priority?: string | null
 }
 
 export type ApiEvent = {
@@ -14,10 +13,7 @@ export type ApiEvent = {
   date: string
   time: string | null
   location: string | null
-  subjectId: number | null
   isShared?: boolean
-  recurrence?: EventRecurrence
-  recurrenceGroupId?: string | null
 }
 
 export type AuthActor = {

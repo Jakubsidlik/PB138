@@ -1,5 +1,5 @@
-import { AnnotationTargetType, CollaborationRole, EventRecurrence, TaskPriority, UserRole } from '@prisma/client'
 import express from 'express'
+import { type CollaborationRole, type TaskPriority, type UserRole } from './db/schema.js'
 import { ApiEvent, ApiTask, CursorPagination } from './types.js'
 
 export const asBigInt = (value: unknown): bigint | null => {
@@ -23,7 +23,12 @@ export const asNumberId = (value: bigint | null | undefined): number | null => {
   return Number.isSafeInteger(numeric) ? numeric : null
 }
 
-export const toDateOnlyIso = (value: Date) => value.toISOString().slice(0, 10)
+export const toDateOnlyIso = (value: Date) => {
+  const y = value.getFullYear()
+  const m = String(value.getMonth() + 1).padStart(2, '0')
+  const d = String(value.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 export const parseOptionalDate = (value: unknown): Date | null | undefined => {
   if (value === undefined) return undefined
@@ -45,20 +50,13 @@ export const parseUserRole = (value: unknown): UserRole | undefined => {
   return undefined
 }
 
-export const parseEventRecurrence = (value: unknown): EventRecurrence | undefined => {
-  if (value === 'NONE' || value === 'DAILY' || value === 'WEEKLY' || value === 'MONTHLY') return value as EventRecurrence
-  return undefined
-}
+
 
 export const parseCollaborationRole = (value: unknown): CollaborationRole | undefined => {
   if (value === 'VIEWER' || value === 'CONTRIBUTOR') return value as CollaborationRole
   return undefined
 }
 
-export const parseAnnotationTargetType = (value: unknown): AnnotationTargetType | undefined => {
-  if (value === 'LESSON' || value === 'LESSON_NOTE' || value === 'FILE_COMMENT') return value as AnnotationTargetType
-  return undefined
-}
 
 export const addDays = (date: Date, days: number) => {
   const next = new Date(date)
@@ -72,30 +70,6 @@ export const addMonths = (date: Date, months: number) => {
   return next
 }
 
-export const buildRecurringDates = (baseDate: Date, recurrence: EventRecurrence, repeatCount: number): Date[] => {
-  const safeCount = Math.min(Math.max(repeatCount, 1), 24)
-  const dates: Date[] = []
-  for (let index = 0; index < safeCount; index += 1) {
-    if (index === 0) {
-      dates.push(new Date(baseDate))
-      continue
-    }
-    if (recurrence === 'DAILY') {
-      dates.push(addDays(baseDate, index))
-      continue
-    }
-    if (recurrence === 'WEEKLY') {
-      dates.push(addDays(baseDate, index * 7))
-      continue
-    }
-    if (recurrence === 'MONTHLY') {
-      dates.push(addMonths(baseDate, index))
-      continue
-    }
-    break
-  }
-  return dates
-}
 
 export const parseFileSizeToBytes = (value: unknown): number | null | undefined => {
   if (value === undefined) return undefined
@@ -129,16 +103,13 @@ export const inferFileCategory = (fileName: string): 'folder' | 'pdf' | 'image' 
   return 'other'
 }
 
-export const mapTask = (task: any): ApiTask & { userId: number, studyPlanId: number | null, favorite: boolean, tag: string | null, deadline: string | null, deletedAt: string | null } => ({
+export const mapTask = (task: any): ApiTask & { userId: number, deletedAt: string | null } => ({
   id: Number(task.id),
   userId: Number(task.userId),
   title: task.title,
   done: task.done,
-  subjectId: asNumberId(task.subjectId),
-  studyPlanId: asNumberId(task.studyPlanId),
-  favorite: task.favorite,
-  tag: task.tag,
-  deadline: task.deadline ? task.deadline.toISOString() : null,
+  priority: task.priority,
+
   deletedAt: task.deletedAt ? task.deletedAt.toISOString() : null,
 })
 
@@ -150,17 +121,15 @@ export const mapEvent = (event: any): ApiEvent & { userId: number, deletedAt: st
   time: event.time,
   location: event.location,
   isShared: event.isShared,
-  recurrence: event.recurrence,
-  recurrenceGroupId: event.recurrenceGroupId,
-  subjectId: asNumberId(event.subjectId),
+
   deletedAt: event.deletedAt ? event.deletedAt.toISOString() : null,
 })
 
 export const mapFileRecord = (file: any) => ({
   id: Number(file.id),
   userId: Number(file.userId),
+  userEmail: file.userEmail,
   subjectId: asNumberId(file.subjectId),
-  lessonId: asNumberId(file.lessonId),
   name: file.name,
   category: inferFileCategory(file.name),
   size: formatFileSize(file.size),
@@ -170,8 +139,12 @@ export const mapFileRecord = (file: any) => ({
   addedLabel: file.addedLabel,
   isShared: file.isShared,
   shared: file.isShared,
+  likes: file.likes ?? 0,
+  dislikes: file.dislikes ?? 0,
+  userVote: file.userVote ?? null,
   deletedAt: file.deletedAt ? file.deletedAt.toISOString() : null,
 })
+
 
 export const parseCursorPagination = (req: express.Request, options?: { defaultLimit?: number, maxLimit?: number }): CursorPagination => {
   const defaultLimit = options?.defaultLimit ?? 25

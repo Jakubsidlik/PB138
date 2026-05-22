@@ -2,19 +2,14 @@ import type {
   ApiError,
   AuthResponse,
   CalendarEvent,
-  CreateAnnotationRequest,
   CreateEventRequest,
-  CreateFileCommentRequest,
   CreateFileRequest,
-  CreateLessonNoteRequest,
   CreateLessonRequest,
   CreateStudyPlanRequest,
   CreateSubjectRequest,
   CreateTaskRequest,
-  FileComment,
   FileRecord,
   Lesson,
-  LessonNote,
   LoginRequest,
   PaginatedResponse,
   RegisterRequest,
@@ -23,11 +18,9 @@ import type {
   StudyPlanCollaborator,
   Subject,
   Task,
-  TextAnnotation,
+  Tag,
   UpdateEventRequest,
-  UpdateFileCommentRequest,
   UpdateFileRequest,
-  UpdateLessonNoteRequest,
   UpdateLessonRequest,
   UpdateStudyPlanRequest,
   UpdateSubjectRequest,
@@ -39,9 +32,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 class ApiClient {
   private userId: number | null = null
+  private token: string | null = null
 
   setUserId(userId: number | null) {
     this.userId = userId
+  }
+
+  setToken(token: string | null) {
+    this.token = token
   }
 
   private async request<T>(
@@ -56,6 +54,10 @@ class ApiClient {
 
     if (this.userId !== null) {
       headers['x-user-id'] = String(this.userId)
+    }
+
+    if (this.token !== null) {
+      headers['Authorization'] = `Bearer ${this.token}`
     }
 
     const options: RequestInit = {
@@ -103,6 +105,14 @@ class ApiClient {
   // User endpoints
   async getUsers() {
     return this.request<User[]>('GET', '/api/users')
+  }
+
+  async adminUpdateUser(id: number, data: any) {
+    return this.request<User>('PUT', `/api/users/${id}`, data)
+  }
+
+  async adminDeleteUser(id: number) {
+    return this.request<{ success: boolean }>('DELETE', `/api/users/${id}`)
   }
 
   async getProfile() {
@@ -173,10 +183,22 @@ class ApiClient {
     return this.request('DELETE', `/api/subjects/${id}`)
   }
 
+  // Tags API
+  async getTags() {
+    return this.request<Tag[]>('GET', '/api/tags')
+  }
+
+  async createTag(payload: { name: string, color: string }) {
+    return this.request<Tag>('POST', '/api/tags', payload)
+  }
+
+  async deleteTag(id: number) {
+    return this.request('DELETE', `/api/tags/${id}`)
+  }
+
   // Task endpoints
-  async getTasks(studyPlanId?: number | null) {
-    const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
-    return this.request<PaginatedResponse<Task>>('GET', `/api/tasks${query}`)
+  async getTasks() {
+    return this.request<PaginatedResponse<Task>>('GET', `/api/tasks?paginated=true`)
   }
 
   async createTask(payload: CreateTaskRequest) {
@@ -204,9 +226,8 @@ class ApiClient {
   }
 
   // Event endpoints
-  async getEvents(studyPlanId?: number | null) {
-    const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
-    return this.request<PaginatedResponse<CalendarEvent>>('GET', `/api/events${query}`)
+  async getEvents() {
+    return this.request<PaginatedResponse<CalendarEvent>>('GET', `/api/events?paginated=true`)
   }
 
   async createEvent(payload: CreateEventRequest) {
@@ -226,9 +247,8 @@ class ApiClient {
   }
 
   // File endpoints
-  async getFiles(studyPlanId?: number | null) {
-    const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
-    return this.request<PaginatedResponse<FileRecord>>('GET', `/api/files${query}`)
+  async getFiles() {
+    return this.request<PaginatedResponse<FileRecord>>('GET', `/api/files?paginated=true`)
   }
 
   async getPublicFiles() {
@@ -264,27 +284,9 @@ class ApiClient {
     })
   }
 
-  // File Comment endpoints
-  async getFileComments(fileId: number) {
-    return this.request<PaginatedResponse<FileComment>>('GET', `/api/files/${fileId}/comments?paginated=true`)
-  }
-
-  async createFileComment(fileId: number, payload: CreateFileCommentRequest) {
-    return this.request<FileComment>('POST', `/api/files/${fileId}/comments`, payload)
-  }
-
-  async updateFileComment(commentId: number, payload: UpdateFileCommentRequest) {
-    return this.request<FileComment>('PATCH', `/api/file-comments/${commentId}`, payload)
-  }
-
-  async deleteFileComment(commentId: number) {
-    return this.request('DELETE', `/api/file-comments/${commentId}`)
-  }
-
   // Lesson endpoints
-  async getLessons(studyPlanId?: number | null) {
-    const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
-    return this.request<PaginatedResponse<Lesson>>('GET', `/api/lessons${query}`)
+  async getLessons() {
+    return this.request<PaginatedResponse<Lesson>>('GET', `/api/lessons?paginated=true`)
   }
 
   async createLesson(payload: CreateLessonRequest) {
@@ -299,35 +301,6 @@ class ApiClient {
     return this.request('DELETE', `/api/lessons/${id}`)
   }
 
-  // Lesson Note endpoints
-  async getLessonNotes(lessonId: number) {
-    return this.request<PaginatedResponse<LessonNote>>('GET', `/api/lessons/${lessonId}/notes?paginated=true`)
-  }
-
-  async createLessonNote(lessonId: number, payload: CreateLessonNoteRequest) {
-    return this.request<LessonNote>('POST', `/api/lessons/${lessonId}/notes`, payload)
-  }
-
-  async updateLessonNote(noteId: number, payload: UpdateLessonNoteRequest) {
-    return this.request<LessonNote>('PATCH', `/api/lesson-notes/${noteId}`, payload)
-  }
-
-  async deleteLessonNote(noteId: number) {
-    return this.request('DELETE', `/api/lesson-notes/${noteId}`)
-  }
-
-  // Annotation endpoints
-  async getAnnotations(targetId: number) {
-    return this.request<PaginatedResponse<TextAnnotation>>('GET', `/api/annotations?targetId=${targetId}&paginated=true`)
-  }
-
-  async createAnnotation(payload: CreateAnnotationRequest) {
-    return this.request<TextAnnotation>('POST', '/api/annotations', payload)
-  }
-
-  async deleteAnnotation(annotationId: number) {
-    return this.request('DELETE', `/api/annotations/${annotationId}`)
-  }
 }
 
 export const apiClient = new ApiClient()

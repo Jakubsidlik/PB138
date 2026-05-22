@@ -1,25 +1,5 @@
-import { CalendarCell, EventMeta, FileCategory, MobileNavItem } from './types'
+import { CalendarCell, EventMeta, FileCategory } from './types'
 
-export const getNavFromHash = (hash: string): MobileNavItem => {
-  if (hash === '#calendar') {
-    return 'calendar'
-  }
-  if (hash === '#tasks') {
-    return 'tasks'
-  }
-  if (hash === '#files') {
-    return 'files'
-  }
-  if (hash === '#study-plan') {
-    return 'study-plan'
-  }
-
-  if (hash === '#profile') {
-    return 'profile'
-  }
-
-  return 'home'
-}
 
 export const formatDateIso = (date: Date) => {
   const year = date.getFullYear()
@@ -112,14 +92,19 @@ export const getRelativeDaysLabel = (date: string) => {
     return 'Zítra'
   }
 
-  return `In ${diffDays} days`
+  if (diffDays >= 2 && diffDays <= 4) {
+    return `Za ${diffDays} dny`
+  }
+
+  return `Za ${diffDays} dní`
 }
 
 export const buildCalendarCells = (displayMonth: Date): CalendarCell[] => {
   const year = displayMonth.getFullYear()
   const month = displayMonth.getMonth()
   const firstDay = new Date(year, month, 1)
-  const startOffset = firstDay.getDay()
+  const jsDay = firstDay.getDay()
+  const startOffset = jsDay === 0 ? 6 : jsDay - 1
   const startDate = new Date(year, month, 1 - startOffset)
 
   return Array.from({ length: 35 }, (_, index) => {
@@ -136,24 +121,24 @@ export const buildCalendarCells = (displayMonth: Date): CalendarCell[] => {
 
 export const getDailyMotto = (): string => {
   const mottos = [
-    '"Vzdělání je nejlepší investice!"',
-    '"Každý den je nová příležitost!"',
-    '"Malé krůčky vedou k velkým cílům!"',
-    '"Věř ve své schopnosti!"',
-    '"Učení nikdy nekončí!"',
-    '"Soustředění je klíč k úspěchu!"',
-    '"Tvoje práce se vždy vyplatí!"',
-    '"Chyby jsou součástí učení!"',
-    '"Nejlepší čas je teď!"',
-    '"Nerezignuj na své sny!"',
-    '"Jsi silnější, než si myslíš!"',
-    '"Sebevědomost roste s praxí!"',
-    '"Společný úkol - větší síla!"',
-    '"Každý máster byl kdysi začátečník!"',
-    '"Ztráta je jen lekce!"',
-    '"Tvůj potenciál je neomezený!"',
-    '"Vytrvalost je cesta k vítězství!"',
-    '"Základy jsou důležité!"'
+    'Vzdělání je nejlepší investice!',
+    'Každý den je nová příležitost!',
+    'Malé krůčky vedou k velkým cílům!',
+    'Věř ve své schopnosti!',
+    'Učení nikdy nekončí!',
+    'Soustředění je klíč k úspěchu!',
+    'Tvoje práce se vždy vyplatí!',
+    'Chyby jsou součástí učení!',
+    'Nejlepší čas je teď!',
+    'Nerezignuj na své sny!',
+    'Jsi silnější, než si myslíš!',
+    'Sebevědomost roste s praxí!',
+    'Společný úkol - větší síla!',
+    'Každý máster byl kdysi začátečník!',
+    'Ztráta je jen lekce!',
+    'Tvůj potenciál je neomezený!',
+    'Vytrvalost je cesta k vítězství!',
+    'Základy jsou důležité!'
   ]
 
   const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000)

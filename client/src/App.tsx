@@ -1,237 +1,79 @@
-import React from 'react';
+import React from 'react'
 import './App.css'
-import './App-subject-modal.css'
-import {
-  calendarWeekDays,
-  subjectVisualByCode,
-} from './app/data'
-import { getDeadlineMeta, getDefaultMetaForTitle, getRelativeDaysLabel } from './app/utils'
-import { useDashboardState } from './app/useDashboardState'
-import { Sidebar } from './components/shared/Sidebar'
-import { Topbar } from './components/shared/Topbar'
-import { AuthScreen } from './components/authentication/AuthScreen'
-import { useUser, useAuth } from '@clerk/clerk-react'
 
-import { MobileFilesScreen } from './screen/mobile/MobileFiles'
-import { MobileCalendarScreen } from './screen/mobile/MobileCalendar'
-import { MobileTasks } from './screen/mobile/MobileTasks'
-import { MobileStudyPlanScreen } from './screen/mobile/MobileStudyPlan'
-import { MobileBottomNav } from './screen/mobile/MobileBottomNav'
-import { MobileProfileScreen } from './screen/mobile/MobileProfile'
-import { DashboardHomeContent } from './components/shared/DashboardHomeContent'
-import { DesktopCalendarScreen } from './screen/desktop/DesktopCalendar'
-import { DesktopFilesScreen } from './screen/desktop/DesktopFiles'
-import { DesktopTasksScreen } from './screen/desktop/DesktopTasks'
-import { DesktopStudyPlan } from './screen/desktop/DesktopStudyPlan'
-import { DesktopProfileScreen } from './screen/desktop/DesktopProfile'
+import { RouterProvider } from '@tanstack/react-router'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { router } from './app/router'
+import { queryClient } from './app/query-client'
 
-function App() {
-  const state = useDashboardState()
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const { isLoaded, isSignedIn, user } = useUser()
-  const { signOut } = useAuth()
+import { useUser } from '@clerk/clerk-react'
+import { Toaster } from './components/ui/sonner'
+
+import { DashboardProvider, useDashboard } from './app/DashboardContext'
+import { AuthRequiredDialog } from './components/shared/dashboard/AuthRequiredDialog'
+import { BannedAccountDialog } from './components/shared/dashboard/BannedAccountDialog'
+
+function DashboardSync() {
+  const state = useDashboard()
+  const { isSignedIn, user } = useUser()
 
   // Synchronizace Clerk stavu do lokálního Dashboard stavu aplikace
   React.useEffect(() => {
-    if (isSignedIn && user && !state.authSession) {
+    if (!isSignedIn || !user || state.isBanned) return
+
+    const newUserId = user.id
+
+    // Pokud přihlášený Clerk uživatel neodpovídá uloženému záznamu (nebo žádný uložený není),
+    // okamžitě vyčistíme veškerá data z předchozí session a nastavíme novou
+    if (!state.authSession || state.authSession.userId !== newUserId) {
+      // Smažeme stará data z localStorage (i kdyby tam zbyla po smazaném účtu)
+      localStorage.removeItem('pb138.profile')
+      localStorage.removeItem('pb138-auth-session')
+      // Okamžitě vyresetujeme React state (profil, tagy, předměty...) ať se stará data nezobrazí
+      state.clearUserData()
       state.setAuthSession({
-        userId: user.id as any, // Clerk vrací textové ID
-        role: 'REGISTERED',
+        userId: user.id as any,
+        role: 'REGISTROVANÝ UŽIVATEL',
         fullName: user.fullName || 'Uživatel',
         email: user.primaryEmailAddress?.emailAddress || '',
       })
     }
-  }, [isSignedIn, user, state.authSession])
+  }, [isSignedIn, user?.id])
 
-  const handleLogout = async () => {
-    await signOut()
-    state.logout()
-  }
+  return null
+}
+
+function AppContent() {
+  const state = useDashboard()
+  
+  return (
+    <>
+      <DashboardSync />
+      <RouterProvider router={router} />
+      <Toaster theme={state.themeMode} />
+      <AuthRequiredDialog />
+      <BannedAccountDialog />
+    </>
+  )
+}
+
+function App() {
+  const { isLoaded } = useUser()
 
   if (!isLoaded) {
-    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>Načítám...</div>
-  }
-
-  // Zobrazí AuthScreen, pokud není přihlášen Clerk
-  if (!isSignedIn) {
     return (
-      <AuthScreen />
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+        Načítám...
+      </div>
     )
   }
 
   return (
-    <div
-      className={`dashboard-root theme-${state.themeMode} palette-${state.accentPalette} mobile-nav-${state.activeMobileNav} nav-${state.activeMobileNav}`}
-    >
-      <Sidebar
-        activeMobileNav={state.activeMobileNav}
-        setActiveMobileNav={state.setActiveMobileNav}
-        themeMode={state.themeMode}
-        onThemeChange={state.setThemeMode}
-        accentPalette={state.accentPalette}
-        onPaletteChange={state.setAccentPalette}
-        onLogout={handleLogout}
-      />
-
-      <main className="main-content">
-        <Topbar
-          isCalendarScreen={state.isCalendarScreen}
-          isFilesScreen={state.isFilesScreen}
-          isTasksScreen={state.isTasksScreen}
-          isStudyPlanScreen={state.isStudyPlanScreen}
-          isProfileScreen={state.isProfileScreen}
-          fileInputRef={fileInputRef}
-          setActiveMobileNav={state.setActiveMobileNav}
-          profileName={state.profile.fullName}
-          profileSubtitle={state.profile.studyYear}
-          profileAvatarDataUrl={state.profile.avatarDataUrl}
-          onOpenProfile={state.onOpenProfile}
-        />
-
-        <div className="mobile-content-scroll">
-          <MobileFilesScreen
-            fileTab={state.fileTab}
-            setFileTab={state.setFileTab}
-            displayedRecentFiles={state.displayedRecentFiles}
-            isDragActive={state.isDragActive}
-            setIsDragActive={state.setIsDragActive}
-            onDropToUpload={state.onDropToUpload}
-            onUploadFiles={state.onUploadFiles}
-            onManageFile={state.manageFile}
-            fileInputRef={fileInputRef}
-          />
-
-          <MobileCalendarScreen
-            monthLabel={state.monthLabel}
-            calendarWeekDays={calendarWeekDays}
-            calendarCells={state.calendarCells}
-            eventsByDate={state.eventsByDate}
-            selectedDateIso={state.selectedDateIso}
-            setSelectedDateIso={state.setSelectedDateIso}
-            selectedDayEvents={state.selectedDayEvents}
-            eventMetaById={state.eventMetaById}
-            getDefaultMetaForTitle={getDefaultMetaForTitle}
-            setDisplayMonth={state.setDisplayMonth}
-            addDesktopEvent={state.addDesktopEvent}
-            removeEvent={state.removeEvent}
-          />
-
-          <MobileTasks
-            tasks={state.tasks}
-            tasksDone={state.tasksDone}
-            toggleTask={state.toggleTask}
-          />
-
-          <MobileStudyPlanScreen
-            subjectSearch={state.subjectSearch}
-            setSubjectSearch={state.setSubjectSearch}
-            filteredSubjects={state.filteredSubjects}
-            subjectVisualByCode={subjectVisualByCode}
-            onCreateSubject={state.createSubject}
-            onEditSubject={state.updateSubject}
-            onToggleArchiveSubject={state.toggleSubjectArchived}
-            onDeleteSubject={state.deleteSubject}
-            managedFiles={state.managedFiles}
-          />
-
-          <MobileProfileScreen
-            profile={state.profile}
-            authSession={state.authSession}
-            onChangeProfile={state.onChangeProfile}
-            onUploadAvatar={state.onUploadProfileAvatar}
-            onRemoveAvatar={state.onRemoveProfileAvatar}
-            onResetProfile={state.resetProfile}
-            onLogout={handleLogout}
-            themeMode={state.themeMode}
-            onThemeChange={state.setThemeMode}
-            accentPalette={state.accentPalette}
-            onPaletteChange={state.setAccentPalette}
-            hasUnsavedChanges={state.hasUnsavedProfileChanges}
-            onSaveProfile={state.onSaveProfile}
-            isSavingProfile={state.isSavingProfile}
-          />
-
-          <DashboardHomeContent
-            profileName={state.profile.fullName}
-            tasksDone={state.tasksDone}
-            tasks={state.tasks}
-            upcomingEvents={state.upcomingEvents}
-            getDeadlineMeta={getDeadlineMeta}
-            getRelativeDaysLabel={getRelativeDaysLabel}
-            toggleTask={state.toggleTask}
-          />
-
-          <DesktopFilesScreen
-            managedFiles={state.managedFiles}
-            fileInputRef={fileInputRef}
-            onUploadFiles={state.onUploadFiles}
-            onManageFile={state.manageFile}
-            onDeleteFile={state.removeFile}
-            onToggleFileShared={state.toggleFileShared}
-          />
-
-          <DesktopCalendarScreen
-            monthLabel={state.monthLabel}
-            calendarWeekDays={calendarWeekDays}
-            calendarCells={state.calendarCells}
-            eventsByDate={state.eventsByDate}
-            selectedDateIso={state.selectedDateIso}
-            setSelectedDateIso={state.setSelectedDateIso}
-            setDisplayMonth={state.setDisplayMonth}
-            selectedDayEvents={state.selectedDayEvents}
-            eventMetaById={state.eventMetaById}
-            getDefaultMetaForTitle={getDefaultMetaForTitle}
-            removeEvent={state.removeEvent}
-            goToToday={state.goToToday}
-            addDesktopEvent={state.addDesktopEvent}
-          />
-
-          <DesktopTasksScreen
-            tasks={state.tasks}
-            tasksDone={state.tasksDone}
-            toggleTask={state.toggleTask}
-            addTask={state.addTask}
-            deleteTask={state.deleteTask}
-          />
-
-          <DesktopStudyPlan
-            desktopSubjects={state.desktopSubjects}
-            subjectFilter={state.subjectFilter}
-            setSubjectFilter={state.setSubjectFilter}
-            onCreateSubject={state.createSubject}
-            onEditSubject={state.updateSubject}
-            onToggleArchiveSubject={state.toggleSubjectArchived}
-            onDeleteSubject={state.deleteSubject}
-            managedFiles={state.managedFiles}
-            onUploadFiles={state.onUploadFiles}
-            lessons={state.lessons}
-            onAddNote={state.addSubjectNote}
-          />
-
-          <DesktopProfileScreen
-            profile={state.profile}
-            authSession={state.authSession}
-            onChangeProfile={state.onChangeProfile}
-            onUploadAvatar={state.onUploadProfileAvatar}
-            onRemoveAvatar={state.onRemoveProfileAvatar}
-            onResetProfile={state.resetProfile}
-            onLogout={handleLogout}
-            themeMode={state.themeMode}
-            onThemeChange={state.setThemeMode}
-            accentPalette={state.accentPalette}
-            onPaletteChange={state.setAccentPalette}
-            hasUnsavedChanges={state.hasUnsavedProfileChanges}
-            onSaveProfile={state.onSaveProfile}
-            isSavingProfile={state.isSavingProfile}
-          />
-        </div>
-
-        <MobileBottomNav
-          activeMobileNav={state.activeMobileNav}
-          setActiveMobileNav={state.setActiveMobileNav}
-        />
-      </main>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <DashboardProvider>
+        <AppContent />
+      </DashboardProvider>
+    </QueryClientProvider>
   )
 }
 

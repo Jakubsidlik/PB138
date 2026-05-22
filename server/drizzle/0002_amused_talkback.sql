@@ -1,0 +1,1 @@
+-- Tento sloupec již v DB existuje, takže tuto migraci přeskakujeme.
