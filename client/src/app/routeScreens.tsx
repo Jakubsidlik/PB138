@@ -105,6 +105,31 @@ export function TasksComponent() {
 // Study plan route component
 export function StudyComponent() {
   const state = useDashboard()
+  const search: any = useSearch({ strict: false })
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (search.planId !== undefined) {
+      const planId = search.planId === 'none' ? -1 : (parseInt(search.planId) || null)
+      if (planId !== state.activeStudyPlanId) {
+        state.setActiveStudyPlanId(planId)
+      }
+    } else {
+      if (state.activeStudyPlanId !== null) {
+        state.setActiveStudyPlanId(null)
+      }
+    }
+  }, [search.planId])
+
+  const handleSetActiveStudyPlanId = (id: number | null) => {
+    state.setActiveStudyPlanId(id)
+    void (navigate as any)({
+      search: (prev: any) => ({
+        ...prev,
+        planId: id === null ? undefined : id === -1 ? 'none' : id.toString()
+      })
+    })
+  }
 
   return (
     <DesktopStudyPlan
@@ -128,7 +153,7 @@ export function StudyComponent() {
       onUpdateNote={state.updateSubjectNote}
       studyPlans={state.studyPlans}
       activeStudyPlanId={state.activeStudyPlanId}
-      setActiveStudyPlanId={state.setActiveStudyPlanId}
+      setActiveStudyPlanId={handleSetActiveStudyPlanId}
       onCreateStudyPlan={state.createStudyPlan}
       onEditStudyPlan={state.updateStudyPlan}
       onToggleArchiveStudyPlan={state.toggleStudyPlanArchived}
