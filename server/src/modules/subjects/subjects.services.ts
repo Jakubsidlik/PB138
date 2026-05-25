@@ -35,22 +35,37 @@ export class SubjectsService {
       }
     }
     
-    const mappedSubjects = await Promise.all(rows.map(async (subject) => ({
-      id: Number(subject.id),
-      userId: asNumberId(subject.userId),
-      studyPlanId: asNumberId(subject.studyPlanId),
-      name: subject.name,
-      teacher: subject.teacher,
-      code: subject.code,
-      isShared: subject.isShared,
-      archived: subject.isArchived,
-      deletedAt: subject.deletedAt ? subject.deletedAt.toISOString() : null,
-      tags: tagsBySubjectId[subject.id.toString()] || [],
-      files: await subjectsRepository.countRows(fileRecords, subject.id),
-      notes: await subjectsRepository.countRows(lessons, subject.id),
-      createdAt: subject.createdAt.toISOString(),
-      updatedAt: subject.updatedAt.toISOString(),
-    })))
+        const mappedSubjects = await Promise.all(rows.map(async (subject: any) => {
+      const studyPlanOwnerId = subject.studyPlanOwnerId
+      const studyPlanIsShared = subject.studyPlanIsShared
+      const collaboratorId = subject.collaboratorId
+
+      const hasPlanAccess =
+        actor.role === 'ADMIN' ||
+        !subject.studyPlanId ||
+        (studyPlanOwnerId !== null && studyPlanOwnerId === BigInt(actor.id)) ||
+        studyPlanIsShared === true ||
+        collaboratorId !== null
+
+      const finalStudyPlanId = hasPlanAccess ? subject.studyPlanId : null
+
+      return {
+        id: Number(subject.id),
+        userId: asNumberId(subject.userId),
+        studyPlanId: asNumberId(finalStudyPlanId),
+        name: subject.name,
+        teacher: subject.teacher,
+        code: subject.code,
+        isShared: subject.isShared,
+        archived: subject.isArchived,
+        deletedAt: subject.deletedAt ? subject.deletedAt.toISOString() : null,
+        tags: tagsBySubjectId[subject.id.toString()] || [],
+        files: await subjectsRepository.countRows(fileRecords, subject.id),
+        notes: await subjectsRepository.countRows(lessons, subject.id),
+        createdAt: subject.createdAt.toISOString(),
+        updatedAt: subject.updatedAt.toISOString(),
+      }
+    }))
 
     if (!filters.pagination.enabled) {
       return mappedSubjects

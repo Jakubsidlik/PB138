@@ -29,6 +29,9 @@ const subjectSelect = (actorId: number) => ({
   deletedAt: subjects.deletedAt,
   createdAt: subjects.createdAt,
   updatedAt: subjects.updatedAt,
+  studyPlanOwnerId: studyPlans.userId,
+  studyPlanIsShared: studyPlans.isShared,
+  collaboratorId: studyPlanCollaborators.id,
 })
 
 export class SubjectsRepository {

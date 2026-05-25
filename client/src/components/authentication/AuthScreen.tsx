@@ -9,6 +9,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { signUpSchema, signInSchema, verificationCodeSchema, type SignUpFormData, type SignInFormData, type VerificationCodeFormData } from '../../app/schemas'
 
+interface ClerkAPIError {
+  errors?: {
+    longMessage?: string
+    message?: string
+  }[]
+}
+
+
 export function AuthScreen() {
   const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn()
   const { isLoaded: isSignUpLoaded, signUp, setActive: setSignUpActive } = useSignUp()
@@ -66,8 +74,9 @@ export function AuthScreen() {
         await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
         setPendingVerification(true)
       }
-    } catch (err: any) {
-      setGlobalError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Došlo k chybě při registraci.')
+    } catch (err) {
+      const clerkErr = err as ClerkAPIError
+      setGlobalError(clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || 'Došlo k chybě při registraci.')
     }
   }
 
@@ -82,8 +91,9 @@ export function AuthScreen() {
       } else {
         setGlobalError('Nepodařilo se ověřit účet. Zkuste to prosím znovu.')
       }
-    } catch (err: any) {
-      setGlobalError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Neplatný ověřovací kód.')
+    } catch (err) {
+      const clerkErr = err as ClerkAPIError
+      setGlobalError(clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || 'Neplatný ověřovací kód.')
     }
   }
 
@@ -104,8 +114,9 @@ export function AuthScreen() {
       } else {
         setGlobalError('Nepodařilo se ověřit účet. Zkuste to prosím znovu.')
       }
-    } catch (err: any) {
-      setGlobalError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Neplatný kód.')
+    } catch (err) {
+      const clerkErr = err as ClerkAPIError
+      setGlobalError(clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || 'Neplatný kód.')
     }
   }
 
@@ -129,17 +140,21 @@ export function AuthScreen() {
         if (status === 'needs_first_factor') {
           throw new Error('Neplatné přihlašovací údaje.')
         }
-        const emailFactor = result.supportedFirstFactors?.find((f: any) => f.strategy === 'email_code')
-        if (emailFactor) {
-          await signIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: (emailFactor as any).emailAddressId })
+        const emailFactor = result.supportedFirstFactors?.find(
+          (f): f is Extract<NonNullable<typeof result.supportedFirstFactors>[number], { strategy: 'email_code' }> =>
+            f.strategy === 'email_code'
+        )
+        if (emailFactor?.emailAddressId) {
+          await signIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: emailFactor.emailAddressId })
           setPendingSignInCode('email_code')
           verificationForm.reset()
         } else {
           setGlobalError(`Účet vyžaduje dodatečné ověření, které není podporováno.`)
         }
       }
-    } catch (err: any) {
-      setGlobalError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Nesprávné přihlašovací údaje.')
+    } catch (err) {
+      const clerkErr = err as ClerkAPIError
+      setGlobalError(clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || 'Nesprávné přihlašovací údaje.')
     }
   }
 
