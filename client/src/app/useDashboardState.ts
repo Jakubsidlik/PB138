@@ -113,7 +113,7 @@ export function useDashboardState(fetchAll = false) {
   const [tags, setTags] = React.useState<Tag[]>([])
   const [profile, setProfile] = React.useState<UserProfile>(userProfileSeed)
   const [savedProfile, setSavedProfile] = React.useState<UserProfile>(userProfileSeed)
-  const [authSession, setAuthSession] = React.useState<AuthSession | null>(null)
+  const [authSession, setAuthSession] = React.useState<AuthSession | null>(() => readAuthSessionFromStorage())
   const [authAlertOpen, setAuthAlertOpen] = React.useState(false)
   const [isBanned, setIsBanned] = React.useState(false)
   const [isSavingProfile, setIsSavingProfile] = React.useState(false)

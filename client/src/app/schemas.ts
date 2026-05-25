@@ -81,7 +81,7 @@ export type CreateTagFormData = z.infer<typeof createTagSchema>
 
 // Note schemas
 export const createNoteSchema = z.object({
-  text: z.string().min(1, 'Poznámka nemůže být prázdná').max(5000, 'Poznámka je příliš dlouhá'),
+  text: z.string().min(1, 'Poznámka nemůže být prázdná').max(2000, 'Poznámka může mít maximálně 2000 znaků'),
 })
 
 export type CreateNoteFormData = z.infer<typeof createNoteSchema>

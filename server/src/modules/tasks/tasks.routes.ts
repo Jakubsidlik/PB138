@@ -1,7 +1,7 @@
 import express from 'express'
 import { tasksService } from './tasks.services'
 import { bulkTasksSchema, taskSchema, updateTaskSchema } from '../../schemas'
-import { asBigInt, parseCursorPagination, parseOptionalDate } from '../../utils'
+import { asBigInt, parseCursorPagination } from '../../utils'
 import { requireRegisteredActor } from '../../auth'
 import { asyncHandler, AppError } from '../../middleware/error-handler'
 import { validate } from '../../middleware/validate'

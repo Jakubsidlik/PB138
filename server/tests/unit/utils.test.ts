@@ -3,11 +3,6 @@ import {
   asBigInt,
   asNumberId,
   toDateOnlyIso,
-  parseOptionalDate,
-  parseTaskPriority,
-  parseUserRole,
-  parseCollaborationRole,
-  parseFileSizeToBytes,
   formatFileSize,
   inferFileCategory,
   parseCursorPagination,
@@ -51,69 +46,7 @@ describe('utils.ts', () => {
     })
   })
 
-  describe('parseOptionalDate', () => {
-    it('should return undefined for undefined input', () => {
-      expect(parseOptionalDate(undefined)).toBeUndefined()
-    })
-    it('should return null for null or empty string', () => {
-      expect(parseOptionalDate(null)).toBeNull()
-      expect(parseOptionalDate('')).toBeNull()
-    })
-    it('should parse valid date string', () => {
-      const parsed = parseOptionalDate('2024-05-20')
-      expect(parsed).toBeInstanceOf(Date)
-    })
-    it('should return undefined for invalid date string', () => {
-      expect(parseOptionalDate('invalid-date')).toBeUndefined()
-    })
-  })
 
-  describe('parseTaskPriority', () => {
-    it('should return parsed priority if valid', () => {
-      expect(parseTaskPriority('HIGH')).toBe('HIGH')
-      expect(parseTaskPriority('NONE')).toBe('NONE')
-    })
-    it('should return undefined for invalid priority', () => {
-      expect(parseTaskPriority('INVALID')).toBeUndefined()
-      expect(parseTaskPriority(123)).toBeUndefined()
-    })
-  })
-
-  describe('parseUserRole', () => {
-    it('should return parsed role if valid', () => {
-      expect(parseUserRole('ADMIN')).toBe('ADMIN')
-      expect(parseUserRole('REGISTERED')).toBe('REGISTERED')
-    })
-    it('should return undefined for invalid role', () => {
-      expect(parseUserRole('GUEST')).toBeUndefined()
-    })
-  })
-
-  describe('parseCollaborationRole', () => {
-    it('should return valid roles', () => {
-      expect(parseCollaborationRole('VIEWER')).toBe('VIEWER')
-      expect(parseCollaborationRole('CONTRIBUTOR')).toBe('CONTRIBUTOR')
-    })
-    it('should return undefined for invalid', () => {
-      expect(parseCollaborationRole('ADMIN')).toBeUndefined()
-    })
-  })
-
-  describe('parseFileSizeToBytes', () => {
-    it('should parse numeric size directly as trunc', () => {
-      expect(parseFileSizeToBytes(1024.5)).toBe(1024)
-    })
-    it('should parse strings with units', () => {
-      expect(parseFileSizeToBytes('1 KB')).toBe(1024)
-      expect(parseFileSizeToBytes('2.5 MB')).toBe(2621440)
-      expect(parseFileSizeToBytes('1 GB')).toBe(1073741824)
-    })
-    it('should return undefined/null on invalid', () => {
-      expect(parseFileSizeToBytes(undefined)).toBeUndefined()
-      expect(parseFileSizeToBytes(null)).toBeNull()
-      expect(parseFileSizeToBytes('invalid size')).toBeUndefined()
-    })
-  })
 
   describe('formatFileSize', () => {
     it('should format to KB if under 1MB', () => {

@@ -253,13 +253,22 @@ export function SubjectDetailModal({
                   }
                 }}
               />
-              <div className="flex justify-end items-center mt-2 pt-2 border-t border-border/50">
+              <div className="flex justify-between items-center mt-2 pt-2 border-t border-border/50">
+                <span className={`text-xs select-none ${
+                  (noteForm.watch('text')?.length ?? 0) > 2000
+                    ? 'text-destructive font-semibold animate-pulse'
+                    : (noteForm.watch('text')?.length ?? 0) > 1800
+                    ? 'text-amber-500 font-medium'
+                    : 'text-muted-foreground'
+                }`}>
+                  {noteForm.watch('text')?.length ?? 0} / 2000
+                </span>
                 <Button 
                   type="button" 
                   size="sm"
                   className="gap-1.5 rounded-full px-4"
                   onClick={() => noteForm.handleSubmit(handleAddNote)()}
-                  disabled={!noteForm.watch('text')?.trim() || noteForm.formState.isSubmitting}
+                  disabled={!noteForm.watch('text')?.trim() || (noteForm.watch('text')?.length ?? 0) > 2000 || noteForm.formState.isSubmitting}
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Přidat

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -10,7 +10,6 @@ import {
 } from '../../ui/dialog'
 import { Button } from '../../ui/button'
 import { Input } from '../../ui/input'
-import { Badge } from '../../ui/badge'
 import { Tag } from '../../../app/types'
 import { createTagSchema, type CreateTagFormData } from '../../../app/schemas'
 

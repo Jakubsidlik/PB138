@@ -44,9 +44,33 @@ export const eventSchema = z.object({
 })
 export const updateEventSchema = eventSchema.partial()
 
+const parseSizeToBytes = (value: unknown): number | null | undefined => {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return Math.trunc(value)
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  if (/^\d+$/.test(trimmed)) return Number.parseInt(trimmed, 10)
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(KB|MB|GB)$/i)
+  if (!match) return undefined
+  const amount = Number.parseFloat(match[1])
+  const unit = match[2].toUpperCase()
+  if (unit === 'KB') return Math.round(amount * 1024)
+  if (unit === 'MB') return Math.round(amount * 1024 * 1024)
+  return Math.round(amount * 1024 * 1024 * 1024)
+}
+
 export const fileSchema = z.object({
   name: z.string().trim().min(1, 'Pole name je povinne.'),
-  size: z.union([z.string(), z.number()]).optional(),
+  size: z.preprocess(
+    (val) => {
+      if (val === undefined || val === null || val === '') return undefined
+      const parsed = parseSizeToBytes(val)
+      return parsed !== undefined ? parsed : val
+    },
+    z.number({ invalid_type_error: 'Pole size musi byt cislo nebo text typu "2.4 MB".' }).optional()
+  ),
   addedLabel: z.string().optional().default('Added now'),
   shared: z.boolean().optional(),
   isShared: z.boolean().optional(),
@@ -65,7 +89,7 @@ export const shareFileSchema = z.object({
 
 export const lessonSchema = z.object({
   title: z.string().trim().min(1, 'Pole title je povinne.'),
-  content: z.string().nullable().optional(),
+  content: z.string().max(2000, 'Poznámka může mít maximálně 2000 znaků.').nullable().optional(),
   subjectId: z.number().nullable().optional(),
   isShared: z.boolean().optional().default(false),
   orderIndex: z.number().optional().default(0),

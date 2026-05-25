@@ -1,5 +1,5 @@
-import { db } from './src/db/client.js'
-import { tags } from './src/db/schema.js'
+import { db } from './src/db/client'
+import { tags } from './src/db/schema'
 
 async function seed() {
   const systemTags = [

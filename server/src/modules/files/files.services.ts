@@ -1,6 +1,6 @@
 import { filesRepository } from './files.repository'
 import { AppError } from '../../middleware/error-handler'
-import { mapFileRecord, parseFileSizeToBytes, toPaginatedPayload } from '../../utils'
+import { mapFileRecord, toPaginatedPayload } from '../../utils'
 import { usersRepository } from '../users/users.repository'
 import { env } from '../../env'
 import { PutObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
@@ -75,8 +75,7 @@ export class FilesService {
   }
 
   async createFile(actorId: number, data: any) {
-    const parsedSize = parseFileSizeToBytes(data.size)
-    if (parsedSize === undefined || parsedSize === null) {
+    if (data.size === undefined || data.size === null) {
       throw new AppError('Pole size musi byt cislo nebo text typu "2.4 MB".', 400)
     }
 
@@ -84,7 +83,7 @@ export class FilesService {
       userId: BigInt(actorId),
       subjectId: data.subjectId ? BigInt(data.subjectId) : null,
       name: data.name,
-      size: parsedSize,
+      size: data.size,
       addedLabel: data.addedLabel,
       isShared: data.isShared !== undefined ? data.isShared : data.shared !== undefined ? data.shared : false,
       fileKey: data.fileKey ?? null,
@@ -104,14 +103,13 @@ export class FilesService {
       throw new AppError('Nemate opravneni upravit tento soubor.', 403)
     }
 
-    const parsedSize = parseFileSizeToBytes(data.size)
-    if (data.size !== undefined && parsedSize === undefined) {
+    if (data.size === null) {
       throw new AppError('Neplatna velikost souboru.', 400)
     }
 
     const updated = await filesRepository.update(fileId, {
       name: data.name,
-      size: parsedSize ?? undefined,
+      size: data.size !== undefined ? data.size : undefined,
       addedLabel: data.addedLabel,
       isShared: data.isShared !== undefined ? data.isShared : data.shared !== undefined ? data.shared : undefined,
       subjectId: data.subjectId !== undefined ? (data.subjectId ? BigInt(data.subjectId) : null) : undefined,

@@ -1,4 +1,4 @@
-import { db } from './src/db/client.js';
+import { db } from './src/db/client';
 import { sql } from 'drizzle-orm';
 import * as fs from 'fs';
 

@@ -1,7 +1,7 @@
 import { and, asc, eq, gte, gt, ilike, inArray, isNull, lte } from 'drizzle-orm'
 import { db } from '../../db/client'
-import { tasks, subjects } from '../../db/schema'
-import { asBigInt, parseTaskPriority, mapTask, toPaginatedPayload } from '../../utils'
+import { tasks, subjects, type TaskPriority } from '../../db/schema'
+import { asBigInt, mapTask, toPaginatedPayload } from '../../utils'
 import { CursorPagination } from '../../types'
 
 const taskSelect = {
@@ -60,7 +60,7 @@ export class TaskRepository {
       userId: BigInt(actorId),
       title: data.title,
       done: data.done,
-      priority: data.priority ? parseTaskPriority(data.priority) ?? 'NONE' : 'NONE',
+      priority: (data.priority as TaskPriority) ?? 'NONE',
     }).returning(taskSelect)
 
     return mapTask(created)
@@ -84,7 +84,7 @@ export class TaskRepository {
       .set({
         title: data.title,
         done: data.done,
-        priority: data.priority ? parseTaskPriority(data.priority) : undefined,
+        priority: data.priority as TaskPriority | undefined,
       })
       .where(eq(tasks.id, taskId))
       .returning(taskSelect)

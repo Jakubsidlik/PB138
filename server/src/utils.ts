@@ -1,5 +1,4 @@
 import express from 'express'
-import { type CollaborationRole, type TaskPriority, type UserRole } from './db/schema'
 import { ApiEvent, ApiTask, CursorPagination } from './types'
 
 export const asBigInt = (value: unknown): bigint | null => {
@@ -30,32 +29,7 @@ export const toDateOnlyIso = (value: Date) => {
   return `${y}-${m}-${d}`
 }
 
-export const parseOptionalDate = (value: unknown): Date | null | undefined => {
-  if (value === undefined) return undefined
-  if (value === null || value === '') return null
-  if (typeof value !== 'string') return undefined
-  const parsed = new Date(value)
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed
-}
 
-export const parseTaskPriority = (value: unknown): TaskPriority | undefined => {
-  if (value === 'NONE' || value === 'LOW' || value === 'MEDIUM' || value === 'HIGH' || value === 'URGENT') {
-    return value as TaskPriority
-  }
-  return undefined
-}
-
-export const parseUserRole = (value: unknown): UserRole | undefined => {
-  if (value === 'REGISTERED' || value === 'ADMIN') return value as UserRole
-  return undefined
-}
-
-
-
-export const parseCollaborationRole = (value: unknown): CollaborationRole | undefined => {
-  if (value === 'VIEWER' || value === 'CONTRIBUTOR') return value as CollaborationRole
-  return undefined
-}
 
 
 export const addDays = (date: Date, days: number) => {
@@ -71,22 +45,7 @@ export const addMonths = (date: Date, months: number) => {
 }
 
 
-export const parseFileSizeToBytes = (value: unknown): number | null | undefined => {
-  if (value === undefined) return undefined
-  if (value === null) return null
-  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return Math.trunc(value)
-  if (typeof value !== 'string') return undefined
-  const trimmed = value.trim()
-  if (!trimmed) return undefined
-  if (/^\d+$/.test(trimmed)) return Number.parseInt(trimmed, 10)
-  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(KB|MB|GB)$/i)
-  if (!match) return undefined
-  const amount = Number.parseFloat(match[1])
-  const unit = match[2].toUpperCase()
-  if (unit === 'KB') return Math.round(amount * 1024)
-  if (unit === 'MB') return Math.round(amount * 1024 * 1024)
-  return Math.round(amount * 1024 * 1024 * 1024)
-}
+
 
 export const formatFileSize = (sizeInBytes: number) => {
   if (sizeInBytes < 1024 * 1024) {
