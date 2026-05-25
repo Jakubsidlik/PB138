@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, exists, gt, isNull, or, sql } from 'drizzle-orm'
-import { db } from '../../db/client.js'
-import { fileRecords, fileShares, users, subjects, studyPlans, studyPlanCollaborators, fileRatings } from '../../db/schema.js'
+import { db } from '../../db/client'
+import { fileRecords, fileShares, users, subjects, studyPlans, studyPlanCollaborators, fileRatings } from '../../db/schema'
 
 const fileSelect = (actorId: number) => ({
   id: fileRecords.id,

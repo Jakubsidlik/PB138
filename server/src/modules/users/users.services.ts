@@ -1,10 +1,10 @@
 import { clerkClient } from '@clerk/express'
-import { db } from '../../db/client.js'
-import { users } from '../../db/schema.js'
-import { usersRepository } from './users.repository.js'
-import { AppError } from '../../middleware/error-handler.js'
-import { toDateOnlyIso } from '../../utils.js'
-import { UserRole } from '../../db/schema.js'
+import { db } from '../../db/client'
+import { users } from '../../db/schema'
+import { usersRepository } from './users.repository'
+import { AppError } from '../../middleware/error-handler'
+import { toDateOnlyIso } from '../../utils'
+import { UserRole } from '../../db/schema'
 
 export class UsersService {
   async getAllUsers() {
@@ -19,7 +19,7 @@ export class UsersService {
         if (!email) continue
 
         if (!dbEmails.has(email) && !dbClerkIds.has(cu.id)) {
-          const fullName = `${cu.firstName || ''} ${cu.lastName || ''}`.trim() || 'Uživatel'
+          const fullName = `${cu.firstName || ''} ${cu.lastName || ''}`.trim() || 'UĹľivatel'
           await db.insert(users).values({
             clerkId: cu.id,
             email,
@@ -31,7 +31,7 @@ export class UsersService {
         }
       }
     } catch (err) {
-      console.error('Chyba při synchronizaci uživatelů z Clerku:', err)
+      console.error('Chyba pĹ™i synchronizaci uĹľivatelĹŻ z Clerku:', err)
     }
 
     const rows = await usersRepository.findAll()

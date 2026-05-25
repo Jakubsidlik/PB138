@@ -1,10 +1,10 @@
-import { subjectsRepository } from './subjects.repository.js'
-import { AppError } from '../../middleware/error-handler.js'
-import { asNumberId, toPaginatedPayload, asBigInt } from '../../utils.js'
-import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators } from '../../db/schema.js'
-import { db } from '../../db/client.js'
+import { subjectsRepository } from './subjects.repository'
+import { AppError } from '../../middleware/error-handler'
+import { asNumberId, toPaginatedPayload, asBigInt } from '../../utils'
+import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators } from '../../db/schema'
+import { db } from '../../db/client'
 import { and, eq, inArray } from 'drizzle-orm'
-import { tags, subjectTags } from '../../db/schema.js'
+import { tags, subjectTags } from '../../db/schema'
 export class SubjectsService {
   async getSubjects(actor: { id: number, role: string }, filters: {
     pagination: any

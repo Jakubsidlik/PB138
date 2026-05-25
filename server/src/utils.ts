@@ -1,6 +1,6 @@
 import express from 'express'
-import { type CollaborationRole, type TaskPriority, type UserRole } from './db/schema.js'
-import { ApiEvent, ApiTask, CursorPagination } from './types.js'
+import { type CollaborationRole, type TaskPriority, type UserRole } from './db/schema'
+import { ApiEvent, ApiTask, CursorPagination } from './types'
 
 export const asBigInt = (value: unknown): bigint | null => {
   if (typeof value === 'bigint') {

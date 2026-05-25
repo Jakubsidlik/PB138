@@ -1,9 +1,9 @@
 import express from 'express'
-import { studyPlansService } from './study-plans.services.js'
-import { shareStudyPlanSchema, studyPlanSchema, updateStudyPlanSchema } from '../../schemas.js'
-import { asBigInt } from '../../utils.js'
-import { getActorFromRequest, requireRegisteredActor } from '../../auth.js'
-import { asyncHandler, AppError } from '../../middleware/error-handler.js'
+import { studyPlansService } from './study-plans.services'
+import { shareStudyPlanSchema, studyPlanSchema, updateStudyPlanSchema } from '../../schemas'
+import { asBigInt } from '../../utils'
+import { getActorFromRequest, requireRegisteredActor } from '../../auth'
+import { asyncHandler, AppError } from '../../middleware/error-handler'
 
 export const studyPlansRouter: express.Router = express.Router()
 

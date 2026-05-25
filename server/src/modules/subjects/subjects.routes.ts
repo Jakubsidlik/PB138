@@ -1,9 +1,9 @@
 import express from 'express'
-import { subjectsService } from './subjects.services.js'
-import { subjectSchema, updateSubjectSchema } from '../../schemas.js'
-import { asBigInt, parseCursorPagination } from '../../utils.js'
-import { getActorFromRequest, requireRegisteredActor } from '../../auth.js'
-import { asyncHandler, AppError } from '../../middleware/error-handler.js'
+import { subjectsService } from './subjects.services'
+import { subjectSchema, updateSubjectSchema } from '../../schemas'
+import { asBigInt, parseCursorPagination } from '../../utils'
+import { getActorFromRequest, requireRegisteredActor } from '../../auth'
+import { asyncHandler, AppError } from '../../middleware/error-handler'
 
 export const subjectsRouter: express.Router = express.Router()
 

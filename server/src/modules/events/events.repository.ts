@@ -1,8 +1,8 @@
 import { and, asc, eq, gt, inArray, isNull, or } from 'drizzle-orm'
-import { db } from '../../db/client.js'
-import { events, subjects } from '../../db/schema.js'
-import { asBigInt, mapEvent, toPaginatedPayload } from '../../utils.js'
-import { CursorPagination } from '../../types.js'
+import { db } from '../../db/client'
+import { events, subjects } from '../../db/schema'
+import { asBigInt, mapEvent, toPaginatedPayload } from '../../utils'
+import { CursorPagination } from '../../types'
 
 const eventSelect = {
   id: events.id,

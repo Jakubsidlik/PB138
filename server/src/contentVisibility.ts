@@ -4,9 +4,9 @@ export type PublicContent = {
 }
 
 export const isPubliclyVisible = (content: PublicContent): boolean => {
-  // Obsah musí mít deletedAt přesně null (ne undefined nebo Date)
+  // Obsah musĂ­ mĂ­t deletedAt pĹ™esnÄ› null (ne undefined nebo Date)
   if (content.deletedAt !== null) return false
-  // Obsah musí být explicitně sdílený
+  // Obsah musĂ­ bĂ˝t explicitnÄ› sdĂ­lenĂ˝
   if (content.isShared !== true) return false
   return true
 }

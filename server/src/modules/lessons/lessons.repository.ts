@@ -1,8 +1,8 @@
 import { and, asc, desc, eq, exists, isNull, or, sql } from 'drizzle-orm'
-import { db } from '../../db/client.js'
-import { lessons, studyPlans, studyPlanCollaborators, subjects, users, lessonRatings } from '../../db/schema.js'
+import { db } from '../../db/client'
+import { lessons, studyPlans, studyPlanCollaborators, subjects, users, lessonRatings } from '../../db/schema'
 
-// Used for INSERT/UPDATE RETURNING — only columns from the Lesson table itself
+// Used for INSERT/UPDATE RETURNING â€” only columns from the Lesson table itself
 const lessonBaseSelect = {
   id: lessons.id,
   subjectId: lessons.subjectId,
@@ -16,7 +16,7 @@ const lessonBaseSelect = {
   updatedAt: lessons.updatedAt,
 }
 
-// Used for SELECT with LEFT JOIN users — includes authorFullName and ratings
+// Used for SELECT with LEFT JOIN users â€” includes authorFullName and ratings
 const lessonSelect = (actorId: number) => ({
   ...lessonBaseSelect,
   authorFullName: users.fullName,

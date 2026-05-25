@@ -1,7 +1,7 @@
-import { studyPlanRepository } from './study-plans.repository.js'
-import { AppError } from '../../middleware/error-handler.js'
+import { studyPlanRepository } from './study-plans.repository'
+import { AppError } from '../../middleware/error-handler'
 
-import { subjects, tasks, lessons } from '../../db/schema.js'
+import { subjects, tasks, lessons } from '../../db/schema'
 
 export class StudyPlansService {
   async getStudyPlans(actor: { id: number, role: string }, filters: { includeInactive?: boolean }) {

@@ -7,7 +7,7 @@ import {
   subjectSchema,
   lessonSchema,
   fileSchema
-} from '../../src/schemas.js'
+} from '../../src/schemas'
 
 describe('schemas.ts', () => {
   describe('studyPlanSchema', () => {

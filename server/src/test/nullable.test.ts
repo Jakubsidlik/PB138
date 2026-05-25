@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseOptionalDate } from '../utils.js'
+import { parseOptionalDate } from '../utils'
 
 describe('backend nullable handling', () => {
   it('keeps optional date fields empty when no value is provided', () => {

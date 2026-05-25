@@ -899,7 +899,7 @@ export function useDashboardState(fetchAll = false) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, teacher, code, studyPlanId: activeStudyPlanId, tagIds: subjectData.tagIds || [] }),
+      body: JSON.stringify({ name, teacher, code, studyPlanId: activeStudyPlanId === -1 ? null : activeStudyPlanId, tagIds: subjectData.tagIds || [] }),
     }).then(() => {
       void refreshSubjects()
     })
@@ -1183,7 +1183,11 @@ export function useDashboardState(fetchAll = false) {
           return false
         }
 
-        const matchesStudyPlan = activeStudyPlanId ? subject.studyPlanId === activeStudyPlanId : true
+        const matchesStudyPlan = activeStudyPlanId
+          ? activeStudyPlanId === -1
+            ? subject.studyPlanId === null || subject.studyPlanId === undefined
+            : subject.studyPlanId === activeStudyPlanId
+          : true
         if (!matchesStudyPlan) {
           return false
         }

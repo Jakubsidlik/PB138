@@ -1,6 +1,6 @@
-import { taskRepository } from './tasks.repository.js'
-import { CursorPagination } from '../../types.js'
-import { AppError } from '../../middleware/error-handler.js'
+import { taskRepository } from './tasks.repository'
+import { CursorPagination } from '../../types'
+import { AppError } from '../../middleware/error-handler'
 
 export class TasksService {
   async getTasks(actorId: number, filters: {

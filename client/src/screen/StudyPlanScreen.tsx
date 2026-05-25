@@ -93,6 +93,11 @@ export function DesktopStudyPlan({
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
 
+  const unassignedSubjectsCount = React.useMemo(
+    () => desktopSubjects.filter((s) => s.studyPlanId === null || s.studyPlanId === undefined).length,
+    [desktopSubjects],
+  )
+
   // Study Plan forms
   const createPlanForm = useForm<CreateStudyPlanFormData>({
     resolver: zodResolver(createStudyPlanSchema),
@@ -148,6 +153,7 @@ export function DesktopStudyPlan({
         teacher: editingSubject.teacher,
         code: editingSubject.code,
         tagIds: editingSubject.tags?.map(t => t.id) || [],
+        studyPlanId: editingSubject.studyPlanId,
       })
     }
   }, [editingSubject, editSubjectForm])
@@ -319,6 +325,34 @@ export function DesktopStudyPlan({
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {(planFilter === 'active' || planFilter === 'all') && (
+              <Card
+                className="relative overflow-hidden hover:shadow-md transition-all hover:border-primary/50 cursor-pointer flex flex-col group h-full border-dashed border-2 bg-muted/10"
+                onClick={() => setActiveStudyPlanId(-1)}
+              >
+                <span className="absolute top-0 left-0 right-0 h-1 bg-muted-foreground/30" />
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-muted/20 text-muted-foreground">
+                      📂
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col pt-0">
+                  <div className="mb-4">
+                    <CardTitle className="group-hover:text-primary transition-colors mb-1 line-clamp-1">
+                      Nezařazené předměty
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2 text-sm text-muted-foreground">
+                      Předměty, které nemají přiřazený studijní plán nebo byly nasdíleny.
+                    </CardDescription>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-auto">
+                    <span>📚 {unassignedSubjectsCount} předmětů</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {studyPlans.filter(plan => {
               if (planFilter === 'all') return true
               if (planFilter === 'active') return plan.isActive
@@ -404,8 +438,12 @@ export function DesktopStudyPlan({
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
               <button onClick={() => setActiveStudyPlanId(null)} className="hover:text-foreground transition-colors">← Zpět na plány</button>
             </div>
-            <h2 className="text-2xl font-bold tracking-tight">{activePlan?.name || 'Studijní plán'}</h2>
-            <p className="text-muted-foreground">Přehled předmětů v tomto plánu</p>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {activeStudyPlanId === -1 ? 'Nezařazené předměty' : (activePlan?.name || 'Studijní plán')}
+            </h2>
+            <p className="text-muted-foreground">
+              {activeStudyPlanId === -1 ? 'Přehled předmětů bez studijního plánu' : 'Přehled předmětů v tomto plánu'}
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -616,6 +654,23 @@ export function DesktopStudyPlan({
                     {editSubjectForm.formState.errors.code && (
                       <p className="text-sm font-medium text-destructive">{editSubjectForm.formState.errors.code.message}</p>
                     )}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium">Studijní plán</label>
+                    <Select
+                      value={editSubjectForm.watch('studyPlanId') !== undefined && editSubjectForm.watch('studyPlanId') !== null ? (editSubjectForm.watch('studyPlanId')?.toString() || 'none') : 'none'}
+                      onValueChange={(val) => editSubjectForm.setValue('studyPlanId', val === 'none' ? null : parseInt(val))}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Vyberte studijní plán" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Bez studijního plánu (Nezařazené)</SelectItem>
+                        {studyPlans.filter(p => p.isActive).map(plan => (
+                          <SelectItem key={plan.id} value={plan.id.toString()}>{plan.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium">Štítky</label>

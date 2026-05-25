@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test'
-import { AppError, errorHandler } from '../../src/middleware/error-handler.js'
+import { AppError, errorHandler } from '../../src/middleware/error-handler'
 
 describe('error-handler.ts', () => {
   it('AppError should set message and statusCode correctly', () => {

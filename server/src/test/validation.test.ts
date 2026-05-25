@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isValidDisplayName, isValidEmail, isStrongPassword } from '../validation.js'
+import { isValidDisplayName, isValidEmail, isStrongPassword } from '../validation'
 
 describe('backend validation', () => {
   it('requires display name to be at least 2 characters long', () => {

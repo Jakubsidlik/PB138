@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildFileKey, buildFileUrl } from '../fileStorage.js'
+import { buildFileKey, buildFileUrl } from '../fileStorage'
 
 describe('file upload helpers', () => {
   it('creates sanitized file keys with unique prefixes', () => {

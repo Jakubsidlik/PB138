@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isEmailAvailable } from '../validation.js'
+import { isEmailAvailable } from '../validation'
 
 describe('backend uniqueness checks', () => {
   it('rejects an email that is already used', () => {

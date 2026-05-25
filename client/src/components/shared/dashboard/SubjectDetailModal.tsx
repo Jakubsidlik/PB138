@@ -5,7 +5,7 @@ import { Subject, ManagedFile, Lesson } from '../../../app/types'
 import { Button } from '../../ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../ui/dialog'
 import { Textarea } from '../../ui/textarea'
-import { Hash, User, FileText, Upload, Plus, MessageSquare, Paperclip, Clock, UserCircle2, ThumbsUp, ThumbsDown, Share } from 'lucide-react'
+import { Hash, User, FileText, Upload, Plus, MessageSquare, Paperclip, Clock, UserCircle2, ThumbsUp, ThumbsDown, Share, Download } from 'lucide-react'
 import { useDashboard } from '../../../app/DashboardContext'
 import { ShareFileModal } from '../files/ShareFileModal'
 import { createNoteSchema, type CreateNoteFormData } from '../../../app/schemas'
@@ -188,6 +188,20 @@ export function SubjectDetailModal({
                             <span className="min-w-[8px] text-xs font-semibold">{file.dislikes ?? 0}</span>
                           </Button>
                         </div>
+
+                        {/* Download control */}
+                        {file.fileUrl && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
+                            onClick={() => window.open(`/api/files/${file.id}/download`, '_blank')}
+                            title="Stáhnout"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
 
                         {/* Share control */}
                         <Button

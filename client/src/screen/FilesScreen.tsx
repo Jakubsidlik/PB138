@@ -19,7 +19,7 @@ import {
   AlertDialogMedia,
 } from '../components/ui/alert-dialog'
 import { Input } from '../components/ui/input'
-import { Share, Trash2, MoreVertical } from 'lucide-react'
+import { Share, Trash2, MoreVertical, Download } from 'lucide-react'
 
 type DesktopFilesScreenProps = {
   managedFiles: ManagedFile[]
@@ -126,6 +126,18 @@ export function DesktopFilesScreen({
                         
                         {/* Desktop Actions */}
                         <div className="hidden sm:flex justify-end gap-1">
+                          {file.fileUrl && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                              onClick={() => window.open(`/api/files/${file.id}/download`, '_blank')}
+                              title="Stáhnout"
+                            >
+                              <Download className="size-4" />
+                            </Button>
+                          )}
                           <Button
                             type="button"
                             variant="ghost"
@@ -233,6 +245,20 @@ export function DesktopFilesScreen({
                 </div>
                 
                 <div className="flex flex-col gap-2 mt-2">
+                  {file.fileUrl && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start gap-2 h-10"
+                      onClick={() => {
+                        window.open(`/api/files/${file.id}/download`, '_blank')
+                        setInfoFileId(null)
+                      }}
+                    >
+                      <Download className="size-4 text-muted-foreground" />
+                      <span>Stáhnout</span>
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="outline"

@@ -1,6 +1,6 @@
-import { eventRepository } from './events.repository.js'
-import { CursorPagination } from '../../types.js'
-import { AppError } from '../../middleware/error-handler.js'
+import { eventRepository } from './events.repository'
+import { CursorPagination } from '../../types'
+import { AppError } from '../../middleware/error-handler'
 
 export class EventsService {
   async getEvents(actor: { id: number, role: string }, filters: {

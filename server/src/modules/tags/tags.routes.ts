@@ -1,10 +1,10 @@
 import express from 'express'
-import { tagsService } from './tags.services.js'
-import { requireRegisteredActor } from '../../auth.js'
-import { asyncHandler, AppError } from '../../middleware/error-handler.js'
-import { validate } from '../../middleware/validate.js'
-import { tagSchema } from '../../schemas.js'
-import { asBigInt } from '../../utils.js'
+import { tagsService } from './tags.services'
+import { requireRegisteredActor } from '../../auth'
+import { asyncHandler, AppError } from '../../middleware/error-handler'
+import { validate } from '../../middleware/validate'
+import { tagSchema } from '../../schemas'
+import { asBigInt } from '../../utils'
 
 export const tagsRouter = express.Router()
 

@@ -1,5 +1,4 @@
 import React from 'react'
-import './App.css'
 
 import { RouterProvider } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -62,7 +61,7 @@ function App() {
 
   if (!isLoaded) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+      <div className="h-screen flex items-center justify-center text-white">
         Načítám...
       </div>
     )

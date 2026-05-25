@@ -15,8 +15,8 @@ mock.module('../../src/auth.js', () => ({
   getActorFromRequest: async () => ({ id: 1, role: 'REGISTERED' })
 }))
 
-import { app } from '../../src/index.js'
-import { lessonsService } from '../../src/modules/lessons/lessons.services.js'
+import { app } from '../../src/index'
+import { lessonsService } from '../../src/modules/lessons/lessons.services'
 
 describe('Lessons API E2E', () => {
   describe('GET /api/lessons', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import request from 'supertest'
-import { app } from '../../src/index.js'
+import { app } from '../../src/index'
 
 describe('E2E API Tests (General)', () => {
   describe('GET /api/health', () => {

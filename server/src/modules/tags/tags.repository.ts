@@ -1,5 +1,5 @@
-import { db } from '../../db/client.js'
-import { tags } from '../../db/schema.js'
+import { db } from '../../db/client'
+import { tags } from '../../db/schema'
 import { and, eq, or, isNull } from 'drizzle-orm'
 
 class TagsRepository {

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { canAccessProtectedResource, isPublicActor } from '../accessControl.js'
+import { canAccessProtectedResource, isPublicActor } from '../accessControl'
 
 describe('auth guard rules', () => {
   it('rejects public actors from protected backend actions', () => {
     expect(
       canAccessProtectedResource({
+        id: 0,
         fullName: 'Verejnost',
         email: '',
         role: 'PUBLIC',
@@ -35,6 +36,7 @@ describe('auth guard rules', () => {
   it('detects public actors explicitly', () => {
     expect(
       isPublicActor({
+        id: 0,
         fullName: 'Verejnost',
         email: '',
         role: 'PUBLIC',

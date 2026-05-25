@@ -46,6 +46,7 @@ export const createSubjectSchema = z.object({
   teacher: z.string().min(1, 'Jméno vyučujícího je povinné').max(255, 'Jméno je příliš dlouhé'),
   code: z.string().min(1, 'Kód předmětu je povinný').max(20, 'Kód je příliš dlouhý'),
   tagIds: z.array(z.number()).optional(),
+  studyPlanId: z.number().nullable().optional(),
 })
 
 export type CreateSubjectFormData = z.infer<typeof createSubjectSchema>

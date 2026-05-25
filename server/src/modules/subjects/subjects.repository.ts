@@ -1,7 +1,7 @@
 import { and, asc, eq, exists, gt, isNull, or, sql } from 'drizzle-orm'
-import { db } from '../../db/client.js'
-import { subjects, studyPlans, studyPlanCollaborators, tasks, fileRecords, lessons, events } from '../../db/schema.js'
-import { CursorPagination } from '../../types.js'
+import { db } from '../../db/client'
+import { subjects, studyPlans, studyPlanCollaborators, tasks, fileRecords, lessons, events } from '../../db/schema'
+import { CursorPagination } from '../../types'
 
 const subjectSelect = {
   id: subjects.id,

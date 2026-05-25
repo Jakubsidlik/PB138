@@ -1,9 +1,9 @@
 import express from 'express'
-import { lessonsService } from './lessons.services.js'
-import { lessonSchema, updateLessonSchema } from '../../schemas.js'
-import { asBigInt } from '../../utils.js'
-import { getActorFromRequest, requireRegisteredActor } from '../../auth.js'
-import { asyncHandler, AppError } from '../../middleware/error-handler.js'
+import { lessonsService } from './lessons.services'
+import { lessonSchema, updateLessonSchema } from '../../schemas'
+import { asBigInt } from '../../utils'
+import { getActorFromRequest, requireRegisteredActor } from '../../auth'
+import { asyncHandler, AppError } from '../../middleware/error-handler'
 
 export const lessonsRouter: express.Router = express.Router()
 
@@ -71,7 +71,7 @@ lessonsRouter.post('/:id/vote', asyncHandler(async (req, res) => {
 
   const parsed = voteSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new AppError('Neplatný hlas.', 400)
+    throw new AppError('NeplatnĂ˝ hlas.', 400)
   }
 
   const result = await lessonsService.setLessonVote(lessonId, actor, parsed.data.vote)

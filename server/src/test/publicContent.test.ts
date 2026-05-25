@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isPubliclyVisible } from '../contentVisibility.js'
+import { isPubliclyVisible } from '../contentVisibility'
 
 describe('public content visibility', () => {
   it('allows only shared and not deleted content for anonymous users', () => {

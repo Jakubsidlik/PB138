@@ -17,8 +17,8 @@ mock.module('../../src/auth.js', () => ({
 }))
 
 // Import app AFTER mocks
-import { app } from '../../src/index.js'
-import { tasksService } from '../../src/modules/tasks/tasks.services.js'
+import { app } from '../../src/index'
+import { tasksService } from '../../src/modules/tasks/tasks.services'
 
 describe('Tasks API E2E', () => {
   it('GET /api/tasks should return 200', async () => {

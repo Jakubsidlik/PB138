@@ -1,12 +1,13 @@
 import express from 'express'
-import { filesService } from './files.services.js'
-import { fileSchema, updateFileSchema, uploadUrlSchema, shareFileSchema } from '../../schemas.js'
-import { asBigInt, parseCursorPagination } from '../../utils.js'
-import { getActorFromRequest, requireAdmin, requireRegisteredActor } from '../../auth.js'
-import { asyncHandler, AppError } from '../../middleware/error-handler.js'
+import { filesService } from './files.services'
+import { fileSchema, updateFileSchema, uploadUrlSchema, shareFileSchema } from '../../schemas'
+import { asBigInt, parseCursorPagination } from '../../utils'
+import { getActorFromRequest, requireAdmin, requireRegisteredActor } from '../../auth'
+import { asyncHandler, AppError } from '../../middleware/error-handler'
 import fs from 'fs'
 import path from 'path'
 import { pipeline } from 'stream/promises'
+import { env } from '../../env'
 
 export const filesRouter: express.Router = express.Router()
 export const adminFilesRouter: express.Router = express.Router()
@@ -132,7 +133,7 @@ filesRouter.delete('/:id/shares/:userId', asyncHandler(async (req, res) => {
 
   const fileId = asBigInt(req.params.id)
   const targetUserId = asBigInt(req.params.userId)
-  if (!fileId || !targetUserId) throw new AppError('Neplatné parametry.', 400)
+  if (!fileId || !targetUserId) throw new AppError('NeplatnĂ© parametry.', 400)
 
   const result = await filesService.unshareFile(fileId, targetUserId, actor)
   res.json(result)
@@ -146,15 +147,38 @@ filesRouter.post('/:id/vote', asyncHandler(async (req, res) => {
   if (!actor) return
 
   const fileId = asBigInt(req.params.id)
-  if (!fileId) throw new AppError('Neplatné ID souboru.', 400)
+  if (!fileId) throw new AppError('NeplatnĂ© ID souboru.', 400)
 
   const parsed = voteSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new AppError('Neplatný hlas.', 400)
+    throw new AppError('NeplatnĂ˝ hlas.', 400)
   }
 
   const result = await filesService.setFileVote(fileId, actor, parsed.data.vote)
   res.json(result)
+}))
+
+filesRouter.get('/:id/download', asyncHandler(async (req, res) => {
+  const fileId = asBigInt(req.params.id)
+  if (!fileId) throw new AppError('Neplatné ID souboru.', 400)
+
+  const file = await filesService.getFileForDownload(fileId)
+  if (!file) throw new AppError('Soubor nebyl nalezen.', 404)
+
+  if (file.fileKey && env.S3_ACCESS_KEY && env.S3_SECRET_KEY) {
+    const signedUrl = await filesService.getPresignedDownloadUrl(file.fileKey, file.name)
+    res.redirect(signedUrl)
+  } else {
+    const fileKey = file.fileKey || file.fileUrl?.split('/').pop() || ''
+    const filePath = path.join(process.cwd(), 'uploads', fileKey)
+    if (fs.existsSync(filePath)) {
+      res.download(filePath, file.name)
+    } else if (file.fileUrl) {
+      res.redirect(file.fileUrl)
+    } else {
+      res.status(404).send('Soubor nenalezen')
+    }
+  }
 }))
 
 // adminFilesRouter

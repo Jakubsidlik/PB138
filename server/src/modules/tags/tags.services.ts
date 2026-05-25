@@ -1,5 +1,5 @@
-import { AppError } from '../../middleware/error-handler.js'
-import { tagsRepository } from './tags.repository.js'
+import { AppError } from '../../middleware/error-handler'
+import { tagsRepository } from './tags.repository'
 
 class TagsService {
   async getTags(userId: number) {

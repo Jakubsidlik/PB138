@@ -1,7 +1,7 @@
-import { lessonsRepository } from './lessons.repository.js'
-import { AppError } from '../../middleware/error-handler.js'
-import { asNumberId } from '../../utils.js'
-import { fileRecords } from '../../db/schema.js'
+import { lessonsRepository } from './lessons.repository'
+import { AppError } from '../../middleware/error-handler'
+import { asNumberId } from '../../utils'
+import { fileRecords } from '../../db/schema'
 
 export class LessonsService {
   async getLessons(actor: { id: number, role: string }, filters: {

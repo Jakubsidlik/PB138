@@ -175,6 +175,8 @@ export interface FileRecord {
   dislikes?: number
   userVote?: 'LIKE' | 'DISLIKE' | null
   userEmail?: string
+  fileUrl?: string
+  fileKey?: string
 }
 
 export interface ManagedFile extends FileRecord {
