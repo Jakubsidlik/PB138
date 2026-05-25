@@ -124,6 +124,8 @@ export function StudyComponent() {
       onUploadFiles={state.onUploadFiles}
       lessons={state.lessons}
       onAddNote={state.addSubjectNote}
+      onDeleteNote={state.deleteSubjectNote}
+      onUpdateNote={state.updateSubjectNote}
       studyPlans={state.studyPlans}
       activeStudyPlanId={state.activeStudyPlanId}
       setActiveStudyPlanId={state.setActiveStudyPlanId}

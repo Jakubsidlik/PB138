@@ -4,8 +4,18 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Subject, ManagedFile, Lesson } from '../../../app/types'
 import { Button } from '../../ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../ui/alert-dialog'
 import { Textarea } from '../../ui/textarea'
-import { Hash, User, FileText, Upload, Plus, MessageSquare, Paperclip, Clock, UserCircle2, ThumbsUp, ThumbsDown, Share, Download } from 'lucide-react'
+import { Hash, User, FileText, Upload, Plus, MessageSquare, Paperclip, Clock, UserCircle2, ThumbsUp, ThumbsDown, Share, Download, Pencil, Trash2 } from 'lucide-react'
 import { useDashboard } from '../../../app/DashboardContext'
 import { ShareFileModal } from '../files/ShareFileModal'
 import { createNoteSchema, type CreateNoteFormData } from '../../../app/schemas'
@@ -19,6 +29,8 @@ type SubjectDetailModalProps = {
   onAddFile?: (subjectId: number, file: File) => void
   onRateLesson?: (lessonId: number, vote: 'LIKE' | 'DISLIKE' | null) => Promise<void>
   onRateFile?: (fileId: number, vote: 'LIKE' | 'DISLIKE' | null) => Promise<void>
+  onDeleteNote?: (noteId: number) => Promise<void>
+  onUpdateNote?: (noteId: number, note: string) => Promise<void>
 }
 
 export function SubjectDetailModal({ 
@@ -30,8 +42,13 @@ export function SubjectDetailModal({
   onAddFile,
   onRateLesson,
   onRateFile,
+  onDeleteNote,
+  onUpdateNote,
 }: SubjectDetailModalProps) {
-  const { toggleFileShared } = useDashboard()
+  const { toggleFileShared, authSession } = useDashboard()
+  const [editingNoteId, setEditingNoteId] = React.useState<number | null>(null)
+  const [editingNoteText, setEditingNoteText] = React.useState<string>('')
+  const [noteToDeleteId, setNoteToDeleteId] = React.useState<number | null>(null)
   const noteForm = useForm<CreateNoteFormData>({
     resolver: zodResolver(createNoteSchema),
     defaultValues: { text: '' },
@@ -67,6 +84,13 @@ export function SubjectDetailModal({
 
     onAddNote?.(subject.id, data.text)
     noteForm.reset()
+  }
+
+  const handleSaveEditNote = async (id: number) => {
+    if (!editingNoteText.trim() || editingNoteText.length > 2000) return
+    await onUpdateNote?.(id, editingNoteText)
+    setEditingNoteId(null)
+    setEditingNoteText('')
   }
 
   const handleAddFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -282,6 +306,53 @@ export function SubjectDetailModal({
             {subjectLessons.length > 0 ? (
               <div className="space-y-3 mt-4">
                 {subjectLessons.map((lesson) => {
+                  const isAuthor = lesson.authorId !== undefined && lesson.authorId !== null && (Number(lesson.authorId) === Number(authSession?.userId) || authSession?.role === 'ADMIN')
+
+                  if (editingNoteId === lesson.id) {
+                    return (
+                      <div key={lesson.id} className="p-4 rounded-lg border bg-card shadow-sm space-y-3">
+                        <Textarea
+                          value={editingNoteText}
+                          onChange={(e) => setEditingNoteText(e.target.value)}
+                          placeholder="Upravit poznámku..."
+                          rows={2}
+                          className="resize-none border focus-visible:ring-1 focus-within:ring-primary/50 text-sm w-full p-2 bg-transparent rounded-md"
+                        />
+                        <div className="flex justify-between items-center text-xs">
+                          <span className={`select-none ${
+                            editingNoteText.length > 2000
+                              ? 'text-destructive font-semibold animate-pulse'
+                              : editingNoteText.length > 1800
+                              ? 'text-amber-500 font-medium'
+                              : 'text-muted-foreground'
+                          }`}>
+                            {editingNoteText.length} / 2000
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              type="button" 
+                              size="sm"
+                              variant="outline"
+                              className="h-8 rounded-full px-3 text-xs"
+                              onClick={() => setEditingNoteId(null)}
+                            >
+                              Zrušit
+                            </Button>
+                            <Button 
+                              type="button" 
+                              size="sm"
+                              className="h-8 rounded-full px-3 text-xs"
+                              onClick={() => handleSaveEditNote(lesson.id)}
+                              disabled={!editingNoteText.trim() || editingNoteText.length > 2000}
+                            >
+                              Uložit
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+
                   return (
                     <div key={lesson.id} className="p-4 rounded-lg border bg-card shadow-sm relative group">
                       <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">{lesson.content || lesson.title}</p>
@@ -306,41 +377,73 @@ export function SubjectDetailModal({
                           </div>
                         </div>
 
-                        {/* Rating controls */}
-                        <div className="flex items-center gap-0.5 bg-muted/30 px-1 py-1 rounded-full border">
-                          <Button 
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className={`h-7 px-2 rounded-full gap-1.5 ${
-                              lesson.userVote === 'LIKE' ? 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 hover:text-emerald-600' : 'text-muted-foreground hover:bg-muted'
-                            }`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleNoteVote(lesson.id, 'LIKE');
-                            }}
-                          >
-                            <ThumbsUp className={`w-3.5 h-3.5 ${lesson.userVote === 'LIKE' ? 'fill-current' : ''}`} />
-                            <span className="min-w-[8px] text-xs font-bold">{lesson.likes ?? 0}</span>
-                          </Button>
-                          <div className="w-[1px] h-3 bg-border mx-0.5" />
-                          <Button 
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className={`h-7 px-2 rounded-full gap-1.5 ${
-                              lesson.userVote === 'DISLIKE' ? 'text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-600' : 'text-muted-foreground hover:bg-muted'
-                            }`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleNoteVote(lesson.id, 'DISLIKE');
-                            }}
-                          >
-                            <ThumbsDown className={`w-3.5 h-3.5 ${lesson.userVote === 'DISLIKE' ? 'fill-current' : ''}`} />
-                            <span className="min-w-[8px] text-xs font-bold">{lesson.dislikes ?? 0}</span>
-                          </Button>
+                        {/* Rating controls & Actions */}
+                        <div className="flex items-center gap-2">
+                          {/* Rating controls */}
+                          <div className="flex items-center gap-0.5 bg-muted/30 px-1 py-1 rounded-full border">
+                            <Button 
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className={`h-7 px-2 rounded-full gap-1.5 ${
+                                lesson.userVote === 'LIKE' ? 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 hover:text-emerald-600' : 'text-muted-foreground hover:bg-muted'
+                              }`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleNoteVote(lesson.id, 'LIKE');
+                              }}
+                            >
+                              <ThumbsUp className={`w-3.5 h-3.5 ${lesson.userVote === 'LIKE' ? 'fill-current' : ''}`} />
+                              <span className="min-w-[8px] text-xs font-bold">{lesson.likes ?? 0}</span>
+                            </Button>
+                            <div className="w-[1px] h-3 bg-border mx-0.5" />
+                            <Button 
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className={`h-7 px-2 rounded-full gap-1.5 ${
+                                lesson.userVote === 'DISLIKE' ? 'text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-600' : 'text-muted-foreground hover:bg-muted'
+                              }`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleNoteVote(lesson.id, 'DISLIKE');
+                              }}
+                            >
+                              <ThumbsDown className={`w-3.5 h-3.5 ${lesson.userVote === 'DISLIKE' ? 'fill-current' : ''}`} />
+                              <span className="min-w-[8px] text-xs font-bold">{lesson.dislikes ?? 0}</span>
+                            </Button>
+                          </div>
+
+                          {/* Edit / Delete actions */}
+                          {isAuthor && (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
+                                onClick={() => {
+                                  setEditingNoteId(lesson.id)
+                                  setEditingNoteText(lesson.content || lesson.title)
+                                }}
+                                title="Upravit poznámku"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+                                onClick={() => setNoteToDeleteId(lesson.id)}
+                                title="Smazat poznámku"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -371,6 +474,31 @@ export function SubjectDetailModal({
           />
         )
       })()}
+
+      <AlertDialog open={noteToDeleteId !== null} onOpenChange={(open) => { if (!open) setNoteToDeleteId(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Opravdu chcete smazat tuto poznámku?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce je nevratná a poznámka bude trvale smazána.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (noteToDeleteId) {
+                  await onDeleteNote?.(noteToDeleteId)
+                }
+                setNoteToDeleteId(null)
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

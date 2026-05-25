@@ -704,6 +704,61 @@ export function useDashboardState(fetchAll = false) {
     }
   }
 
+  const deleteSubjectNote = async (lessonId: number) => {
+    if (!ensureAuthenticated()) {
+      return
+    }
+
+    try {
+      const res = await apiFetch(`/api/lessons/${lessonId}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        toast.error(errorData?.error || 'Nepodařilo se smazat poznámku.')
+        console.error('Failed to delete note:', errorData)
+        return
+      }
+
+      toast.success('Poznámka byla smazána.')
+      await refreshLessons()
+      await refreshSubjects()
+    } catch (e) {
+      toast.error('Došlo k chybě při mazání poznámky.')
+      console.error('Failed to delete note:', e)
+    }
+  }
+
+  const updateSubjectNote = async (lessonId: number, noteText: string) => {
+    if (!ensureAuthenticated()) {
+      return
+    }
+
+    const title = noteText.length > 50 ? noteText.slice(0, 50) + '...' : noteText
+
+    try {
+      const res = await apiFetch(`/api/lessons/${lessonId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content: noteText }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        toast.error(errorData?.error || 'Nepodařilo se upravit poznámku.')
+        console.error('Failed to update note:', errorData)
+        return
+      }
+
+      toast.success('Poznámka byla upravena.')
+      await refreshLessons()
+    } catch (e) {
+      toast.error('Došlo k chybě při úpravě poznámky.')
+      console.error('Failed to update note:', e)
+    }
+  }
+
   const rateLesson = async (lessonId: number, vote: 'LIKE' | 'DISLIKE' | null) => {
     if (!ensureAuthenticated()) return
 
@@ -1308,6 +1363,8 @@ export function useDashboardState(fetchAll = false) {
     removeEvent,
     addDesktopEvent,
     addSubjectNote,
+    deleteSubjectNote,
+    updateSubjectNote,
     onUploadFiles,
     onDropToUpload,
     goToToday,

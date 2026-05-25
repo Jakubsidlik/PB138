@@ -110,29 +110,10 @@ export class LessonsRepository {
   async canActorManageLesson(actorId: number, actorRole: string, lessonId: bigint) {
     if (actorRole === 'ADMIN') return true
 
-    const [lesson] = await db.select({ subjectId: lessons.subjectId }).from(lessons).where(eq(lessons.id, lessonId)).limit(1)
+    const [lesson] = await db.select({ userId: lessons.userId }).from(lessons).where(eq(lessons.id, lessonId)).limit(1)
     if (!lesson) return false
 
-    if (lesson.subjectId !== null) {
-      const [ownSubject] = await db.select({ id: subjects.id }).from(subjects).where(and(eq(subjects.id, lesson.subjectId), eq(subjects.userId, BigInt(actorId)))).limit(1)
-      if (ownSubject) return true
-      
-      const [collab] = await db.select({ id: studyPlanCollaborators.id })
-        .from(subjects)
-        .innerJoin(studyPlanCollaborators, eq(subjects.studyPlanId, studyPlanCollaborators.studyPlanId))
-        .where(and(eq(subjects.id, lesson.subjectId), eq(studyPlanCollaborators.userId, BigInt(actorId))))
-        .limit(1)
-      if (collab) return true
-
-      // Check if subject is shared with the actor via subjectShares
-      const [shared] = await db.select({ id: subjectShares.id })
-        .from(subjectShares)
-        .where(and(eq(subjectShares.subjectId, lesson.subjectId), eq(subjectShares.userId, BigInt(actorId))))
-        .limit(1)
-      if (shared) return true
-    }
-
-    return false
+    return lesson.userId !== null && lesson.userId === BigInt(actorId)
   }
 
   async setVote(lessonId: bigint, userId: bigint, vote: 'LIKE' | 'DISLIKE' | null) {

@@ -51,6 +51,8 @@ type DesktopStudyPlanProps = {
   onUploadFiles: (files: FileList | File[] | null, options?: { subjectId?: number }) => Promise<void>
   lessons: Lesson[]
   onAddNote: (subjectId: number, note: string) => Promise<void>
+  onDeleteNote?: (noteId: number) => Promise<void>
+  onUpdateNote?: (noteId: number, note: string) => Promise<void>
   studyPlans: StudyPlan[]
   activeStudyPlanId: number | null
   setActiveStudyPlanId: (id: number | null) => void
@@ -81,6 +83,8 @@ export function DesktopStudyPlan({
   onUploadFiles,
   lessons,
   onAddNote,
+  onDeleteNote,
+  onUpdateNote,
   studyPlans,
   activeStudyPlanId,
   setActiveStudyPlanId,
@@ -724,6 +728,8 @@ export function DesktopStudyPlan({
             onAddFile={handleAddFile}
             onRateLesson={onRateLesson}
             onRateFile={onRateFile}
+            onDeleteNote={onDeleteNote}
+            onUpdateNote={onUpdateNote}
           />
         </section>
       )}
