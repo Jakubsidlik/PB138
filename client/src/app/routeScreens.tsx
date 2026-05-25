@@ -82,6 +82,7 @@ export function FilesComponent() {
       onDeleteFile={state.removeFile}
       onToggleFileShared={state.toggleFileShared}
       onChangeFileSubject={state.changeFileSubject}
+      authSession={state.authSession}
     />
   )
 }

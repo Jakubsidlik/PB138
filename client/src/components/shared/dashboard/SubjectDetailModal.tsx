@@ -163,6 +163,7 @@ export function SubjectDetailModal({
             {subjectFiles.length > 0 ? (
               <div className="grid gap-2">
                 {subjectFiles.map((file) => {
+                  const isSharedFile = authSession ? (file.userId !== undefined && file.userId !== null && file.userId !== Number(authSession.userId)) : !!file.shared
                   return (
                     <div key={file.id} className="flex items-center justify-between p-3 rounded-md border bg-card hover:bg-accent/30 transition-colors shadow-sm">
                       <div className="flex items-center gap-3 overflow-hidden mr-4">
@@ -172,6 +173,9 @@ export function SubjectDetailModal({
                         <div className="flex flex-col min-w-0">
                           <span className="font-medium text-sm truncate" title={file.name}>{file.name}</span>
                           <span className="text-[10px] text-muted-foreground font-mono">{file.size}</span>
+                          {isSharedFile && (
+                            <span className="text-[10px] text-amber-600 font-bold mt-0.5">Sdílený soubor</span>
+                          )}
                         </div>
                       </div>
                       
@@ -228,16 +232,18 @@ export function SubjectDetailModal({
                         )}
 
                         {/* Share control */}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
-                          onClick={() => setShareFileId(file.id)}
-                          title="Sdílet soubor s konkrétním uživatelem"
-                        >
-                          <Share className="w-3.5 h-3.5" />
-                        </Button>
+                        {!isSharedFile && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
+                            onClick={() => setShareFileId(file.id)}
+                            title="Sdílet soubor s konkrétním uživatelem"
+                          >
+                            <Share className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )

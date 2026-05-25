@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button } from '../components/ui/button'
-import { ManagedFile, Subject } from '../app/types'
+import { AuthSession, ManagedFile, Subject } from '../app/types'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../components/ui/dropdown-menu'
 import { getFileIcon } from '../components/shared/files/fileUtils'
 import { HiddenFileInput } from '../components/shared/files/HiddenFileInput'
@@ -21,6 +21,9 @@ import {
 import { Input } from '../components/ui/input'
 import { Share, Trash2, MoreVertical, Download } from 'lucide-react'
 
+type SortField = 'name' | 'subject' | 'added' | 'size'
+type SortOrder = 'asc' | 'desc'
+
 type DesktopFilesScreenProps = {
   managedFiles: ManagedFile[]
   subjects: Subject[]
@@ -30,6 +33,7 @@ type DesktopFilesScreenProps = {
   onDeleteFile: (fileId: number) => void
   onToggleFileShared: (fileId: number, email?: string) => Promise<void>
   onChangeFileSubject: (fileId: number, subjectId: number | null) => void
+  authSession: AuthSession | null
 }
 
 export function DesktopFilesScreen({
@@ -41,12 +45,30 @@ export function DesktopFilesScreen({
   onDeleteFile,
   onToggleFileShared,
   onChangeFileSubject,
+  authSession,
 }: DesktopFilesScreenProps) {
   const [shareModalFileId, setShareModalFileId] = useState<number | null>(null)
   const [renamingFileId, setRenamingFileId] = useState<number | null>(null)
   const [newFileName, setNewFileName] = useState('')
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null)
   const [infoFileId, setInfoFileId] = useState<number | null>(null)
+
+  const [sortField, setSortField] = useState<SortField>('added')
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortOrder(field === 'added' ? 'desc' : 'asc')
+    }
+  }
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) return <span className="opacity-30 ml-1 text-xs">↕</span>
+    return sortOrder === 'asc' ? <span className="text-primary ml-1 text-xs">↑</span> : <span className="text-primary ml-1 text-xs">↓</span>
+  }
 
   const handleRename = (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,7 +78,21 @@ export function DesktopFilesScreen({
     }
   }
 
-  const rows = managedFiles
+  const rows = [...managedFiles].sort((a, b) => {
+    let comparison = 0
+    if (sortField === 'name') {
+      comparison = a.name.localeCompare(b.name, 'cs')
+    } else if (sortField === 'subject') {
+      const subA = subjects.find(s => s.id === a.subjectId)?.code || ''
+      const subB = subjects.find(s => s.id === b.subjectId)?.code || ''
+      comparison = subA.localeCompare(subB, 'cs')
+    } else if (sortField === 'added') {
+      comparison = a.id - b.id
+    } else if (sortField === 'size') {
+      comparison = a.sizeBytes - b.sizeBytes
+    }
+    return sortOrder === 'asc' ? comparison : -comparison
+  })
 
   return (
     <section className="flex flex-col gap-6 w-full px-4 sm:px-8 pt-6 pb-10" id="desktop-files">
@@ -76,11 +112,31 @@ export function DesktopFilesScreen({
               <p className="text-muted-foreground text-sm py-4">Zatím nejsou dostupné žádné soubory.</p>
             ) : (
               <div className="w-full">
-                <div className="grid grid-cols-[1fr_80px_40px] sm:grid-cols-[2fr_1fr_1fr_100px] md:grid-cols-[2fr_1fr_1fr_1fr_100px] gap-2 sm:gap-4 py-3 border-b text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                  <div>Název souboru</div>
-                  <div>Předmět</div>
-                  <div className="hidden md:block">Změna</div>
-                  <div className="hidden sm:block">Velikost</div>
+                <div className="grid grid-cols-[1fr_80px_40px] sm:grid-cols-[2fr_1fr_1fr_100px] md:grid-cols-[2fr_1fr_1fr_1fr_100px] gap-2 sm:gap-4 py-3 border-b text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider select-none">
+                  <div 
+                    className="flex items-center cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort('name')}
+                  >
+                    Název souboru {renderSortIcon('name')}
+                  </div>
+                  <div 
+                    className="flex items-center cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort('subject')}
+                  >
+                    Předmět {renderSortIcon('subject')}
+                  </div>
+                  <div 
+                    className="hidden md:flex items-center cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort('added')}
+                  >
+                    Změna {renderSortIcon('added')}
+                  </div>
+                  <div 
+                    className="hidden sm:flex items-center cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort('size')}
+                  >
+                    Velikost {renderSortIcon('size')}
+                  </div>
                   <div className="text-right pr-2 sm:pr-0">Akce</div>
                 </div>
                 
@@ -94,32 +150,45 @@ export function DesktopFilesScreen({
                     if (tone === "accent-amber") bgToneClass = "bg-amber-500/10 text-amber-600"
                     if (tone === "accent-emerald") bgToneClass = "bg-emerald-500/10 text-emerald-600"
 
+                    const isSharedFile = authSession ? (file.userId !== undefined && file.userId !== null && file.userId !== Number(authSession.userId)) : !!file.shared
+
                     return (
                       <div key={file.id} className="grid grid-cols-[1fr_80px_40px] sm:grid-cols-[2fr_1fr_1fr_100px] md:grid-cols-[2fr_1fr_1fr_1fr_100px] gap-2 sm:gap-4 py-3 items-center border-b last:border-0 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-3 overflow-hidden">
                           <span className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${bgToneClass}`}>
                             {icon}
                           </span>
-                          <span className="font-medium text-sm truncate">{file.name}</span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-medium text-sm truncate">{file.name}</span>
+                            {isSharedFile && (
+                              <span className="text-[10px] text-amber-600 font-bold">Sdílený soubor</span>
+                            )}
+                          </div>
                         </div>
                         <div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger className="focus:outline-none">
-                              <span className="inline-flex px-2 py-0.5 rounded-full bg-muted hover:bg-muted/80 text-xs font-semibold cursor-pointer transition-colors" title="Přiřadit k předmětu">
-                                {subjectCode}
-                              </span>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-[200px] max-h-[300px] overflow-y-auto">
-                              <DropdownMenuItem onClick={() => onChangeFileSubject(file.id, null)}>
-                                N/A (Bez předmětu)
-                              </DropdownMenuItem>
-                              {subjects.map(sub => (
-                                <DropdownMenuItem key={sub.id} onClick={() => onChangeFileSubject(file.id, sub.id)}>
-                                  {sub.code} - {sub.name}
+                          {isSharedFile ? (
+                            <span className="inline-flex px-2 py-0.5 rounded-full bg-muted/50 text-xs font-semibold text-muted-foreground select-none opacity-70" title="Předmět (nelze upravovat)">
+                              {subjectCode}
+                            </span>
+                          ) : (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger className="focus:outline-none">
+                                <span className="inline-flex px-2 py-0.5 rounded-full bg-muted hover:bg-muted/80 text-xs font-semibold cursor-pointer transition-colors" title="Přiřadit k předmětu">
+                                  {subjectCode}
+                                </span>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" className="w-[200px] max-h-[300px] overflow-y-auto">
+                                <DropdownMenuItem onClick={() => onChangeFileSubject(file.id, null)}>
+                                  N/A (Bez předmětu)
                                 </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                {subjects.map(sub => (
+                                  <DropdownMenuItem key={sub.id} onClick={() => onChangeFileSubject(file.id, sub.id)}>
+                                    {sub.code} - {sub.name}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
                         <div className="hidden md:block text-sm text-muted-foreground">{file.addedLabel}</div>
                         <div className="hidden sm:block text-sm text-muted-foreground">{file.size}</div>
@@ -138,39 +207,43 @@ export function DesktopFilesScreen({
                               <Download className="size-4" />
                             </Button>
                           )}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                            onClick={() => setShareModalFileId(file.id)}
-                            title="Sdílet soubor s konkrétním uživatelem"
-                          >
-                            <Share className="size-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                            onClick={() => {
-                              setRenamingFileId(file.id)
-                              setNewFileName(file.name)
-                            }}
-                            title="Přejmenovat"
-                          >
-                            ✎
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => setDeletingFileId(file.id)}
-                            title="Smazat"
-                          >
-                            🗑
-                          </Button>
+                          {!isSharedFile && (
+                            <>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={() => setShareModalFileId(file.id)}
+                                title="Sdílet soubor s konkrétním uživatelem"
+                              >
+                                <Share className="size-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={() => {
+                                  setRenamingFileId(file.id)
+                                  setNewFileName(file.name)
+                                }}
+                                title="Přejmenovat"
+                              >
+                                ✎
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeletingFileId(file.id)}
+                                title="Smazat"
+                              >
+                                🗑
+                              </Button>
+                            </>
+                          )}
                         </div>
 
                         {/* Mobile Info & Actions Trigger */}
@@ -221,6 +294,8 @@ export function DesktopFilesScreen({
         if (tone === "accent-amber") bgToneClass = "bg-amber-500/10 text-amber-600"
         if (tone === "accent-emerald") bgToneClass = "bg-emerald-500/10 text-emerald-600"
 
+        const isSharedFile = authSession ? (file.userId !== undefined && file.userId !== null && file.userId !== Number(authSession.userId)) : !!file.shared
+
         return (
           <Dialog open={!!infoFileId} onOpenChange={(open) => !open && setInfoFileId(null)}>
             <DialogContent className="sm:max-w-[425px]">
@@ -229,7 +304,12 @@ export function DesktopFilesScreen({
                   <span className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${bgToneClass}`}>
                     {icon}
                   </span>
-                  <span className="truncate">{file.name}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate">{file.name}</span>
+                    {isSharedFile && (
+                      <span className="text-[10px] text-amber-600 font-bold mt-0.5">Sdílený soubor</span>
+                    )}
+                  </div>
                 </DialogTitle>
               </DialogHeader>
               <div className="flex flex-col gap-4 py-4">
@@ -259,45 +339,49 @@ export function DesktopFilesScreen({
                       <span>Stáhnout</span>
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full justify-start gap-2 h-10"
-                    onClick={() => {
-                      setShareModalFileId(file.id)
-                      setInfoFileId(null)
-                    }}
-                  >
-                    <Share className="size-4 text-muted-foreground" />
-                    <span>Nasdílet uživateli</span>
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full justify-start gap-2 h-10"
-                    onClick={() => {
-                      setRenamingFileId(file.id)
-                      setNewFileName(file.name)
-                      setInfoFileId(null)
-                    }}
-                  >
-                    <span className="text-muted-foreground">✎</span>
-                    <span>Přejmenovat</span>
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="w-full justify-start gap-2 h-10"
-                    onClick={() => {
-                      setDeletingFileId(file.id)
-                      setInfoFileId(null)
-                    }}
-                  >
-                    <span className="text-destructive-foreground">🗑</span>
-                    <span>Smazat soubor</span>
-                  </Button>
+                  {!isSharedFile && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start gap-2 h-10"
+                        onClick={() => {
+                          setShareModalFileId(file.id)
+                          setInfoFileId(null)
+                        }}
+                      >
+                        <Share className="size-4 text-muted-foreground" />
+                        <span>Nasdílet uživateli</span>
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start gap-2 h-10"
+                        onClick={() => {
+                          setRenamingFileId(file.id)
+                          setNewFileName(file.name)
+                          setInfoFileId(null)
+                        }}
+                      >
+                        <span className="text-muted-foreground">✎</span>
+                        <span>Přejmenovat</span>
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        className="w-full justify-start gap-2 h-10"
+                        onClick={() => {
+                          setDeletingFileId(file.id)
+                          setInfoFileId(null)
+                        }}
+                      >
+                        <span className="text-destructive-foreground">🗑</span>
+                        <span>Smazat soubor</span>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </DialogContent>
