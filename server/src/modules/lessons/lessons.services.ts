@@ -1,7 +1,6 @@
 import { lessonsRepository } from './lessons.repository'
 import { AppError } from '../../middleware/error-handler'
 import { asNumberId } from '../../utils'
-import { fileRecords } from '../../db/schema'
 
 export class LessonsService {
   async getLessons(actor: { id: number, role: string }, filters: {
@@ -49,7 +48,7 @@ export class LessonsService {
       title: data.title,
       content: data.content ?? null,
       isShared: data.isShared,
-      orderIndex: Math.trunc(data.orderIndex),
+      orderIndex: Math.trunc(data.orderIndex ?? 0),
     })
 
     return {

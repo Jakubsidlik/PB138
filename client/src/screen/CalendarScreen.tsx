@@ -137,24 +137,6 @@ export function DesktopCalendarScreen({
                       onChange={e => setNewEvent({...newEvent, location: e.target.value})} 
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium">Priorita</label>
-                    <Select 
-                      value={newEvent.priority} 
-                      onValueChange={(val) => setNewEvent({...newEvent, priority: val ?? 'low'})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Vyberte prioritu">
-                          {newEvent.priority === 'high' ? 'Vysoká' : newEvent.priority === 'medium' ? 'Střední' : newEvent.priority === 'low' ? 'Nízká' : 'Vyberte prioritu'}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Nízká</SelectItem>
-                        <SelectItem value="medium">Střední</SelectItem>
-                        <SelectItem value="high">Vysoká</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
                 <DialogFooter>
                   <Button type="submit" disabled={!newEvent.title.trim()}>Přidat</Button>
@@ -202,9 +184,8 @@ export function DesktopCalendarScreen({
                   <span className={numberClasses}>{cell.date.getDate()}</span>
                   <div className="flex flex-col gap-1 w-full overflow-hidden">
                     {dayEvents.slice(0, 2).map((dayEvent) => (
-                      <span key={dayEvent.id} className="text-[10px] sm:text-xs w-full px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium text-left whitespace-normal break-words" style={{ wordBreak: 'break-word' }} title={`${dayEvent.title}${dayEvent.priority ? ` - ${dayEvent.priority === 'high' ? 'vysoká' : dayEvent.priority === 'medium' ? 'střední' : 'nízká'}` : ''}`}>
+                      <span key={dayEvent.id} className="text-[10px] sm:text-xs w-full px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium text-left whitespace-normal break-words" style={{ wordBreak: 'break-word' }} title={dayEvent.title}>
                         {dayEvent.title}
-                        {dayEvent.priority && ` - ${dayEvent.priority === 'high' ? 'vysoká' : dayEvent.priority === 'medium' ? 'střední' : 'nízká'}`}
                       </span>
                     ))}
                     {dayEvents.length > 2 && (

@@ -42,7 +42,7 @@ import {
   getManagedFileCategory,
 } from './utils'
 
-type SubjectFilter = 'all' | 'active' | 'archived'
+type SubjectFilter = 'all' | 'active' | 'archived' | 'shared'
 const AUTH_SESSION_STORAGE_KEY = 'pb138-auth-session'
 
 const readAuthSessionFromStorage = (): AuthSession | null => {
@@ -1290,9 +1290,13 @@ export function useDashboardState(fetchAll = false) {
           return Boolean(subject.archived)
         }
 
+        if (subjectFilter === 'shared') {
+          return Boolean(subject.isShared) || (subject.userId !== undefined && subject.userId !== null && subject.userId !== Number(authSession?.userId))
+        }
+
         return true
       }),
-    [subjects, subjectSearch, subjectFilter, activeStudyPlanId, tagFilter],
+    [subjects, subjectSearch, subjectFilter, activeStudyPlanId, tagFilter, authSession],
   )
 
   const desktopSubjects = React.useMemo(

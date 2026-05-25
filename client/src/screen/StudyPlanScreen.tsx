@@ -32,7 +32,7 @@ type DesktopSubject = Subject & {
   deadlineCount: number
 }
 
-type SubjectFilter = 'all' | 'active' | 'archived'
+type SubjectFilter = 'all' | 'active' | 'archived' | 'shared'
 
 type DesktopStudyPlanProps = {
   desktopSubjects: DesktopSubject[]
@@ -140,7 +140,7 @@ export function DesktopStudyPlan({
 
   const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false)
   const [isAddPlanOpen, setIsAddPlanOpen] = useState(false)
-  const [planFilter, setPlanFilter] = useState<'all' | 'active' | 'archived'>('active')
+  const [planFilter, setPlanFilter] = useState<'all' | 'active' | 'archived' | 'shared'>('active')
 
   const [sharingPlanId, setSharingPlanId] = useState<number | null>(null)
   const [sharingSubjectId, setSharingSubjectId] = useState<number | null>(null)
@@ -294,6 +294,13 @@ export function DesktopStudyPlan({
             >
               Archivované
             </Button>
+            <Button
+              type="button"
+              variant={planFilter === 'shared' ? 'default' : 'outline'}
+              onClick={() => setPlanFilter('shared')}
+            >
+              Sdílené
+            </Button>
             <div className="ml-auto">
               <Dialog open={isAddPlanOpen} onOpenChange={setIsAddPlanOpen}>
                 <DialogTrigger render={<Button size="lg" className="h-10 px-5 text-sm font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--text-contrast)] shadow-sm" />}>
@@ -362,6 +369,9 @@ export function DesktopStudyPlan({
               if (planFilter === 'all') return true
               if (planFilter === 'active') return plan.isActive
               if (planFilter === 'archived') return !plan.isActive
+              if (planFilter === 'shared') {
+                return Boolean(plan.isShared) || (plan.userId !== undefined && plan.userId !== null && plan.userId !== Number(authSession?.userId))
+              }
               return true
             }).map((plan) => (
               <Card
@@ -479,6 +489,13 @@ export function DesktopStudyPlan({
             >
               Archivované
             </Button>
+            <Button
+              type="button"
+              variant={subjectFilter === 'shared' ? 'default' : 'outline'}
+              onClick={() => setSubjectFilter('shared')}
+            >
+              Sdílené
+            </Button>
             
             <div className="ml-2 w-40">
               <Select
@@ -486,7 +503,13 @@ export function DesktopStudyPlan({
                 onValueChange={(val) => setTagFilter(val === 'all' ? null : parseInt(val || '0'))}
               >
                 <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Filtrovat podle štítku" />
+                  <SelectValue placeholder="Filtrovat podle štítku">
+                    {(() => {
+                      if (!tagFilter) return 'Všechny štítky'
+                      const tag = tags.find(t => t.id === tagFilter)
+                      return tag ? tag.name : 'Filtrovat podle štítku'
+                    })()}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Všechny štítky</SelectItem>
@@ -680,12 +703,23 @@ export function DesktopStudyPlan({
                       onValueChange={(val) => editSubjectForm.setValue('studyPlanId', (val === 'none' || !val ? null : parseInt(val)) as any)}
                     >
                       <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Vyberte studijní plán" />
+                        <SelectValue placeholder="Vyberte studijní plán">
+                          {(() => {
+                            const selectedIdStr = editSubjectForm.watch('studyPlanId')?.toString()
+                            if (!selectedIdStr || selectedIdStr === 'none') {
+                              return 'Bez studijního plánu (Nezařazené)'
+                            }
+                            const plan = studyPlans.find(p => p.id.toString() === selectedIdStr)
+                            return plan ? (plan.name + (!plan.isActive ? ' (Archivovaný)' : '')) : selectedIdStr
+                          })()}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">Bez studijního plánu (Nezařazené)</SelectItem>
-                        {studyPlans.filter(p => p.isActive).map(plan => (
-                          <SelectItem key={plan.id} value={plan.id.toString()}>{plan.name}</SelectItem>
+                        {studyPlans.map(plan => (
+                          <SelectItem key={plan.id} value={plan.id.toString()}>
+                            {plan.name} {!plan.isActive && ' (Archivovaný)'}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

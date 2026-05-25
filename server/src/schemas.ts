@@ -4,8 +4,8 @@ export const studyPlanSchema = z.object({
   name: z.string().trim().min(1, 'Pole name je povinne.'),
   description: z.string().trim().nullable().optional(),
 
-  isActive: z.boolean().optional().default(true),
-  isShared: z.boolean().optional().default(false),
+  isActive: z.boolean().optional(),
+  isShared: z.boolean().optional(),
 })
 export const updateStudyPlanSchema = studyPlanSchema.partial()
 
@@ -14,7 +14,7 @@ export const subjectSchema = z.object({
   teacher: z.string().trim().min(1, 'Pole teacher je povinne.'),
   code: z.string().trim().min(1, 'Pole code je povinne.').toUpperCase(),
   studyPlanId: z.number().nullable().optional(),
-  isShared: z.boolean().optional().default(false),
+  isShared: z.boolean().optional(),
   tagIds: z.array(z.number()).optional(),
 })
 export const updateSubjectSchema = subjectSchema.partial().extend({
@@ -29,7 +29,7 @@ export const tagSchema = z.object({
 
 export const taskSchema = z.object({
   title: z.string().trim().min(1, 'Pole title je povinne.'),
-  done: z.boolean().optional().default(false),
+  done: z.boolean().optional(),
   priority: z.enum(['NONE', 'LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
 })
 export const updateTaskSchema = taskSchema.partial()
@@ -40,7 +40,7 @@ export const eventSchema = z.object({
   time: z.string().nullable().optional(),
   location: z.string().nullable().optional(),
 
-  isShared: z.boolean().optional().default(false),
+  isShared: z.boolean().optional(),
 })
 export const updateEventSchema = eventSchema.partial()
 
@@ -91,8 +91,8 @@ export const lessonSchema = z.object({
   title: z.string().trim().min(1, 'Pole title je povinne.'),
   content: z.string().max(2000, 'Poznámka může mít maximálně 2000 znaků.').nullable().optional(),
   subjectId: z.number().nullable().optional(),
-  isShared: z.boolean().optional().default(false),
-  orderIndex: z.number().optional().default(0),
+  isShared: z.boolean().optional(),
+  orderIndex: z.number().optional(),
 })
 export const updateLessonSchema = lessonSchema.partial()
 
