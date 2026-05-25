@@ -58,7 +58,7 @@ export class SubjectsRepository {
   }
 
   async findById(subjectId: bigint) {
-    const [subject] = await db.select({ id: subjects.id, userId: subjects.userId }).from(subjects).where(eq(subjects.id, subjectId)).limit(1)
+    const [subject] = await db.select({ id: subjects.id, userId: subjects.userId, studyPlanId: subjects.studyPlanId }).from(subjects).where(eq(subjects.id, subjectId)).limit(1)
     return subject || null
   }
 

@@ -983,7 +983,11 @@ export function useDashboardState(fetchAll = false) {
       throw new Error(data?.error || 'Nepodařilo se nasdílet předmět.')
     }
     const result = await res.json()
-    toast.success(`Předmět byl úspěšně nasdílen uživateli ${result.recipientEmail}`)
+    const extras = []
+    if (result.copiedFiles > 0) extras.push(`${result.copiedFiles} souborů`)
+    if (result.copiedLessons > 0) extras.push(`${result.copiedLessons} poznámek`)
+    const detail = extras.length > 0 ? ` (včetně ${extras.join(' a ')})` : ''
+    toast.success(`Předmět byl úspěšně nasdílen uživateli ${result.recipientEmail}${detail}`)
   }
 
   const updateSubject = (subjectId: number, data: { name: string, teacher: string, code: string, tagIds?: number[], studyPlanId?: number | null }) => {
@@ -1030,7 +1034,7 @@ export function useDashboardState(fetchAll = false) {
     })
   }
 
-  const deleteSubject = (subjectId: number) => {
+  const deleteSubject = async (subjectId: number) => {
     if (!ensureAuthenticated()) {
       return
     }
@@ -1040,9 +1044,18 @@ export function useDashboardState(fetchAll = false) {
       return
     }
 
-    void apiFetch(`/api/subjects/${subjectId}`, { method: 'DELETE' }).then(() => {
+    try {
+      const res = await apiFetch(`/api/subjects/${subjectId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error || 'Nepodařilo se smazat předmět.')
+        return
+      }
       void refreshSubjects()
-    })
+    } catch (e) {
+      toast.error('Došlo k chybě při mazání předmětu.')
+      console.error('Failed to delete subject:', e)
+    }
   }
 
   const updateFile = (fileId: number, patch: Partial<ManagedFile>) => {

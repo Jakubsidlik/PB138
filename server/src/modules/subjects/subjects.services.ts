@@ -173,8 +173,26 @@ export class SubjectsService {
       throw new AppError('Predmet nebyl nalezen.', 404)
     }
 
-    if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
-      throw new AppError('Nemate opravneni smazat tento predmet.', 403)
+    // Owner or admin can always delete
+    const isOwner = existing.userId === BigInt(actor.id)
+    if (!isOwner && actor.role !== 'ADMIN') {
+      // Check if actor is a CONTRIBUTOR on the subject's study plan
+      if (existing.studyPlanId) {
+        const [collaborator] = await db
+          .select({ role: studyPlanCollaborators.role })
+          .from(studyPlanCollaborators)
+          .where(and(
+            eq(studyPlanCollaborators.studyPlanId, existing.studyPlanId),
+            eq(studyPlanCollaborators.userId, BigInt(actor.id))
+          ))
+          .limit(1)
+
+        if (collaborator?.role !== 'CONTRIBUTOR') {
+          throw new AppError('Nemate opravneni smazat tento predmet.', 403)
+        }
+      } else {
+        throw new AppError('Nemate opravneni smazat tento predmet.', 403)
+      }
     }
 
     return subjectsRepository.delete(subjectId)
@@ -236,10 +254,64 @@ export class SubjectsService {
       })
       .returning({ id: subjects.id })
 
+    const newSubjectId = created.id
+
+    // Copy file records — share same S3 key/URL, no physical file copy needed
+    const originalFiles = await db
+      .select({
+        name: fileRecords.name,
+        size: fileRecords.size,
+        addedLabel: fileRecords.addedLabel,
+        fileKey: fileRecords.fileKey,
+        fileUrl: fileRecords.fileUrl,
+      })
+      .from(fileRecords)
+      .where(and(eq(fileRecords.subjectId, subjectId), isNull(fileRecords.deletedAt)))
+
+    if (originalFiles.length > 0) {
+      await db.insert(fileRecords).values(
+        originalFiles.map((f) => ({
+          userId: recipient.id,
+          subjectId: newSubjectId,
+          name: f.name,
+          size: f.size,
+          addedLabel: f.addedLabel,
+          fileKey: f.fileKey,
+          fileUrl: f.fileUrl,
+          isShared: false,
+        }))
+      )
+    }
+
+    // Copy lessons (notes)
+    const originalLessons = await db
+      .select({
+        title: lessons.title,
+        content: lessons.content,
+        orderIndex: lessons.orderIndex,
+      })
+      .from(lessons)
+      .where(and(eq(lessons.subjectId, subjectId), isNull(lessons.deletedAt)))
+
+    if (originalLessons.length > 0) {
+      await db.insert(lessons).values(
+        originalLessons.map((l) => ({
+          userId: recipient.id,
+          subjectId: newSubjectId,
+          title: l.title,
+          content: l.content,
+          orderIndex: l.orderIndex,
+          isShared: false,
+        }))
+      )
+    }
+
     return {
       recipientEmail: recipient.email,
       recipientFullName: recipient.fullName,
-      newSubjectId: Number(created.id),
+      newSubjectId: Number(newSubjectId),
+      copiedFiles: originalFiles.length,
+      copiedLessons: originalLessons.length,
     }
   }
 }
