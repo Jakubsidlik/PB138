@@ -1,9 +1,9 @@
 import { subjectsRepository } from './subjects.repository'
 import { AppError } from '../../middleware/error-handler'
 import { asNumberId, toPaginatedPayload, asBigInt } from '../../utils'
-import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators, subjects, users } from '../../db/schema'
+import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators, subjects, users, subjectShares } from '../../db/schema'
 import { db } from '../../db/client'
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { tags, subjectTags } from '../../db/schema'
 export class SubjectsService {
   async getSubjects(actor: { id: number, role: string }, filters: {
@@ -132,6 +132,60 @@ export class SubjectsService {
     }
 
     if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
+      // Check if they are a recipient of the subject
+      const [share] = await db
+        .select({ id: subjectShares.id })
+        .from(subjectShares)
+        .where(and(eq(subjectShares.subjectId, subjectId), eq(subjectShares.userId, BigInt(actor.id))))
+        .limit(1)
+
+      // Check if they are a collaborator on the study plan containing the subject
+      let isCollaborator = false
+      if (existing.studyPlanId) {
+        const [collab] = await db
+          .select({ id: studyPlanCollaborators.id })
+          .from(studyPlanCollaborators)
+          .where(and(
+            eq(studyPlanCollaborators.studyPlanId, existing.studyPlanId),
+            eq(studyPlanCollaborators.userId, BigInt(actor.id))
+          ))
+          .limit(1)
+        if (collab) {
+          isCollaborator = true
+        }
+      }
+
+      if ((share || isCollaborator) && data.archived !== undefined) {
+        // Upsert recipient's archive status in SubjectShare!
+        await db.insert(subjectShares)
+          .values({
+            subjectId,
+            userId: BigInt(actor.id),
+            isArchived: data.archived,
+            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [subjectShares.subjectId, subjectShares.userId],
+            set: {
+              isArchived: data.archived,
+              updatedAt: new Date(),
+            },
+          })
+
+        return {
+          id: Number(existing.id),
+          userId: asNumberId(existing.userId),
+          studyPlanId: asNumberId(existing.studyPlanId),
+          name: data.name ?? existing.name,
+          teacher: data.teacher ?? existing.teacher,
+          code: data.code ?? existing.code,
+          isShared: true,
+          archived: data.archived,
+          deletedAt: null,
+          tags: [],
+        }
+      }
+
       throw new AppError('Nemate opravneni upravit tento predmet.', 403)
     }
 
@@ -228,90 +282,37 @@ export class SubjectsService {
     if (!recipient) throw new AppError('Uživatel s daným e-mailem nebyl nalezen.', 404)
     if (recipient.id === existing.userId) throw new AppError('Nelze sdílet předmět sám sobě.', 400)
 
-    // Check if recipient already has a subject with the same code
-    const [conflict] = await db
-      .select({ id: subjects.id })
-      .from(subjects)
-      .where(and(eq(subjects.userId, recipient.id), eq(subjects.code, existing.code), isNull(subjects.deletedAt)))
+    // Check if it's already shared with this recipient
+    const [alreadyShared] = await db
+      .select({ id: subjectShares.id })
+      .from(subjectShares)
+      .where(and(eq(subjectShares.subjectId, subjectId), eq(subjectShares.userId, recipient.id)))
       .limit(1)
 
-    // Build a unique code for the recipient (append suffix if conflict)
-    let recipientCode = existing.code
-    if (conflict) {
-      recipientCode = `${existing.code}-${Date.now().toString().slice(-4)}`
+    if (alreadyShared) {
+      throw new AppError('Tento předmět je již s tímto uživatelem sdílen.', 400)
     }
 
-    // Create a copy of the subject for the recipient with no study plan (Nezařazené)
-    const [created] = await db
-      .insert(subjects)
-      .values({
-        userId: recipient.id,
-        studyPlanId: null,
-        name: existing.name,
-        teacher: existing.teacher,
-        code: recipientCode,
-        isShared: false,
-      })
-      .returning({ id: subjects.id })
+    // Insert into subjectShares to establish shared relationship
+    await db.insert(subjectShares).values({
+      subjectId,
+      userId: recipient.id,
+      isArchived: false,
+    })
 
-    const newSubjectId = created.id
+    // Update parent subject isShared flag to true
+    await db.update(subjects).set({ isShared: true }).where(eq(subjects.id, subjectId))
 
-    // Copy file records — share same S3 key/URL, no physical file copy needed
-    const originalFiles = await db
-      .select({
-        name: fileRecords.name,
-        size: fileRecords.size,
-        addedLabel: fileRecords.addedLabel,
-        fileKey: fileRecords.fileKey,
-        fileUrl: fileRecords.fileUrl,
-      })
-      .from(fileRecords)
-      .where(and(eq(fileRecords.subjectId, subjectId), isNull(fileRecords.deletedAt)))
-
-    if (originalFiles.length > 0) {
-      await db.insert(fileRecords).values(
-        originalFiles.map((f) => ({
-          userId: recipient.id,
-          subjectId: newSubjectId,
-          name: f.name,
-          size: f.size,
-          addedLabel: f.addedLabel,
-          fileKey: f.fileKey,
-          fileUrl: f.fileUrl,
-          isShared: false,
-        }))
-      )
-    }
-
-    // Copy lessons (notes)
-    const originalLessons = await db
-      .select({
-        title: lessons.title,
-        content: lessons.content,
-        orderIndex: lessons.orderIndex,
-      })
-      .from(lessons)
-      .where(and(eq(lessons.subjectId, subjectId), isNull(lessons.deletedAt)))
-
-    if (originalLessons.length > 0) {
-      await db.insert(lessons).values(
-        originalLessons.map((l) => ({
-          userId: recipient.id,
-          subjectId: newSubjectId,
-          title: l.title,
-          content: l.content,
-          orderIndex: l.orderIndex,
-          isShared: false,
-        }))
-      )
-    }
+    // Count existing files/notes that are now automatically shared
+    const [filesCount] = await db.select({ count: sql<number>`count(*)::int` }).from(fileRecords).where(and(eq(fileRecords.subjectId, subjectId), isNull(fileRecords.deletedAt)))
+    const [notesCount] = await db.select({ count: sql<number>`count(*)::int` }).from(lessons).where(and(eq(lessons.subjectId, subjectId), isNull(lessons.deletedAt)))
 
     return {
       recipientEmail: recipient.email,
       recipientFullName: recipient.fullName,
-      newSubjectId: Number(newSubjectId),
-      copiedFiles: originalFiles.length,
-      copiedLessons: originalLessons.length,
+      newSubjectId: Number(subjectId),
+      copiedFiles: filesCount?.count ?? 0,
+      copiedLessons: notesCount?.count ?? 0,
     }
   }
 }

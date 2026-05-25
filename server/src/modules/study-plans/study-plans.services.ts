@@ -66,7 +66,14 @@ export class StudyPlansService {
 
     const canEditMetadata = actor.role === 'ADMIN' || existing.userId === BigInt(actor.id)
     if (!canEditMetadata) {
-      throw new AppError('Nemate opravneni upravovat metadata tohoto planu.', 403)
+      const collaboratorRole = await studyPlanRepository.getCollaboratorRole(studyPlanId, BigInt(actor.id))
+      const isCollaborator = collaboratorRole !== null
+
+      if (isCollaborator && data.isActive !== undefined && data.name === undefined && data.description === undefined && data.isShared === undefined) {
+        // Collaborators are allowed to archive or restore the study plan!
+      } else {
+        throw new AppError('Nemate opravneni upravovat metadata tohoto planu.', 403)
+      }
     }
 
 

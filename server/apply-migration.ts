@@ -4,7 +4,7 @@ import * as fs from 'fs';
 
 async function main() {
   try {
-    const sqlContent = fs.readFileSync('./drizzle/0010_hard_exodus.sql', 'utf-8');
+    const sqlContent = fs.readFileSync('./drizzle/0011_curvy_molly_hayes.sql', 'utf-8');
     const statements = sqlContent.split('--> statement-breakpoint');
     for (const statement of statements) {
       if (statement.trim()) {

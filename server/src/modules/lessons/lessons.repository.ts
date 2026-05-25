@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, exists, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client'
-import { lessons, studyPlans, studyPlanCollaborators, subjects, users, lessonRatings } from '../../db/schema'
+import { lessons, studyPlans, studyPlanCollaborators, subjects, users, lessonRatings, subjectShares } from '../../db/schema'
 
 // Used for INSERT/UPDATE RETURNING â€” only columns from the Lesson table itself
 const lessonBaseSelect = {
@@ -44,6 +44,12 @@ export class LessonsRepository {
               .select({ id: studyPlanCollaborators.id })
               .from(studyPlanCollaborators)
               .where(and(eq(studyPlanCollaborators.studyPlanId, subjects.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
+          ),
+          exists(
+            db
+              .select({ id: subjectShares.id })
+              .from(subjectShares)
+              .where(and(eq(subjectShares.subjectId, lessons.subjectId), eq(subjectShares.userId, BigInt(actor.id)))),
           )
         )
 
@@ -117,6 +123,13 @@ export class LessonsRepository {
         .where(and(eq(subjects.id, lesson.subjectId), eq(studyPlanCollaborators.userId, BigInt(actorId))))
         .limit(1)
       if (collab) return true
+
+      // Check if subject is shared with the actor via subjectShares
+      const [shared] = await db.select({ id: subjectShares.id })
+        .from(subjectShares)
+        .where(and(eq(subjectShares.subjectId, lesson.subjectId), eq(subjectShares.userId, BigInt(actorId))))
+        .limit(1)
+      if (shared) return true
     }
 
     return false

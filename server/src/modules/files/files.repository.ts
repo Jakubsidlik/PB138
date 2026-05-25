@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, exists, gt, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client'
-import { fileRecords, fileShares, users, subjects, studyPlans, studyPlanCollaborators, fileRatings } from '../../db/schema'
+import { fileRecords, fileShares, users, subjects, studyPlans, studyPlanCollaborators, fileRatings, subjectShares } from '../../db/schema'
 
 const fileSelect = (actorId: number) => ({
   id: fileRecords.id,
@@ -68,6 +68,12 @@ export class FilesRepository {
               .select({ id: studyPlanCollaborators.id })
               .from(studyPlanCollaborators)
               .where(and(eq(studyPlanCollaborators.studyPlanId, subjects.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
+          ),
+          exists(
+            db
+              .select({ id: subjectShares.id })
+              .from(subjectShares)
+              .where(and(eq(subjectShares.subjectId, fileRecords.subjectId), eq(subjectShares.userId, BigInt(actor.id)))),
           )
         )
 

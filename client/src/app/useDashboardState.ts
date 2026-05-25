@@ -987,7 +987,7 @@ export function useDashboardState(fetchAll = false) {
     if (result.copiedFiles > 0) extras.push(`${result.copiedFiles} souborů`)
     if (result.copiedLessons > 0) extras.push(`${result.copiedLessons} poznámek`)
     const detail = extras.length > 0 ? ` (včetně ${extras.join(' a ')})` : ''
-    toast.success(`Předmět byl úspěšně nasdílen uživateli ${result.recipientEmail}${detail}`)
+    toast.success(`Předmět byl úspěšně propojen a nasdílen uživateli ${result.recipientEmail}${detail}`)
   }
 
   const updateSubject = (subjectId: number, data: { name: string, teacher: string, code: string, tagIds?: number[], studyPlanId?: number | null }) => {

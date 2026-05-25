@@ -20,11 +20,10 @@ function DashboardSync() {
   React.useEffect(() => {
     if (!isSignedIn || !user || state.isBanned) return
 
-    const newUserId = user.id
 
     // Pokud přihlášený Clerk uživatel neodpovídá uloženému záznamu (nebo žádný uložený není),
     // okamžitě vyčistíme veškerá data z předchozí session a nastavíme novou
-    if (!state.authSession || state.authSession.userId !== newUserId) {
+    if (!state.authSession || state.authSession.email !== user.primaryEmailAddress?.emailAddress) {
       // Smažeme stará data z localStorage (i kdyby tam zbyla po smazaném účtu)
       localStorage.removeItem('pb138.profile')
       localStorage.removeItem('pb138-auth-session')

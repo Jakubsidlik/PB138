@@ -25,6 +25,7 @@ import { Separator } from '../components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { toast } from 'sonner'
 import { createStudyPlanSchema, editStudyPlanSchema, createSubjectSchema, editSubjectSchema, shareStudyPlanSchema, shareSubjectSchema, type CreateStudyPlanFormData, type EditStudyPlanFormData, type CreateSubjectFormData, type EditSubjectFormData, type ShareStudyPlanFormData, type ShareSubjectFormData } from '../app/schemas'
+import { useDashboard } from '../app/DashboardContext'
 
 type DesktopSubject = Subject & {
   meta: DesktopSubjectMeta
@@ -92,6 +93,7 @@ export function DesktopStudyPlan({
   onRateLesson,
   onRateFile,
 }: DesktopStudyPlanProps) {
+  const { authSession } = useDashboard()
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
 
@@ -369,6 +371,11 @@ export function DesktopStudyPlan({
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-primary/10 text-primary">
                       📁
                     </div>
+                    {plan.userId !== undefined && plan.userId !== null && plan.userId !== Number(authSession?.userId) && (
+                      <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                        Sdílené
+                      </span>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col pt-0">
@@ -396,6 +403,7 @@ export function DesktopStudyPlan({
                     onToggleArchiveSubject={onToggleArchiveStudyPlan}
                     onDeleteSubject={() => setPlanToDelete(plan.id)}
                     onShare={openSharePlan}
+                    isOwner={plan.userId === Number(authSession?.userId) || authSession?.role === 'ADMIN'}
                   />
                 </CardFooter>
               </Card>
@@ -571,7 +579,13 @@ export function DesktopStudyPlan({
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${tones.icon}`}>
                         {subject.meta.icon}
                       </div>
-                      <CardAction>
+                      <CardAction className="flex items-center gap-2">
+                        {(subject.studyPlanId === null || subject.studyPlanId === undefined) &&
+                          subject.userId !== undefined && subject.userId !== null && subject.userId !== Number(authSession?.userId) && (
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                              Sdílené
+                            </span>
+                          )}
                         <Badge variant="secondary" className="font-bold tracking-wider">
                           {subject.code}
                         </Badge>
@@ -619,6 +633,7 @@ export function DesktopStudyPlan({
                       onToggleArchiveSubject={onToggleArchiveSubject}
                       onDeleteSubject={() => setSubjectToDelete(subject.id)}
                       onShare={openShareSubject}
+                      isOwner={subject.userId === Number(authSession?.userId) || authSession?.role === 'ADMIN'}
                     />
                   </CardFooter>
                 </Card>
@@ -658,7 +673,7 @@ export function DesktopStudyPlan({
                     <label className="text-sm font-medium">Studijní plán</label>
                     <Select
                       value={editSubjectForm.watch('studyPlanId') !== undefined && editSubjectForm.watch('studyPlanId') !== null ? (editSubjectForm.watch('studyPlanId')?.toString() || 'none') : 'none'}
-                      onValueChange={(val) => editSubjectForm.setValue('studyPlanId', val === 'none' ? null : parseInt(val))}
+                      onValueChange={(val) => editSubjectForm.setValue('studyPlanId', (val === 'none' || !val ? null : parseInt(val)) as any)}
                     >
                       <SelectTrigger className="h-10">
                         <SelectValue placeholder="Vyberte studijní plán" />

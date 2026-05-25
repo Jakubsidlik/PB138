@@ -10,6 +10,7 @@ type SubjectActionButtonsProps = {
   onToggleArchiveSubject: (subjectId: number) => void
   onDeleteSubject: (subjectId: number) => void
   onShare?: (subjectId: number) => void
+  isOwner?: boolean
 }
 
 export function SubjectActionButtons({
@@ -20,21 +21,24 @@ export function SubjectActionButtons({
   onToggleArchiveSubject,
   onDeleteSubject,
   onShare,
+  isOwner = true,
 }: SubjectActionButtonsProps) {
   return (
     <div className={cn("grid grid-cols-2 gap-1.5 w-full", className)} onClick={(event) => event.stopPropagation()}>
-      <Button 
-        type="button" 
-        variant="ghost" 
-        size="sm" 
-        className="h-8 w-full justify-start gap-1.5 px-2 text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors"
-        onClick={() => onEditSubject(subjectId)}
-      >
-        <Pencil className="w-3.5 h-3.5" />
-        Upravit
-      </Button>
+      {isOwner && (
+        <Button 
+          type="button" 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 w-full justify-start gap-1.5 px-2 text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors"
+          onClick={() => onEditSubject(subjectId)}
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          Upravit
+        </Button>
+      )}
       
-      {onShare ? (
+      {isOwner && onShare ? (
         <Button 
           type="button" 
           variant="ghost" 
@@ -46,30 +50,36 @@ export function SubjectActionButtons({
           Sdílet
         </Button>
       ) : (
-        <div />
+        isOwner && <div />
       )}
 
       <Button 
         type="button" 
         variant="ghost" 
         size="sm" 
-        className="h-8 w-full justify-start gap-1.5 px-2 text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors"
+        className={cn(
+          "h-8 w-full justify-start gap-1.5 px-2 text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors",
+          !isOwner && "col-span-2 justify-center" // Center it beautifully if it's the only button!
+        )}
         onClick={() => onToggleArchiveSubject(subjectId)}
       >
         <Archive className="w-3.5 h-3.5" />
         {isArchived ? 'Obnovit' : 'Archivovat'}
       </Button>
 
-      <Button 
-        type="button" 
-        variant="ghost" 
-        size="sm" 
-        className="h-8 w-full justify-start gap-1.5 px-2 text-xs font-medium hover:bg-destructive/10 hover:text-destructive transition-colors text-destructive"
-        onClick={() => onDeleteSubject(subjectId)}
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-        Smazat
-      </Button>
+      {isOwner && (
+        <Button 
+          type="button" 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 w-full justify-start gap-1.5 px-2 text-xs font-medium hover:bg-destructive/10 hover:text-destructive transition-colors text-destructive"
+          onClick={() => onDeleteSubject(subjectId)}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Smazat
+        </Button>
+      )}
     </div>
   )
 }
+

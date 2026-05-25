@@ -100,6 +100,18 @@ export const subjects = pgTable('Subject', {
   uniqueUserCode: uniqueIndex('Subject_userId_code_unique').on(table.userId, table.code),
 }))
 
+export const subjectShares = pgTable('SubjectShare', {
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+  subjectId: bigint('subjectId', { mode: 'bigint' }).notNull().references(() => subjects.id, { onDelete: 'cascade' }),
+  userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  isArchived: boolean('isArchived').notNull().default(false),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  uniqueSubjectUser: uniqueIndex('SubjectShare_subjectId_userId_unique').on(table.subjectId, table.userId),
+  userIdIdx: index('SubjectShare_userId_idx').on(table.userId),
+}))
+
 export const tasks = pgTable('Task', {
   id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
   userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -253,3 +265,4 @@ export type DbLesson = typeof lessons.$inferSelect
 export type DbEvent = typeof events.$inferSelect
 export type DbTag = typeof tags.$inferSelect
 export type DbSubjectTag = typeof subjectTags.$inferSelect
+export type DbSubjectShare = typeof subjectShares.$inferSelect
