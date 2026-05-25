@@ -43,7 +43,7 @@ export class SubjectsService {
       const hasPlanAccess =
         actor.role === 'ADMIN' ||
         !subject.studyPlanId ||
-        (studyPlanOwnerId !== null && studyPlanOwnerId === BigInt(actor.id)) ||
+        (studyPlanOwnerId !== null && studyPlanOwnerId !== undefined && BigInt(studyPlanOwnerId) === BigInt(actor.id)) ||
         studyPlanIsShared === true ||
         collaboratorId !== null
 
