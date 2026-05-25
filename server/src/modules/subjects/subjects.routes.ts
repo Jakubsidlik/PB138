@@ -60,3 +60,17 @@ subjectsRouter.delete('/:id', asyncHandler(async (req, res) => {
   const result = await subjectsService.deleteSubject(subjectId, actor)
   res.json(result)
 }))
+
+subjectsRouter.post('/:id/share', asyncHandler(async (req, res) => {
+  const actor = await requireRegisteredActor(req, res)
+  if (!actor) return
+
+  const subjectId = asBigInt(req.params.id)
+  if (!subjectId) throw new AppError('Neplatne ID predmetu.', 400)
+
+  const { email } = req.body
+  if (!email || typeof email !== 'string') throw new AppError('E-mail je povinny.', 400)
+
+  const result = await subjectsService.shareSubject(subjectId, actor, { email })
+  res.status(201).json(result)
+}))

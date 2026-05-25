@@ -970,15 +970,31 @@ export function useDashboardState(fetchAll = false) {
     toast.success(`Studijní plán byl úspěšně nasdílen uživateli ${email}`)
   }
 
-  const updateSubject = (subjectId: number, subjectData: { name: string, teacher: string, code: string, tagIds?: number[] }) => {
+  const shareSubject = async (subjectId: number, email: string) => {
+    if (!ensureAuthenticated()) return
+
+    const res = await apiFetch(`/api/subjects/${subjectId}/share`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      throw new Error(data?.error || 'Nepodařilo se nasdílet předmět.')
+    }
+    const result = await res.json()
+    toast.success(`Předmět byl úspěšně nasdílen uživateli ${result.recipientEmail}`)
+  }
+
+  const updateSubject = (subjectId: number, data: { name: string, teacher: string, code: string, tagIds?: number[], studyPlanId?: number | null }) => {
     if (!ensureAuthenticated()) return
 
     const subject = subjects.find((item) => item.id === subjectId)
     if (!subject) return
 
-    const name = subjectData.name.trim()
-    const teacher = subjectData.teacher.trim()
-    const code = subjectData.code.trim().toUpperCase()
+    const name = data.name.trim()
+    const teacher = data.teacher.trim()
+    const code = data.code.trim().toUpperCase()
 
     if (!name || !teacher || !code) return
 
@@ -987,7 +1003,7 @@ export function useDashboardState(fetchAll = false) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, teacher, code, tagIds: subjectData.tagIds }),
+      body: JSON.stringify({ name, teacher, code, tagIds: data.tagIds, studyPlanId: 'studyPlanId' in data ? data.studyPlanId : undefined }),
     }).then(() => {
       void refreshSubjects()
     })
@@ -1313,6 +1329,7 @@ export function useDashboardState(fetchAll = false) {
     toggleStudyPlanArchived,
     deleteStudyPlan,
     shareStudyPlan,
+    shareSubject,
     tags,
     createTag,
     deleteTag,

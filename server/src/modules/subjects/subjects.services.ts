@@ -1,9 +1,9 @@
 import { subjectsRepository } from './subjects.repository'
 import { AppError } from '../../middleware/error-handler'
 import { asNumberId, toPaginatedPayload, asBigInt } from '../../utils'
-import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators } from '../../db/schema'
+import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators, subjects, users } from '../../db/schema'
 import { db } from '../../db/client'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { tags, subjectTags } from '../../db/schema'
 export class SubjectsService {
   async getSubjects(actor: { id: number, role: string }, filters: {
@@ -178,6 +178,69 @@ export class SubjectsService {
     }
 
     return subjectsRepository.delete(subjectId)
+  }
+
+  async shareSubject(subjectId: bigint, actor: { id: number, role: string }, data: { email: string }) {
+    // Load the subject to share
+    const [existing] = await db
+      .select({
+        id: subjects.id,
+        userId: subjects.userId,
+        name: subjects.name,
+        teacher: subjects.teacher,
+        code: subjects.code,
+        isShared: subjects.isShared,
+      })
+      .from(subjects)
+      .where(eq(subjects.id, subjectId))
+      .limit(1)
+
+    if (!existing) throw new AppError('Předmět nebyl nalezen.', 404)
+
+    const canShare = actor.role === 'ADMIN' || existing.userId === BigInt(actor.id)
+    if (!canShare) throw new AppError('Nemáte oprávnění sdílet tento předmět.', 403)
+
+    // Find recipient
+    const [recipient] = await db
+      .select({ id: users.id, email: users.email, fullName: users.fullName })
+      .from(users)
+      .where(and(eq(users.email, data.email.toLowerCase()), isNull(users.deletedAt)))
+      .limit(1)
+
+    if (!recipient) throw new AppError('Uživatel s daným e-mailem nebyl nalezen.', 404)
+    if (recipient.id === existing.userId) throw new AppError('Nelze sdílet předmět sám sobě.', 400)
+
+    // Check if recipient already has a subject with the same code
+    const [conflict] = await db
+      .select({ id: subjects.id })
+      .from(subjects)
+      .where(and(eq(subjects.userId, recipient.id), eq(subjects.code, existing.code), isNull(subjects.deletedAt)))
+      .limit(1)
+
+    // Build a unique code for the recipient (append suffix if conflict)
+    let recipientCode = existing.code
+    if (conflict) {
+      recipientCode = `${existing.code}-${Date.now().toString().slice(-4)}`
+    }
+
+    // Create a copy of the subject for the recipient with no study plan (Nezařazené)
+    const [created] = await db
+      .insert(subjects)
+      .values({
+        userId: recipient.id,
+        studyPlanId: null,
+        name: existing.name,
+        teacher: existing.teacher,
+        code: recipientCode,
+        isShared: false,
+      })
+      .returning({ id: subjects.id })
+
+    return {
+      recipientEmail: recipient.email,
+      recipientFullName: recipient.fullName,
+      newSubjectId: Number(created.id),
+    }
   }
 }
 

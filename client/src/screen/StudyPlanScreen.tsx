@@ -38,7 +38,7 @@ type DesktopStudyPlanProps = {
   subjectFilter: SubjectFilter
   setSubjectFilter: React.Dispatch<React.SetStateAction<SubjectFilter>>
   onCreateSubject: (data: { name: string, teacher: string, code: string, tagIds?: number[] }) => void
-  onEditSubject: (subjectId: number, data: { name: string, teacher: string, code: string, tagIds?: number[] }) => void
+  onEditSubject: (subjectId: number, data: { name: string, teacher: string, code: string, tagIds?: number[], studyPlanId?: number | null }) => void
   onToggleArchiveSubject: (subjectId: number) => void
   onDeleteSubject: (subjectId: number) => void
   tags: Tag[]
@@ -58,6 +58,7 @@ type DesktopStudyPlanProps = {
   onToggleArchiveStudyPlan: (studyPlanId: number) => void
   onDeleteStudyPlan: (studyPlanId: number) => void
   onShareStudyPlan?: (studyPlanId: number, email: string) => Promise<void>
+  onShareSubject?: (subjectId: number, email: string) => Promise<void>
   onRateLesson?: (lessonId: number, vote: 'LIKE' | 'DISLIKE' | null) => Promise<void>
   onRateFile?: (fileId: number, vote: 'LIKE' | 'DISLIKE' | null) => Promise<void>
 }
@@ -87,6 +88,7 @@ export function DesktopStudyPlan({
   onToggleArchiveStudyPlan,
   onDeleteStudyPlan,
   onShareStudyPlan,
+  onShareSubject,
   onRateLesson,
   onRateFile,
 }: DesktopStudyPlanProps) {
@@ -219,10 +221,7 @@ export function DesktopStudyPlan({
   const handleShareSubject = async (data: ShareSubjectFormData) => {
     if (sharingSubjectId) {
       try {
-        const subject = desktopSubjects.find(s => s.id === sharingSubjectId)
-        if (!subject || !subject.studyPlanId) return
-        await onShareStudyPlan?.(subject.studyPlanId, data.email)
-        toast.success(`Předmět ${subject.name} byl úspěšně nasdílen uživateli ${data.email}`)
+        await onShareSubject?.(sharingSubjectId, data.email)
         setSharingSubjectId(null)
       } catch (err: any) {
         toast.error(err.message || 'Nepodařilo se nasdílet předmět.')
