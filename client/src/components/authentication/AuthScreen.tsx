@@ -24,6 +24,8 @@ export function AuthScreen() {
   const [pendingVerification, setPendingVerification] = React.useState(false)
   const [pendingSignInCode, setPendingSignInCode] = React.useState<'totp' | 'email_code' | null>(null)
   const [globalError, setGlobalError] = React.useState('')
+  const [forgotPasswordStep, setForgotPasswordStep] = React.useState<'send_code' | 'reset_password' | null>(null)
+  const [resetEmail, setResetEmail] = React.useState('')
 
   // Sign up form
   const signUpForm = useForm<SignUpFormData>({
@@ -51,6 +53,55 @@ export function AuthScreen() {
       code: '',
     },
   })
+
+  // Forgot password email form
+  const forgotForm = useForm<{ email: string }>({
+    defaultValues: { email: '' },
+  })
+
+  // Reset password form
+  const resetForm = useForm<{ code: string; password: string }>({
+    defaultValues: { code: '', password: '' },
+  })
+
+  const handleForgotPasswordSubmit = async (data: { email: string }) => {
+    if (!isSignInLoaded) return
+    setGlobalError('')
+
+    try {
+      await signIn.create({
+        strategy: 'reset_password_email_code',
+        identifier: data.email.trim(),
+      })
+      setResetEmail(data.email.trim())
+      setForgotPasswordStep('reset_password')
+    } catch (err) {
+      const clerkErr = err as ClerkAPIError
+      setGlobalError(clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || 'Došlo k chybě při odesílání kódu.')
+    }
+  }
+
+  const handleResetPasswordSubmit = async (data: { code: string; password: string }) => {
+    if (!isSignInLoaded) return
+    setGlobalError('')
+
+    try {
+      const result = await signIn.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code: data.code,
+        password: data.password,
+      })
+
+      if (result.status === 'complete') {
+        await setSignInActive({ session: result.createdSessionId })
+      } else {
+        setGlobalError('Nepodařilo se resetovat heslo. Zkuste to prosím znovu.')
+      }
+    } catch (err) {
+      const clerkErr = err as ClerkAPIError
+      setGlobalError(clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || 'Neplatný kód nebo došlo k chybě.')
+    }
+  }
 
   const handleSignUpSubmit = async (data: SignUpFormData) => {
     if (!isSignUpLoaded) return
@@ -161,7 +212,112 @@ export function AuthScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
-        {(pendingVerification || pendingSignInCode) ? (
+        {forgotPasswordStep === 'send_code' ? (
+          <Card className="border-border/50 shadow-xl bg-card/95 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-500 rounded-2xl">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-2xl font-bold">Zapomenuté heslo</CardTitle>
+              <CardDescription>
+                Zadej svůj e-mail a my ti zašleme kód pro obnovení hesla.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={forgotForm.handleSubmit(handleForgotPasswordSubmit)} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">E-mail</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="tvuj.email@seznam.cz"
+                    {...forgotForm.register('email', { required: 'E-mail je povinný' })}
+                    disabled={forgotForm.formState.isSubmitting}
+                    className="h-11"
+                  />
+                  {forgotForm.formState.errors.email && (
+                    <p className="text-sm font-medium text-destructive">{forgotForm.formState.errors.email.message}</p>
+                  )}
+                </div>
+                {globalError && <div className="text-sm font-medium text-destructive">{globalError}</div>}
+                <div className="space-y-3 pt-2">
+                  <Button type="submit" className="w-full h-11 text-base font-bold bg-[#242f49] text-white hover:bg-[#161e2f] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] rounded-xl" disabled={forgotForm.formState.isSubmitting}>
+                    {forgotForm.formState.isSubmitting ? 'Odesílám...' : 'Odeslat kód'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setForgotPasswordStep(null)
+                      setGlobalError('')
+                    }}
+                  >
+                    Zpět k přihlášení
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        ) : forgotPasswordStep === 'reset_password' ? (
+          <Card className="border-border/50 shadow-xl bg-card/95 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-500 rounded-2xl">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-2xl font-bold">Obnova hesla</CardTitle>
+              <CardDescription>
+                Zadej kód z e-mailu <strong>{resetEmail}</strong> a zvol si nové heslo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={resetForm.handleSubmit(handleResetPasswordSubmit)} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-code">Ověřovací kód</Label>
+                  <Input
+                    id="reset-code"
+                    type="text"
+                    placeholder="Zadej kód..."
+                    {...resetForm.register('code', { required: 'Kód je povinný' })}
+                    disabled={resetForm.formState.isSubmitting}
+                    className="h-11 text-center tracking-widest text-lg font-bold"
+                  />
+                  {resetForm.formState.errors.code && (
+                    <p className="text-sm font-medium text-destructive">{resetForm.formState.errors.code.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reset-password">Nové heslo</Label>
+                  <Input
+                    id="reset-password"
+                    type="password"
+                    placeholder="Alespoň 8 znaků"
+                    {...resetForm.register('password', { 
+                      required: 'Heslo je povinné',
+                      minLength: { value: 8, message: 'Heslo musí mít alespoň 8 znaků' }
+                    })}
+                    disabled={resetForm.formState.isSubmitting}
+                    className="h-11"
+                  />
+                  {resetForm.formState.errors.password && (
+                    <p className="text-sm font-medium text-destructive">{resetForm.formState.errors.password.message}</p>
+                  )}
+                </div>
+                {globalError && <div className="text-sm font-medium text-destructive">{globalError}</div>}
+                <div className="space-y-3 pt-2">
+                  <Button type="submit" className="w-full h-11 text-base font-bold bg-[#242f49] text-white hover:bg-[#161e2f] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] rounded-xl" disabled={resetForm.formState.isSubmitting}>
+                    {resetForm.formState.isSubmitting ? 'Ukládám...' : 'Uložit nové heslo'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setForgotPasswordStep(null)
+                      setGlobalError('')
+                    }}
+                  >
+                    Zrušit
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        ) : (pendingVerification || pendingSignInCode) ? (
           <Card className="border-border">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold">Ověření</CardTitle>
@@ -222,7 +378,7 @@ export function AuthScreen() {
               <Card className="border-border/50 shadow-xl bg-card/95 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-500 rounded-2xl">
                 <CardHeader className="text-center pb-6">
                   <CardTitle className="text-2xl font-bold">Vítej zpět</CardTitle>
-                  <CardDescription>Přihlas se ke svému účtu.</CardDescription>
+                  <CardDescription>Přihlaš se ke svému účtu.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={signInForm.handleSubmit(handleSignInSubmit)} className="space-y-5">
@@ -241,7 +397,20 @@ export function AuthScreen() {
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="login-password">Heslo</Label>
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="login-password">Heslo</Label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForgotPasswordStep('send_code')
+                            setGlobalError('')
+                            forgotForm.reset()
+                          }}
+                          className="text-xs font-semibold text-primary hover:underline cursor-pointer bg-transparent border-none p-0"
+                        >
+                          Zapomenuté heslo?
+                        </button>
+                      </div>
                       <Input
                         id="login-password"
                         type="password"

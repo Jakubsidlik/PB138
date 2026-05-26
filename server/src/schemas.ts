@@ -91,8 +91,8 @@ export const lessonSchema = z.object({
   title: z.string().trim().min(1, 'Pole title je povinne.'),
   content: z.string().max(2000, 'Poznámka může mít maximálně 2000 znaků.').nullable().optional(),
   subjectId: z.number().nullable().optional(),
-  isShared: z.boolean().optional(),
-  orderIndex: z.number().optional(),
+  isShared: z.boolean().optional().default(false),
+  orderIndex: z.number().optional().default(0),
 })
 export const updateLessonSchema = lessonSchema.partial()
 

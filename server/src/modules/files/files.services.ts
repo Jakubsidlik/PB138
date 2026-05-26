@@ -7,6 +7,7 @@ import { PutObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { v4 as uuidv4 } from 'uuid'
 import { Resend } from 'resend'
+import path from 'path'
 
 const s3Client = new S3Client({
   region: env.S3_REGION,
@@ -105,6 +106,14 @@ export class FilesService {
 
     if (data.size === null) {
       throw new AppError('Neplatna velikost souboru.', 400)
+    }
+
+    if (data.name !== undefined && data.name !== null) {
+      const oldExt = path.extname(existing.name).toLowerCase()
+      const newExt = path.extname(data.name).toLowerCase()
+      if (oldExt !== newExt) {
+        throw new AppError('Změna typu nebo přípony souboru není povolena.', 400)
+      }
     }
 
     const updated = await filesRepository.update(fileId, {

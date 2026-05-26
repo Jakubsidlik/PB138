@@ -1155,6 +1155,19 @@ export function useDashboardState(fetchAll = false) {
     const nextName = newName.trim()
     if (!nextName || nextName === file.name) return
 
+    const getExt = (name: string) => {
+      const parts = name.split('.')
+      return parts.length > 1 ? '.' + parts.pop()?.toLowerCase() : ''
+    }
+
+    const oldExt = getExt(file.name)
+    const newExt = getExt(nextName)
+
+    if (oldExt !== newExt) {
+      toast.error('Změna typu nebo přípony souboru není povolena.')
+      return
+    }
+
     updateFile(fileId, { name: nextName })
   }
 

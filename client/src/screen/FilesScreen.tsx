@@ -70,10 +70,14 @@ export function DesktopFilesScreen({
     return sortOrder === 'asc' ? <span className="text-primary ml-1 text-xs">↑</span> : <span className="text-primary ml-1 text-xs">↓</span>
   }
 
+  const renamingFile = renamingFileId ? managedFiles.find(f => f.id === renamingFileId) : null
+  const lastDotIndex = renamingFile ? renamingFile.name.lastIndexOf('.') : -1
+  const originalExtension = renamingFile && lastDotIndex !== -1 ? renamingFile.name.slice(lastDotIndex) : ''
+
   const handleRename = (e: React.FormEvent) => {
     e.preventDefault()
     if (renamingFileId && newFileName.trim()) {
-      onRenameFile(renamingFileId, newFileName)
+      onRenameFile(renamingFileId, newFileName.trim() + originalExtension)
       setRenamingFileId(null)
     }
   }
@@ -226,7 +230,8 @@ export function DesktopFilesScreen({
                                 className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
                                 onClick={() => {
                                   setRenamingFileId(file.id)
-                                  setNewFileName(file.name)
+                                  const dotIdx = file.name.lastIndexOf('.')
+                                  setNewFileName(dotIdx !== -1 ? file.name.slice(0, dotIdx) : file.name)
                                 }}
                                 title="Přejmenovat"
                               >
@@ -360,7 +365,8 @@ export function DesktopFilesScreen({
                         className="w-full justify-start gap-2 h-10"
                         onClick={() => {
                           setRenamingFileId(file.id)
-                          setNewFileName(file.name)
+                          const dotIdx = file.name.lastIndexOf('.')
+                          setNewFileName(dotIdx !== -1 ? file.name.slice(0, dotIdx) : file.name)
                           setInfoFileId(null)
                         }}
                       >
@@ -412,11 +418,19 @@ export function DesktopFilesScreen({
             <div className="grid gap-4 py-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium">Nový název souboru</label>
-                <Input 
-                  value={newFileName} 
-                  onChange={e => setNewFileName(e.target.value)} 
-                  autoFocus 
-                />
+                <div className="flex items-center gap-2">
+                  <Input 
+                    value={newFileName} 
+                    onChange={e => setNewFileName(e.target.value)} 
+                    autoFocus 
+                    className="flex-1"
+                  />
+                  {originalExtension && (
+                    <span className="px-3 py-2 border rounded-md bg-muted text-muted-foreground text-sm font-semibold select-none">
+                      {originalExtension}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <DialogFooter>
