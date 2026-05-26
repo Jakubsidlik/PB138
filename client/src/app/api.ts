@@ -77,7 +77,6 @@ class ApiClient {
         const errorData = (await response.json()) as ApiError
         errorMessage = errorData.error || errorMessage
       } catch {
-        // Continue with default error message
       }
       throw new Error(errorMessage)
     }
@@ -86,12 +85,10 @@ class ApiClient {
     return data
   }
 
-  // Health check
   async health() {
     return this.request('GET', '/api/health')
   }
 
-  // Auth endpoints
   async register(payload: RegisterRequest) {
     const response = await this.request<AuthResponse>('POST', '/api/auth/register', payload)
     return response
@@ -102,7 +99,6 @@ class ApiClient {
     return response
   }
 
-  // User endpoints
   async getUsers() {
     return this.request<User[]>('GET', '/api/users')
   }
@@ -131,7 +127,6 @@ class ApiClient {
     return this.request('DELETE', '/api/profile')
   }
 
-  // StudyPlan endpoints
   async getStudyPlans() {
     return this.request<PaginatedResponse<StudyPlan>>('GET', '/api/study-plans?paginated=true')
   }
@@ -165,7 +160,6 @@ class ApiClient {
     return this.request('DELETE', `/api/study-plans/${id}/share/${userId}`)
   }
 
-  // Subject endpoints
   async getSubjects(studyPlanId?: number | null) {
     const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
     return this.request<PaginatedResponse<Subject>>('GET', `/api/subjects${query}`)
@@ -183,7 +177,6 @@ class ApiClient {
     return this.request('DELETE', `/api/subjects/${id}`)
   }
 
-  // Tags API
   async getTags() {
     return this.request<Tag[]>('GET', '/api/tags')
   }
@@ -196,7 +189,6 @@ class ApiClient {
     return this.request('DELETE', `/api/tags/${id}`)
   }
 
-  // Task endpoints
   async getTasks() {
     return this.request<PaginatedResponse<Task>>('GET', `/api/tasks?paginated=true`)
   }
@@ -225,7 +217,6 @@ class ApiClient {
     return this.request<PaginatedResponse<Task>>('GET', '/api/task-archive?paginated=true')
   }
 
-  // Event endpoints
   async getEvents() {
     return this.request<PaginatedResponse<CalendarEvent>>('GET', `/api/events?paginated=true`)
   }
@@ -246,7 +237,6 @@ class ApiClient {
     return this.request<CalendarEvent[]>('PUT', '/api/events', events)
   }
 
-  // File endpoints
   async getFiles() {
     return this.request<PaginatedResponse<FileRecord>>('GET', `/api/files?paginated=true`)
   }
@@ -284,7 +274,6 @@ class ApiClient {
     })
   }
 
-  // Lesson endpoints
   async getLessons() {
     return this.request<PaginatedResponse<Lesson>>('GET', `/api/lessons?paginated=true`)
   }

@@ -70,7 +70,6 @@ export class StudyPlansService {
       const isCollaborator = collaboratorRole !== null
 
       if (isCollaborator && data.isActive !== undefined && data.name === undefined && data.description === undefined && data.isShared === undefined) {
-        // Collaborators are allowed to archive or restore the study plan!
       } else {
         throw new AppError('Nemate opravneni upravovat metadata tohoto planu.', 403)
       }

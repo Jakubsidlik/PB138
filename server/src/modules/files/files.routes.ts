@@ -12,7 +12,6 @@ import { env } from '../../env'
 export const filesRouter: express.Router = express.Router()
 export const adminFilesRouter: express.Router = express.Router()
 
-// filesRouter
 filesRouter.get('/', asyncHandler(async (req, res) => {
   const actor = await getActorFromRequest(req)
   const pagination = parseCursorPagination(req, { defaultLimit: 25, maxLimit: 100 })
@@ -133,7 +132,7 @@ filesRouter.delete('/:id/shares/:userId', asyncHandler(async (req, res) => {
 
   const fileId = asBigInt(req.params.id)
   const targetUserId = asBigInt(req.params.userId)
-  if (!fileId || !targetUserId) throw new AppError('NeplatnĂ© parametry.', 400)
+  if (!fileId || !targetUserId) throw new AppError('Neplatné parametry.', 400)
 
   const result = await filesService.unshareFile(fileId, targetUserId, actor)
   res.json(result)
@@ -147,11 +146,11 @@ filesRouter.post('/:id/vote', asyncHandler(async (req, res) => {
   if (!actor) return
 
   const fileId = asBigInt(req.params.id)
-  if (!fileId) throw new AppError('NeplatnĂ© ID souboru.', 400)
+  if (!fileId) throw new AppError('Neplatné ID souboru.', 400)
 
   const parsed = voteSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new AppError('NeplatnĂ˝ hlas.', 400)
+    throw new AppError('Neplatný hlas.', 400)
   }
 
   const result = await filesService.setFileVote(fileId, actor, parsed.data.vote)
@@ -181,7 +180,6 @@ filesRouter.get('/:id/download', asyncHandler(async (req, res) => {
   }
 }))
 
-// adminFilesRouter
 adminFilesRouter.get('/', asyncHandler(async (req, res) => {
   const admin = await requireAdmin(req, res)
   if (!admin) return

@@ -46,7 +46,6 @@ export function DashboardHomeContent({
 
   return (
     <div className="dashboard-home">
-      {/* Welcome header */}
       <header className="dashboard-home-header">
         <div>
           <h1 className="dashboard-home-greeting">
@@ -56,7 +55,6 @@ export function DashboardHomeContent({
         </div>
       </header>
 
-      {/* Stat cards */}
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <Link to="/study" className="dashboard-stat-card stat-subjects">
           <div className="stat-icon">📚</div>
@@ -88,9 +86,7 @@ export function DashboardHomeContent({
         </Link>
       </section>
 
-      {/* Main content grid */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Tasks card */}
         <Card className="dashboard-tasks-card border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xl">Moje úkoly</CardTitle>
@@ -144,7 +140,6 @@ export function DashboardHomeContent({
           </CardContent>
         </Card>
 
-        {/* Events card */}
         <Card className="dashboard-events-card border-none shadow-sm self-start">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xl">Nadcházející události</CardTitle>

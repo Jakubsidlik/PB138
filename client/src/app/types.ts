@@ -1,4 +1,3 @@
-// Auth & User types
 export type UserRole = 'student' | 'registered' | 'public'
 export interface AuthSession {
   userId: number | string
@@ -40,7 +39,6 @@ export interface AuthResponse {
   user: User
 }
 
-// Task types
 export type TaskPriority = 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 
 export interface Task {
@@ -63,7 +61,6 @@ export interface UpdateTaskRequest {
   priority?: TaskPriority
 }
 
-// Event types
 export type EventPriority = 'low' | 'medium' | 'high'
 
 export interface CalendarEvent {
@@ -94,7 +91,6 @@ export interface UpdateEventRequest {
   priority?: EventPriority
 }
 
-// Subject & Tag types
 export interface Tag {
   id: number
   name: string
@@ -133,7 +129,6 @@ export interface UpdateSubjectRequest {
   tagIds?: number[]
 }
 
-// StudyPlan types
 export interface StudyPlan {
   id: number
   userId: number
@@ -159,7 +154,6 @@ export interface UpdateStudyPlanRequest {
   isActive?: boolean
 }
 
-// File types
 export interface FileRecord {
   id: number
   name: string
@@ -194,9 +188,6 @@ export interface UpdateFileRequest {
   addedLabel?: string
 }
 
-
-
-// Lesson types
 export interface Lesson {
   id: number
   title: string
@@ -229,9 +220,6 @@ export interface UpdateLessonRequest {
   orderIndex?: number
 }
 
-
-
-// Collaboration types
 export type CollaborationRole = 'VIEWER' | 'CONTRIBUTOR'
 
 export interface StudyPlanCollaborator {
@@ -249,19 +237,16 @@ export interface ShareStudyPlanRequest {
   role: CollaborationRole
 }
 
-// Paginated response
 export interface PaginatedResponse<T> {
   data: T[]
   hasMore: boolean
   nextCursor?: string | null
 }
 
-// Error response
 export interface ApiError {
   error: string
 }
 
-// UI/UX types (kept from original)
 export type FileCategory = 'folder' | 'pdf' | 'image' | 'document' | 'other'
 export type FileTab = 'all' | 'recent' | 'shared'
 

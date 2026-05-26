@@ -27,7 +27,6 @@ export function AuthScreen() {
   const [forgotPasswordStep, setForgotPasswordStep] = React.useState<'send_code' | 'reset_password' | null>(null)
   const [resetEmail, setResetEmail] = React.useState('')
 
-  // Sign up form
   const signUpForm = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -37,7 +36,6 @@ export function AuthScreen() {
     },
   })
 
-  // Sign in form
   const signInForm = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -46,7 +44,6 @@ export function AuthScreen() {
     },
   })
 
-  // Verification form
   const verificationForm = useForm<VerificationCodeFormData>({
     resolver: zodResolver(verificationCodeSchema),
     defaultValues: {
@@ -54,12 +51,10 @@ export function AuthScreen() {
     },
   })
 
-  // Forgot password email form
   const forgotForm = useForm<{ email: string }>({
     defaultValues: { email: '' },
   })
 
-  // Reset password form
   const resetForm = useForm<{ code: string; password: string }>({
     defaultValues: { code: '', password: '' },
   })

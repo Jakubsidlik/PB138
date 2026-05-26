@@ -1,7 +1,6 @@
 import { describe, expect, it, mock } from 'bun:test'
 import request from 'supertest'
 
-// Mock services to prevent hitting the real database
 mock.module('../../../server/src/modules/tasks/tasks.services.js', () => ({
   tasksService: {
     getTasks: mock(async () => []),
@@ -16,7 +15,6 @@ mock.module('../../../server/src/auth.js', () => ({
   getActorFromRequest: async () => ({ id: 1, role: 'REGISTERED' })
 }))
 
-// Import app AFTER mocks
 import { app } from '../../../server/src/index'
 import { tasksService } from '../../../server/src/modules/tasks/tasks.services'
 

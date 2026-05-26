@@ -7,7 +7,6 @@ import { asyncHandler, AppError } from '../../middleware/error-handler'
 
 export const lessonsRouter: express.Router = express.Router()
 
-// lessonsRouter
 lessonsRouter.get('/', asyncHandler(async (req, res) => {
   const actor = await getActorFromRequest(req)
   const filters = {
@@ -71,7 +70,7 @@ lessonsRouter.post('/:id/vote', asyncHandler(async (req, res) => {
 
   const parsed = voteSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new AppError('NeplatnĂ˝ hlas.', 400)
+    throw new AppError('Neplatný hlas.', 400)
   }
 
   const result = await lessonsService.setLessonVote(lessonId, actor, parsed.data.vote)

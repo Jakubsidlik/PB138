@@ -42,7 +42,6 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
       .limit(1)
 
     if (existingUser && existingUser.deletedAt === null) {
-      // Synchronizujeme jmĂ©no z Clerku do DB pĹ™i kaĹľdĂ©m pĹ™ihlĂˇĹˇenĂ­
       try {
         const clerkUser = await clerkClient.users.getUser(auth.userId)
         const clerkFullName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim()
@@ -55,7 +54,6 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
           return toAuthActor(synced)
         }
       } catch {
-        // Ignorujeme chybu synchronizace â€” pouĹľijeme data z DB
       }
       return toAuthActor(existingUser)
     }
@@ -66,7 +64,7 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
       try {
         const clerkUser = await clerkClient.users.getUser(auth.userId)
         const email = clerkUser.emailAddresses[0]?.emailAddress || ''
-        const fullName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'UĹľivatel'
+        const fullName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Uživatel'
 
         if (email) {
           const [foundUser] = await db
@@ -83,7 +81,7 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
             .set({
               clerkId: auth.userId,
               deletedAt: null,
-              fullName: fullName !== 'UĹľivatel' ? fullName : user.fullName,
+              fullName: fullName !== 'Uživatel' ? fullName : user.fullName,
             })
             .where(eq(users.id, user.id))
             .returning({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
@@ -106,7 +104,7 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
               user = fallbackUser ?? null
             }
           } catch (insertErr) {
-            console.error('Konflikt pĹ™i vklĂˇdĂˇnĂ­:', insertErr)
+            console.error('Konflikt při ukládání uživatele z Clerku:', insertErr)
             const [fallbackUser] = await db
               .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
               .from(users)
@@ -118,7 +116,7 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
 
         if (user) return toAuthActor(user)
       } catch (err) {
-        console.error(`Chyba pĹ™i vytvĂˇĹ™enĂ­ uĹľivatele z Clerku:`, err)
+        console.error('Chyba při vytváření uživatele z Clerku:', err)
       }
     }
   }

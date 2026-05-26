@@ -127,7 +127,6 @@ export function useDashboardState(fetchAll = false) {
       try {
         token = await getToken()
       } catch {
-        // Ignorujeme případné chyby získání tokenu
       }
 
       if (token) {
@@ -154,8 +153,7 @@ export function useDashboardState(fetchAll = false) {
       document.documentElement.classList.remove('theme-dark', 'dark')
       document.body.style.backgroundColor = '#fffdf6'
     }
-    
-    // Force update the root element so we don't have to refresh the page
+
     const rootEl = document.querySelector('.dashboard-root')
     if (rootEl) {
       rootEl.classList.remove('theme-light', 'theme-dark')
@@ -165,8 +163,7 @@ export function useDashboardState(fetchAll = false) {
 
   React.useEffect(() => {
     localStorage.setItem(PALETTE_STORAGE_KEY, accentPalette)
-    
-    // Force update the root element so we don't have to refresh the page
+
     const rootEl = document.querySelector('.dashboard-root')
     if (rootEl) {
       rootEl.classList.forEach((cls) => {
@@ -176,8 +173,7 @@ export function useDashboardState(fetchAll = false) {
       })
       rootEl.classList.add(`palette-${accentPalette}`)
     }
-    
-    // Also apply to body so that portals (modals, popovers) inherit the variables
+
     document.body.classList.forEach((cls) => {
       if (cls.startsWith('palette-')) {
         document.body.classList.remove(cls)
@@ -308,7 +304,6 @@ export function useDashboardState(fetchAll = false) {
     void hydrateData()
   }, [apiFetch, authSession, isLoaded, isSignedIn, isHydrated, signOut])
 
-  // Save tasks/events to localStorage whenever they change (for offline fallback)
   React.useEffect(() => {
     if (!isHydrated || !authSession) return
     localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks))
@@ -324,7 +319,6 @@ export function useDashboardState(fetchAll = false) {
       return
     }
 
-    // Inicializuj fullName a email z authSession pokud jsou prázdné
     if (authSession && (!profile.fullName || !profile.email)) {
       setProfile((prevProfile) => ({
         ...prevProfile,
@@ -446,7 +440,6 @@ export function useDashboardState(fetchAll = false) {
       })
     } catch (e) {
       console.error('Failed to toggle task:', e)
-      // Revert on failure
       setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: !newDone } : t)))
     }
   }
@@ -457,12 +450,10 @@ export function useDashboardState(fetchAll = false) {
     const trimmedTitle = title.trim()
     if (!trimmedTitle) return
 
-    // Show task immediately in UI
     const tempId = Date.now()
     const tempTask: Task = { id: tempId, title: trimmedTitle, done: false, priority }
     setTasks((prev) => [...prev, tempTask])
 
-    // Persist to server in background (don't block render)
     apiFetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -510,7 +501,7 @@ export function useDashboardState(fetchAll = false) {
       await apiFetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
     } catch (e) {
       console.error('Failed to delete task:', e)
-      setTasks(prev) // Revert on failure
+      setTasks(prev)
     }
   }
 
@@ -529,7 +520,7 @@ export function useDashboardState(fetchAll = false) {
       await apiFetch(`/api/events/${eventId}`, { method: 'DELETE' })
     } catch (e) {
       console.error('Failed to delete event:', e)
-      setEvents(prev) // Revert on failure
+      setEvents(prev)
     }
   }
 
@@ -552,7 +543,6 @@ export function useDashboardState(fetchAll = false) {
       priority,
     }
 
-    // Show event immediately in UI
     setEvents((prevEvents) => [...prevEvents, nextEvent])
     setEventMetaById((prevMeta) => ({
       ...prevMeta,
@@ -563,7 +553,6 @@ export function useDashboardState(fetchAll = false) {
       },
     }))
 
-    // Persist to server in background (don't block render)
     apiFetch('/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -763,7 +752,6 @@ export function useDashboardState(fetchAll = false) {
     if (!ensureAuthenticated()) return
 
     const prevLessons = lessons
-    // Optimistic UI update
     setLessons((prev) => prev.map(l => {
       if (l.id === lessonId) {
         let likes = Number(l.likes ?? 0)
@@ -790,7 +778,7 @@ export function useDashboardState(fetchAll = false) {
     } catch (e) {
       toast.error('Došlo k chybě při ukládání hodnocení.')
       console.error('Failed to rate lesson:', e)
-      setLessons(prevLessons) // Revert on failure
+      setLessons(prevLessons)
     }
   }
 
@@ -798,7 +786,6 @@ export function useDashboardState(fetchAll = false) {
     if (!ensureAuthenticated()) return
 
     const prevFiles = managedFiles
-    // Optimistic UI update
     setManagedFiles((prev) => prev.map(f => {
       if (f.id === fileId) {
         let likes = Number(f.likes ?? 0)
@@ -825,7 +812,7 @@ export function useDashboardState(fetchAll = false) {
     } catch (e) {
       toast.error('Došlo k chybě při ukládání hodnocení.')
       console.error('Failed to rate file:', e)
-      setManagedFiles(prevFiles) // Revert on failure
+      setManagedFiles(prevFiles)
     }
   }
 
@@ -921,7 +908,6 @@ export function useDashboardState(fetchAll = false) {
     await signOut()
   }
 
-  // --- TAGS ---
   const createTag = async (data: { name: string, color: string }) => {
     if (!ensureAuthenticated()) return
     const res = await apiFetch('/api/tags', {

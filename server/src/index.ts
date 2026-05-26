@@ -40,9 +40,6 @@ app.get('/api/health', async (_req, res) => {
   }
 })
 
-// Users routes moved to src/users/users.routes.ts
-
-// Global error handler middleware
 app.use(errorHandler)
 
 const start = async () => {

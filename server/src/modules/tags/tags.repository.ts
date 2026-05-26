@@ -6,8 +6,8 @@ class TagsRepository {
   async findAll(userId: number) {
     return await db.query.tags.findMany({
       where: or(
-        isNull(tags.userId), // system tags
-        eq(tags.userId, BigInt(userId)) // user tags
+        isNull(tags.userId),
+        eq(tags.userId, BigInt(userId))
       ),
       orderBy: (tags, { asc }) => [asc(tags.id)]
     })
@@ -27,7 +27,7 @@ class TagsRepository {
     const [deleted] = await db.delete(tags).where(
       and(
         eq(tags.id, BigInt(tagId)),
-        eq(tags.userId, BigInt(userId)), // can only delete own tags
+        eq(tags.userId, BigInt(userId)),
         eq(tags.isSystem, false)
       )
     ).returning()

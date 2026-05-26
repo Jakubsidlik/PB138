@@ -81,7 +81,7 @@ export const fileSchema = z.object({
 export const updateFileSchema = fileSchema.partial()
 
 export const shareFileSchema = z.object({
-  targetUserEmail: z.string().email('NeplatnĂ˝ formĂˇt e-mailu'),
+  targetUserEmail: z.string().email('Neplatný formát e-mailu'),
   permission: z.enum(['read', 'write']).default('read'),
 })
 

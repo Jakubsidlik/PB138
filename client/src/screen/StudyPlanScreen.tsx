@@ -106,7 +106,6 @@ export function DesktopStudyPlan({
     [desktopSubjects],
   )
 
-  // Study Plan forms
   const createPlanForm = useForm<CreateStudyPlanFormData>({
     resolver: zodResolver(createStudyPlanSchema),
     defaultValues: { name: '', description: '' },
@@ -122,7 +121,6 @@ export function DesktopStudyPlan({
     defaultValues: { email: '' },
   })
 
-  // Subject forms
   const createSubjectForm = useForm<CreateSubjectFormData>({
     resolver: zodResolver(createSubjectSchema),
     defaultValues: { name: '', teacher: '', code: '', tagIds: [] },

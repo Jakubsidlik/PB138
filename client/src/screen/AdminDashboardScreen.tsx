@@ -71,7 +71,6 @@ export function AdminDashboardScreen() {
       }
     } catch (error) {
       console.error('Failed to load files:', error)
-      // Nechceme přepsat chybu z uživatelů, pokud už tam je
       if (!error) setError('Nepodařilo se načíst soubory.')
     } finally {
       setLoadingFiles(false)

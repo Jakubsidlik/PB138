@@ -26,7 +26,6 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
   const watchedValues = form.watch()
 
   React.useEffect(() => {
-    // Sync the form values to the parent when they change
     const school = watchedValues.school || undefined
     const studyType = watchedValues.studyType || undefined
     const studyMajor = watchedValues.studyMajor || undefined

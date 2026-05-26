@@ -19,7 +19,7 @@ export class UsersService {
         if (!email) continue
 
         if (!dbEmails.has(email) && !dbClerkIds.has(cu.id)) {
-          const fullName = `${cu.firstName || ''} ${cu.lastName || ''}`.trim() || 'UĹľivatel'
+          const fullName = `${cu.firstName || ''} ${cu.lastName || ''}`.trim() || 'Uživatel'
           await db.insert(users).values({
             clerkId: cu.id,
             email,
@@ -31,7 +31,7 @@ export class UsersService {
         }
       }
     } catch (err) {
-      console.error('Chyba pĹ™i synchronizaci uĹľivatelĹŻ z Clerku:', err)
+      console.error('Chyba při synchronizaci uživatelů z Clerku:', err)
     }
 
     const rows = await usersRepository.findAll()

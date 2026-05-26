@@ -32,7 +32,6 @@ export function TagManagerModal({ tags, onCreateTag, onDeleteTag }: TagManagerMo
       await onCreateTag({ name: data.name.trim(), color: '#888888' })
       form.reset()
     } catch (err) {
-      // Error is handled by parent
     }
   }
 

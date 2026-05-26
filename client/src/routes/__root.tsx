@@ -8,7 +8,6 @@ function RootComponent() {
     select: (s) => s.location.pathname,
   })
 
-  // For login page, show just the outlet without dashboard UI
   const isLoginPage = pathname === '/login'
 
   if (isLoginPage) {

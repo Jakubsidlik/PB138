@@ -153,7 +153,7 @@ export class FilesService {
 
     let targetUser = await filesRepository.findUserByEmail(data.targetUserEmail)
     if (!targetUser) {
-      const fallbackName = data.targetUserEmail.split('@')[0] || 'UĹľivatel'
+      const fallbackName = data.targetUserEmail.split('@')[0] || 'Uživatel'
       const createdUser = await usersRepository.create({
         email: data.targetUserEmail,
         fullName: fallbackName,
@@ -179,22 +179,22 @@ export class FilesService {
         await resend.emails.send({
           from: 'Planner <onboarding@resend.dev>',
           to: data.targetUserEmail,
-          subject: `SdĂ­lenĂ˝ soubor: ${file.name}`,
+          subject: `Sdílený soubor: ${file.name}`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-              <h2 style="color: #3b82f6;">NovĂ˝ soubor nasdĂ­len!</h2>
+              <h2 style="color: #3b82f6;">Nový soubor byl nasdílen!</h2>
               <p>Ahoj,</p>
-              <p>UĹľivatel <strong>${actor.fullName || actor.email}</strong> s tebou nasdĂ­lel soubor <strong>${file.name}</strong> v aplikaci Planner.</p>
+              <p>Uživatel <strong>${actor.fullName || actor.email}</strong> s tebou nasdílel soubor <strong>${file.name}</strong> v aplikaci Planner.</p>
               <div style="margin: 30px 0;">
-                <a href="http://localhost:5173/files" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">OtevĹ™Ă­t v aplikaci</a>
+                <a href="http://localhost:5173/files" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Otevřít v aplikaci</a>
               </div>
-              <p style="color: #666; font-size: 14px;">Tento e-mail byl automaticky vygenerovĂˇn aplikacĂ­ Planner.</p>
+              <p style="color: #666; font-size: 14px;">Tento e-mail byl automaticky vygenerován aplikací Planner.</p>
             </div>
           `
         })
       }
     } catch (emailError) {
-      console.error('NepodaĹ™ilo se odeslat upozorĹovacĂ­ e-mail:', emailError)
+      console.error('Nepodařilo se odeslat upozorňovací e-mail:', emailError)
     }
 
     return {

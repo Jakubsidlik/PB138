@@ -59,7 +59,7 @@ export function SubjectActionButtons({
         size="sm" 
         className={cn(
           "h-8 w-full justify-start gap-1.5 px-2 text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors",
-          !isOwner && "col-span-2 justify-center" // Center it beautifully if it's the only button!
+          !isOwner && "col-span-2 justify-center"
         )}
         onClick={() => onToggleArchiveSubject(subjectId)}
       >

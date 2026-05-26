@@ -25,7 +25,6 @@ export function CircularProgress({
         viewBox={`0 0 ${size} ${size}`}
         style={{ transform: 'rotate(-90deg)' }}
       >
-        {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -35,7 +34,6 @@ export function CircularProgress({
           strokeWidth={strokeWidth}
         />
 
-        {/* Progress circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -52,7 +50,6 @@ export function CircularProgress({
         />
       </svg>
 
-      {/* Text in center */}
       <div className="circular-progress-text" style={{ 
         position: 'absolute', 
         top: 0, 

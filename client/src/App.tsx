@@ -16,18 +16,12 @@ function DashboardSync() {
   const state = useDashboard()
   const { isSignedIn, user } = useUser()
 
-  // Synchronizace Clerk stavu do lokálního Dashboard stavu aplikace
   React.useEffect(() => {
     if (!isSignedIn || !user || state.isBanned) return
 
-
-    // Pokud přihlášený Clerk uživatel neodpovídá uloženému záznamu (nebo žádný uložený není),
-    // okamžitě vyčistíme veškerá data z předchozí session a nastavíme novou
     if (!state.authSession || state.authSession.email !== user.primaryEmailAddress?.emailAddress) {
-      // Smažeme stará data z localStorage (i kdyby tam zbyla po smazaném účtu)
       localStorage.removeItem('pb138.profile')
       localStorage.removeItem('pb138-auth-session')
-      // Okamžitě vyresetujeme React state (profil, tagy, předměty...) ať se stará data nezobrazí
       state.clearUserData()
       state.setAuthSession({
         userId: user.id as any,

@@ -136,7 +136,7 @@ export class SubjectsService {
       isShared: created.isShared,
       archived: created.isArchived,
       deletedAt: null,
-      tags: [], // Tags can be fetched later or mapped if needed
+      tags: [],
     }
   }
 
@@ -147,14 +147,12 @@ export class SubjectsService {
     }
 
     if (existing.userId !== BigInt(actor.id) && actor.role !== 'ADMIN') {
-      // Check if they are a recipient of the subject
       const [share] = await db
         .select({ id: subjectShares.id })
         .from(subjectShares)
         .where(and(eq(subjectShares.subjectId, subjectId), eq(subjectShares.userId, BigInt(actor.id))))
         .limit(1)
 
-      // Check if they are a collaborator on the study plan containing the subject
       let isCollaborator = false
       if (existing.studyPlanId) {
         const [collab] = await db
@@ -171,7 +169,6 @@ export class SubjectsService {
       }
 
       if ((share || isCollaborator) && data.archived !== undefined) {
-        // Upsert recipient's archive status in SubjectShare!
         await db.insert(subjectShares)
           .values({
             subjectId,
@@ -214,7 +211,6 @@ export class SubjectsService {
     })
 
     if (data.tagIds !== undefined) {
-      // replace tags
       await db.delete(subjectTags).where(eq(subjectTags.subjectId, subjectId))
       if (data.tagIds.length > 0) {
         const toInsert = data.tagIds.map((tid: number) => ({ subjectId, tagId: BigInt(tid) }))
@@ -232,7 +228,7 @@ export class SubjectsService {
       isShared: updated.isShared,
       archived: updated.isArchived,
       deletedAt: updated.deletedAt ? updated.deletedAt.toISOString() : null,
-      tags: [], // Client will refetch
+      tags: [],
     }
   }
 
@@ -242,10 +238,8 @@ export class SubjectsService {
       throw new AppError('Predmet nebyl nalezen.', 404)
     }
 
-    // Owner or admin can always delete
     const isOwner = existing.userId === BigInt(actor.id)
     if (!isOwner && actor.role !== 'ADMIN') {
-      // Check if actor is a CONTRIBUTOR on the subject's study plan
       if (existing.studyPlanId) {
         const [collaborator] = await db
           .select({ role: studyPlanCollaborators.role })
@@ -268,7 +262,6 @@ export class SubjectsService {
   }
 
   async shareSubject(subjectId: bigint, actor: { id: number, role: string }, data: { email: string }) {
-    // Load the subject to share
     const [existing] = await db
       .select({
         id: subjects.id,
@@ -287,7 +280,6 @@ export class SubjectsService {
     const canShare = actor.role === 'ADMIN' || existing.userId === BigInt(actor.id)
     if (!canShare) throw new AppError('Nemáte oprávnění sdílet tento předmět.', 403)
 
-    // Find recipient
     const [recipient] = await db
       .select({ id: users.id, email: users.email, fullName: users.fullName })
       .from(users)
@@ -297,7 +289,6 @@ export class SubjectsService {
     if (!recipient) throw new AppError('Uživatel s daným e-mailem nebyl nalezen.', 404)
     if (recipient.id === existing.userId) throw new AppError('Nelze sdílet předmět sám sobě.', 400)
 
-    // Check if it's already shared with this recipient
     const [alreadyShared] = await db
       .select({ id: subjectShares.id })
       .from(subjectShares)
@@ -308,17 +299,14 @@ export class SubjectsService {
       throw new AppError('Tento předmět je již s tímto uživatelem sdílen.', 400)
     }
 
-    // Insert into subjectShares to establish shared relationship
     await db.insert(subjectShares).values({
       subjectId,
       userId: recipient.id,
       isArchived: false,
     })
 
-    // Update parent subject isShared flag to true
     await db.update(subjects).set({ isShared: true }).where(eq(subjects.id, subjectId))
 
-    // Count existing files/notes that are now automatically shared
     const [filesCount] = await db.select({ count: sql<number>`count(*)::int` }).from(fileRecords).where(and(eq(fileRecords.subjectId, subjectId), isNull(fileRecords.deletedAt)))
     const [notesCount] = await db.select({ count: sql<number>`count(*)::int` }).from(lessons).where(and(eq(lessons.subjectId, subjectId), isNull(lessons.deletedAt)))
 

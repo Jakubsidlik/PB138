@@ -10,7 +10,6 @@ import { DesktopStudyPlan } from '../screen/StudyPlanScreen'
 import { DesktopProfileScreen } from '../screen/ProfileScreen'
 import { calendarWeekDays } from './data'
 
-// Home route component
 export function HomeComponent() {
   const state = useDashboard()
   const navigate = useNavigate()
@@ -35,7 +34,6 @@ export function HomeComponent() {
   )
 }
 
-// Calendar route component
 export function CalendarComponent() {
   const state = useDashboard()
   const search: any = useSearch({ strict: false })
@@ -67,7 +65,6 @@ export function CalendarComponent() {
   )
 }
 
-// Files route component
 export function FilesComponent() {
   const state = useDashboard()
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -87,7 +84,6 @@ export function FilesComponent() {
   )
 }
 
-// Tasks route component
 export function TasksComponent() {
   const state = useDashboard()
 
@@ -103,7 +99,6 @@ export function TasksComponent() {
   )
 }
 
-// Study plan route component
 export function StudyComponent() {
   const state = useDashboard()
   const search: any = useSearch({ strict: false })
@@ -167,7 +162,6 @@ export function StudyComponent() {
   )
 }
 
-// Profile route component
 export function ProfileComponent() {
   const state = useDashboard()
 
@@ -190,7 +184,6 @@ export function ProfileComponent() {
   )
 }
 
-// Legacy exports for backward compatibility
 export const HomeRouteScreen = HomeComponent
 export const CalendarRouteScreen = CalendarComponent
 export const FilesRouteScreen = FilesComponent

@@ -1,9 +1,6 @@
 import { CalendarEvent } from '../../../app/types'
 import { formatDateIso } from '../../../app/utils'
-  
-/**
- * Filters all calendar events by future/past relative to today.
- */
+
 function parseEventDateTime(dateStr: string, timeStr?: string | null): number {
   const [year, month, day] = dateStr.split('-').map(Number)
   let hours = 0
@@ -51,9 +48,6 @@ export function filterEventsByTime(
   }
 }
 
-/**
- * Formats a date ISO string to a localized Czech date label.
- */
 export function formatCzechDate(isoDate: string): string {
   return new Intl.DateTimeFormat('cs-CZ', {
     day: 'numeric',

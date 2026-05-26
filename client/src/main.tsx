@@ -7,7 +7,6 @@ import { ClerkProvider } from '@clerk/clerk-react'
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 if (!PUBLISHABLE_KEY) {
-  // Render a helpful error message instead of crashing silently
   const root = document.getElementById('root')!
   root.innerHTML = `
     <div style="

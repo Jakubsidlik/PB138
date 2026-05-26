@@ -45,20 +45,17 @@ export function AvatarUpload({
 
     const file = files[0]
 
-    // Validace - jenom PNG a JPG
     const allowedTypes = ['image/png', 'image/jpeg']
     if (!allowedTypes.includes(file.type)) {
       toast.error('Prosím vyberte obrázek ve formátu PNG nebo JPG')
       return
     }
 
-    // Validace velikosti (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Soubor je příliš velký. Maximum je 5MB.')
       return
     }
 
-    // Create preview and reset offset
     const reader = new FileReader()
     reader.onload = (e) => {
       setPreviewUrl(e.target?.result as string)

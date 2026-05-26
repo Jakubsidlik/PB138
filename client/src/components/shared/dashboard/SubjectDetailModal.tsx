@@ -100,8 +100,7 @@ export function SubjectDetailModal({
     }
 
     onAddFile?.(subject.id, file)
-    
-    // Reset input
+
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -375,7 +374,6 @@ export function SubjectDetailModal({
                             <span>
                               {(() => {
                                 const d = new Date(lesson.createdAt!)
-                                // Oprava posunu času z databáze o +2 hodiny (na lokální CZ čas)
                                 d.setHours(d.getHours() + 2)
                                 return `${d.toLocaleDateString('cs-CZ')} ${d.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}`
                               })()}
@@ -383,9 +381,7 @@ export function SubjectDetailModal({
                           </div>
                         </div>
 
-                        {/* Rating controls & Actions */}
                         <div className="flex items-center gap-2">
-                          {/* Rating controls */}
                           <div className="flex items-center gap-0.5 bg-muted/30 px-1 py-1 rounded-full border">
                             <Button 
                               type="button"

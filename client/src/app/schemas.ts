@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-// Auth schemas
 export const signUpSchema = z.object({
   email: z.string().email('Neplatná e-mailová adresa'),
   password: z.string().min(8, 'Heslo musí obsahovat alespoň 8 znaků'),
@@ -22,7 +21,6 @@ export const verificationCodeSchema = z.object({
 
 export type VerificationCodeFormData = z.infer<typeof verificationCodeSchema>
 
-// Study Plan schemas
 export const createStudyPlanSchema = z.object({
   name: z.string().min(1, 'Název plánu je povinný').max(255, 'Název je příliš dlouhý'),
   description: z.string().max(500, 'Popis je příliš dlouhý').optional(),
@@ -40,7 +38,6 @@ export const shareStudyPlanSchema = z.object({
 
 export type ShareStudyPlanFormData = z.infer<typeof shareStudyPlanSchema>
 
-// Subject schemas
 export const createSubjectSchema = z.object({
   name: z.string().min(1, 'Název předmětu je povinný').max(255, 'Název je příliš dlouhý'),
   teacher: z.string().min(1, 'Jméno vyučujícího je povinné').max(255, 'Jméno je příliš dlouhé'),
@@ -61,7 +58,6 @@ export const shareSubjectSchema = z.object({
 
 export type ShareSubjectFormData = z.infer<typeof shareSubjectSchema>
 
-// Profile schemas
 export const profileStudyInfoSchema = z.object({
   school: z.string().max(255, 'Název školy je příliš dlouhý').optional(),
   studyType: z.string().optional(),
@@ -71,7 +67,6 @@ export const profileStudyInfoSchema = z.object({
 
 export type ProfileStudyInfoFormData = z.infer<typeof profileStudyInfoSchema>
 
-// Tag schemas
 export const createTagSchema = z.object({
   name: z.string().min(1, 'Název štítku je povinný').max(30, 'Název je příliš dlouhý'),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Neplatná barva'),
@@ -79,7 +74,6 @@ export const createTagSchema = z.object({
 
 export type CreateTagFormData = z.infer<typeof createTagSchema>
 
-// Note schemas
 export const createNoteSchema = z.object({
   text: z.string().min(1, 'Poznámka nemůže být prázdná').max(2000, 'Poznámka může mít maximálně 2000 znaků'),
 })
