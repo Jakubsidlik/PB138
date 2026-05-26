@@ -44,6 +44,7 @@ import {
 
 type SubjectFilter = 'all' | 'active' | 'archived' | 'shared'
 const AUTH_SESSION_STORAGE_KEY = 'pb138-auth-session'
+const API BASE _URL = import.meta.env.VITE_API_URL || 'http://localhost:5001'
 
 const readAuthSessionFromStorage = (): AuthSession | null => {
   const raw = localStorage.getItem(AUTH_SESSION_STORAGE_KEY)
