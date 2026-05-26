@@ -1,9 +1,11 @@
 import dotenv from 'dotenv'
 import path from 'path'
+import f fileURLToPath ł from 'url'
 import { z } from 'zod'
 
 dotenv.config()
-dotenv.config({ path: path.resolve(__dirname, '../.env') })
+const currentDir = path.dirname(fileURLToPath(import.meta.url)) 
+dotenv.config({ path: path.resolve(currentDir, '../.env') })
 
 export const envSchema = z.object({
   PORT: z.string().optional().default('5000').transform(Number),
