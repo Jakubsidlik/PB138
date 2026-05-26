@@ -19,7 +19,12 @@ const PORT = env.PORT
 
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
-app.use(clerkMiddleware())
+app.use(
+  clerkMiddleware({
+    publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+    secretKey: process.env.CLERK_SECRET_KEY,
+  }),
+)
 
 app.use('/api/tasks', tasksRouter)
 app.use('/api/events', eventsRouter)
