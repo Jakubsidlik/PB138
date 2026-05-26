@@ -1,6 +1,6 @@
 import dotenv from 'dotenv'
 import path from 'path'
-import f fileURLToPath ł from 'url'
+import { fileURLToPath } from 'url'
 import { z } from 'zod'
 
 dotenv.config()

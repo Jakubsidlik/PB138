@@ -127,12 +127,12 @@ export function DashboardHomeContent({
             )}
             <div className="mt-auto pt-4">
               {tasks.length > 5 && (
-                <Button variant="link" render={<Link to="/tasks" />} className="p-0 h-auto font-medium">
+                <Button variant="link" render={<Link to="/tasks" />} nativeButton={false} className="p-0 h-auto font-medium">
                     Zobrazit všechny úkoly →
                 </Button>
               )}
               {tasks.length > 0 && tasks.length <= 5 && (
-                <Button variant="link" render={<Link to="/tasks" />} className="p-0 h-auto font-medium">
+                <Button variant="link" render={<Link to="/tasks" />} nativeButton={false} className="p-0 h-auto font-medium">
                     Správa úkolů →
                 </Button>
               )}
@@ -187,7 +187,7 @@ export function DashboardHomeContent({
               <p className="text-base text-muted-foreground my-auto">Žádné nadcházející události.</p>
             )}
             <div className="mt-auto pt-4">
-              <Button variant="link" render={<Link to="/calendar" />} className="p-0 h-auto font-medium">
+              <Button variant="link" render={<Link to="/calendar" />} nativeButton={false} className="p-0 h-auto font-medium">
                   Otevřít kalendář →
               </Button>
             </div>

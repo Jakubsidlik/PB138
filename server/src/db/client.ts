@@ -1,6 +1,6 @@
 import dotenv from 'dotenv'
 import path from 'path'
-import { fileURLToPath } from 'url"
+import { fileURLToPath } from 'url'
 import postgres from 'postgres'
 import { drizzle } from 'drizzle-orm/postgres-js'
 
