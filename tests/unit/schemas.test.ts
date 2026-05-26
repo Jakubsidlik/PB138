@@ -7,7 +7,7 @@ import {
   subjectSchema,
   lessonSchema,
   fileSchema
-} from '../../src/schemas'
+} from '../../server/src/schemas'
 
 describe('schemas.ts', () => {
   describe('studyPlanSchema', () => {
@@ -59,7 +59,7 @@ describe('schemas.ts', () => {
       const res = subjectSchema.safeParse(data)
       expect(res.success).toBe(true)
       if (res.success) {
-        expect(res.data.code).toBe('MATH101') // Checks if toUpperCase() was applied? Zod doesn't transform unless we use transform, but the schema has .toUpperCase(), wait no, Zod string().toUpperCase() transforms the string!
+        expect(res.data.code).toBe('MATH101')
       }
     })
     it('should fail if code is missing', () => {

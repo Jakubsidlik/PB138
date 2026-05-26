@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from 'bun:test'
 import request from 'supertest'
 
-mock.module('../../src/modules/study-plans/study-plans.services.js', () => ({
+mock.module('../../../server/src/modules/study-plans/study-plans.services.js', () => ({
   studyPlansService: {
     getStudyPlans: mock(async () => []),
     createStudyPlan: mock(async (_id: any, data: any) => ({ id: 777, ...data })),
@@ -13,14 +13,14 @@ mock.module('../../src/modules/study-plans/study-plans.services.js', () => ({
   }
 }))
 
-mock.module('../../src/auth.js', () => ({
+mock.module('../../../server/src/auth.js', () => ({
   requireRegisteredActor: async (req: any, res: any) => ({ id: 1, role: 'REGISTERED' }),
   requireAdmin: async (req: any, res: any) => ({ id: 1, role: 'ADMIN' }),
   getActorFromRequest: async () => ({ id: 1, role: 'REGISTERED' })
 }))
 
-import { app } from '../../src/index'
-import { studyPlansService } from '../../src/modules/study-plans/study-plans.services'
+import { app } from '../../../server/src/index'
+import { studyPlansService } from '../../../server/src/modules/study-plans/study-plans.services'
 
 describe('Study Plans API E2E', () => {
   describe('GET /api/study-plans', () => {

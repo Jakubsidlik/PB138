@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { canAccessProtectedResource, isPublicActor } from '../accessControl'
+import { describe, expect, it } from 'bun:test'
+import { canAccessProtectedResource, isPublicActor } from '../../server/src/accessControl'
 
 describe('auth guard rules', () => {
   it('rejects public actors from protected backend actions', () => {

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { buildFileKey, buildFileUrl } from '../fileStorage'
+import { describe, expect, it } from 'bun:test'
+import { buildFileKey, buildFileUrl } from '../../server/src/fileStorage'
 
 describe('file upload helpers', () => {
   it('creates sanitized file keys with unique prefixes', () => {

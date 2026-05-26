@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from 'bun:test'
 import request from 'supertest'
 
-mock.module('../../src/modules/lessons/lessons.services.js', () => ({
+mock.module('../../../server/src/modules/lessons/lessons.services.js', () => ({
   lessonsService: {
     getLessons: mock(async () => []),
     createLesson: mock(async (_id: any, data: any) => ({ id: 555, ...data })),
@@ -10,13 +10,13 @@ mock.module('../../src/modules/lessons/lessons.services.js', () => ({
   }
 }))
 
-mock.module('../../src/auth.js', () => ({
+mock.module('../../../server/src/auth.js', () => ({
   requireRegisteredActor: async (req: any, res: any) => ({ id: 1, role: 'REGISTERED' }),
   getActorFromRequest: async () => ({ id: 1, role: 'REGISTERED' })
 }))
 
-import { app } from '../../src/index'
-import { lessonsService } from '../../src/modules/lessons/lessons.services'
+import { app } from '../../../server/src/index'
+import { lessonsService } from '../../../server/src/modules/lessons/lessons.services'
 
 describe('Lessons API E2E', () => {
   describe('GET /api/lessons', () => {

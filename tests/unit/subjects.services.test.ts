@@ -1,14 +1,14 @@
 import { describe, expect, it, mock } from 'bun:test'
 
 // Import the real singletons in memory
-import { subjectsRepository } from '../../src/modules/subjects/subjects.repository'
-import { db } from '../../src/db/client'
+import { subjectsRepository } from '../../server/src/modules/subjects/subjects.repository'
+import { db } from '../../server/src/db/client'
 
 describe('SubjectsService - studyPlanId accessibility mapping', () => {
   it('should nullify studyPlanId if actor has no access to the study plan', async () => {
     // 1. Dynamically import with ?nocache query param to bypass Bun E2E module mock cache entirely!
     // We use a dynamic string variable to bypass TypeScript static analysis compilation error.
-    const servicePath = '../../src/modules/subjects/subjects.services.ts?nocache'
+    const servicePath = '../../server/src/modules/subjects/subjects.services.ts?nocache'
     const { subjectsService } = await import(servicePath) as any
 
     // Save original methods to avoid side-effects in other unit/e2e tests

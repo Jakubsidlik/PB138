@@ -2,7 +2,7 @@ import { describe, expect, it, mock } from 'bun:test'
 import request from 'supertest'
 
 // Mock services to prevent hitting the real database
-mock.module('../../src/modules/tasks/tasks.services.js', () => ({
+mock.module('../../../server/src/modules/tasks/tasks.services.js', () => ({
   tasksService: {
     getTasks: mock(async () => []),
     createTask: mock(async (_id: any, data: any) => ({ id: 999, ...data })),
@@ -11,14 +11,14 @@ mock.module('../../src/modules/tasks/tasks.services.js', () => ({
   }
 }))
 
-mock.module('../../src/auth.js', () => ({
+mock.module('../../../server/src/auth.js', () => ({
   requireRegisteredActor: async (req: any, res: any) => ({ id: 1, role: 'REGISTERED' }),
   getActorFromRequest: async () => ({ id: 1, role: 'REGISTERED' })
 }))
 
 // Import app AFTER mocks
-import { app } from '../../src/index'
-import { tasksService } from '../../src/modules/tasks/tasks.services'
+import { app } from '../../../server/src/index'
+import { tasksService } from '../../../server/src/modules/tasks/tasks.services'
 
 describe('Tasks API E2E', () => {
   it('GET /api/tasks should return 200', async () => {

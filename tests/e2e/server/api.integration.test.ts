@@ -1,9 +1,9 @@
 import { AddressInfo } from 'node:net'
 import type { Server } from 'node:http'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { eq } from 'drizzle-orm'
-import { db } from '../db/client'
-import { users } from '../db/schema'
+import { db } from '../../../server/src/db/client'
+import { users } from '../../../server/src/db/schema'
 
 describe('api integration', () => {
   let app: { listen: (port: number) => Server }
@@ -16,7 +16,7 @@ describe('api integration', () => {
     process.env.NODE_ENV = 'test'
     process.env.VITEST = 'true'
 
-    const appModule = await import('../index')
+    const appModule = await import('../../../server/src/index')
     app = appModule.app
 
     server = app.listen(0)

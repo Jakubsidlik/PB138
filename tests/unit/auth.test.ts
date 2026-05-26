@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { toAuthActor } from '../../src/auth'
+import { toAuthActor } from '../../server/src/auth'
 
 describe('auth.ts', () => {
   describe('toAuthActor', () => {

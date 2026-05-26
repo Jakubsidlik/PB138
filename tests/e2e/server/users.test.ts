@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from 'bun:test'
 import request from 'supertest'
 
-mock.module('../../src/modules/users/users.services.js', () => ({
+mock.module('../../../server/src/modules/users/users.services.js', () => ({
   usersService: {
     getAllUsers: mock(async () => [{ id: 1, fullName: 'Admin', email: 'admin@test.com', role: 'ADMIN' }]),
     getProfile: mock(async (_id: any) => ({ id: 1, fullName: 'User', email: 'user@test.com', role: 'REGISTERED' })),
@@ -13,14 +13,14 @@ mock.module('../../src/modules/users/users.services.js', () => ({
   }
 }))
 
-mock.module('../../src/auth.js', () => ({
+mock.module('../../../server/src/auth.js', () => ({
   requireRegisteredActor: async (req: any, res: any) => ({ id: 1, role: 'REGISTERED' }),
   requireAdmin: async (req: any, res: any) => ({ id: 1, role: 'ADMIN' }),
   getActorFromRequest: async () => ({ id: 1, role: 'REGISTERED' })
 }))
 
-import { app } from '../../src/index'
-import { usersService } from '../../src/modules/users/users.services'
+import { app } from '../../../server/src/index'
+import { usersService } from '../../../server/src/modules/users/users.services'
 
 describe('Users API E2E', () => {
   describe('GET /api/users (admin)', () => {

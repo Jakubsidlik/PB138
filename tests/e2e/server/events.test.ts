@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from 'bun:test'
 import request from 'supertest'
 
-mock.module('../../src/modules/events/events.services.js', () => ({
+mock.module('../../../server/src/modules/events/events.services.js', () => ({
   eventsService: {
     getEvents: mock(async () => []),
     createEvent: mock(async (_id: any, data: any) => ([{ id: 888, title: data.title, date: data.date }])),
@@ -11,13 +11,13 @@ mock.module('../../src/modules/events/events.services.js', () => ({
   }
 }))
 
-mock.module('../../src/auth.js', () => ({
+mock.module('../../../server/src/auth.js', () => ({
   requireRegisteredActor: async (req: any, res: any) => ({ id: 1, role: 'REGISTERED' }),
   getActorFromRequest: async () => ({ id: 1, role: 'REGISTERED' })
 }))
 
-import { app } from '../../src/index'
-import { eventsService } from '../../src/modules/events/events.services'
+import { app } from '../../../server/src/index'
+import { eventsService } from '../../../server/src/modules/events/events.services'
 
 describe('Events API E2E', () => {
   describe('GET /api/events', () => {

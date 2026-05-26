@@ -8,7 +8,7 @@ import {
   parseCursorPagination,
   mapFileRecord,
   toPaginatedPayload
-} from '../../src/utils'
+} from '../../server/src/utils'
 
 describe('utils.ts', () => {
   describe('asBigInt', () => {

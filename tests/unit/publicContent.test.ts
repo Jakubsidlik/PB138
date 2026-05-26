@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { isPubliclyVisible } from '../contentVisibility'
+import { describe, expect, it } from 'bun:test'
+import { isPubliclyVisible } from '../../server/src/contentVisibility'
 
 describe('public content visibility', () => {
   it('allows only shared and not deleted content for anonymous users', () => {
