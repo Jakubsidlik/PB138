@@ -33,7 +33,7 @@ export function AdminDashboardScreen() {
 
     const updateToken = async () => {
       try {
-        const localData = localStorage.getItem('user_profile')
+        const localData = localStorage.getItem('pb138.profile')
         if (localData) {
           const localProfile = JSON.parse(localData)
           if (localProfile.id !== 0) {
