@@ -221,7 +221,7 @@ export function AdminDashboardScreen() {
           </CardHeader>
           
           <CardContent className="p-0">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
                 <tr>
                   <th className="px-4 py-3 text-left">
@@ -240,15 +240,16 @@ export function AdminDashboardScreen() {
                       Email {renderUserSortIcon('email')}
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-right">Akce</th>
+                  <th className="px-4 py-3 text-right w-20">Akce</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {sortedUsers.map(user => (
                   <tr key={user.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-medium">{user.fullName}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
-                    <td className="px-4 py-3 text-right flex justify-end gap-1">
+                    <td className="px-4 py-3 font-medium truncate">{user.fullName}</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell truncate">{user.email}</td>
+                    <td className="px-4 py-3 text-right w-20">
+                      <div className="flex justify-end gap-1 flex-nowrap">
                       {user.avatarDataUrl && (
                         <Button 
                           variant="ghost"
@@ -269,6 +270,7 @@ export function AdminDashboardScreen() {
                       >
                         <UserMinus className="size-4" />
                       </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
