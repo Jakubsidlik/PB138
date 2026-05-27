@@ -26,7 +26,7 @@ export class EventRepository {
 
     const whereParts = [
       includeDeleted ? undefined : isNull(events.deletedAt),
-      or(eq(events.userId, BigInt(actor.id)), eq(events.isShared, true)),
+      eq(events.userId, BigInt(actor.id)),
       pagination.enabled && pagination.cursor ? gt(events.id, pagination.cursor) : undefined,
     ].filter(Boolean)
 

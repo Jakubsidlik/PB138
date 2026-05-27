@@ -54,11 +54,8 @@ export class FilesRepository {
 
     const visibility = or(
       eq(fileRecords.userId, BigInt(actor.id)),
-      eq(fileRecords.isShared, true),
       sql`${fileRecords.id} IN ${explicitShares}`,
       eq(subjects.userId, BigInt(actor.id)),
-      eq(subjects.isShared, true),
-      eq(studyPlans.isShared, true),
       exists(
         db
           .select({ id: studyPlanCollaborators.id })

@@ -44,8 +44,6 @@ export class SubjectsRepository {
 
     const visibility = or(
       eq(subjects.userId, BigInt(actor.id)),
-      eq(subjects.isShared, true),
-      eq(studyPlans.isShared, true),
       isNotNull(studyPlanCollaborators.id),
       isNotNull(subjectShares.id),
     )

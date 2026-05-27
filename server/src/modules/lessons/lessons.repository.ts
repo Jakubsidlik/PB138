@@ -31,10 +31,7 @@ export class LessonsRepository {
     const { subjectId, includeDeleted } = filters
 
     const visibility = or(
-      eq(lessons.isShared, true),
       eq(subjects.userId, BigInt(actor.id)),
-      eq(subjects.isShared, true),
-      eq(studyPlans.isShared, true),
       exists(
         db
           .select({ id: studyPlanCollaborators.id })
