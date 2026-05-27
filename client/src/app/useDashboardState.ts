@@ -1347,6 +1347,7 @@ export function useDashboardState(fetchAll = false) {
     setTagFilter,
     isDragActive,
     setIsDragActive,
+    isHydrated,
     profile,
     authSession,
     tasksDone,

@@ -43,17 +43,19 @@ export function CalendarEventList({
         const meta = eventMetaById[event.id] ?? getDefaultMetaForTitle(event.title)
 
         return (
-          <article key={event.id} className={itemClassName}>
+          <article key={event.id} className={`${itemClassName} overflow-hidden`}>
             <div className={iconClassName}>{meta.icon}</div>
-            <div className={contentClassName}>
-              <h4 className="break-words whitespace-normal" style={{ wordBreak: 'break-word' }}>
+            <div className={`${contentClassName} min-w-0`}>
+              <h4 className="max-w-full break-words whitespace-normal leading-snug" style={{ overflowWrap: 'anywhere' }}>
                 {event.title}
               </h4>
-              <p>
+              <p className="max-w-full break-words whitespace-normal leading-snug" style={{ overflowWrap: 'anywhere' }}>
                 {meta.time}
                 {showDate && event.date ? `, ${formatCzechDate(event.date)}` : ''}
               </p>
-              <p>{meta.location}</p>
+              <p className="max-w-full break-words whitespace-normal leading-snug" style={{ overflowWrap: 'anywhere' }}>
+                {meta.location}
+              </p>
             </div>
             {showTimeBadge ? <div className={timeClassName}>{meta.time.split(' - ')[0]}</div> : null}
             <Button

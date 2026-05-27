@@ -11,6 +11,7 @@ import { ProfileSaveActions } from '../components/shared/profile/ProfileSaveActi
 
 type DesktopProfileScreenProps = {
   profile: UserProfile
+  isHydrated: boolean
   authSession: AuthSession | null
   onChangeProfile: (updates: Partial<UserProfile>) => void
   onUploadAvatar: (files: FileList | null) => void
@@ -27,6 +28,7 @@ type DesktopProfileScreenProps = {
 
 export function DesktopProfileScreen({
   profile,
+  isHydrated,
   authSession,
   onChangeProfile,
   onUploadAvatar,
@@ -128,9 +130,11 @@ export function DesktopProfileScreen({
             <CardTitle className="text-lg">Studijní informace</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <ProfileStudyInfoForm profile={profile} onChangeProfile={onChangeProfile} />
-            </div>
+            {isHydrated && (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <ProfileStudyInfoForm profile={profile} onChangeProfile={onChangeProfile} />
+              </div>
+            )}
           </CardContent>
         </Card>
 

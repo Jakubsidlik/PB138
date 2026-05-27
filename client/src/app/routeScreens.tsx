@@ -168,6 +168,7 @@ export function ProfileComponent() {
   return (
     <DesktopProfileScreen
       profile={state.profile}
+      isHydrated={state.isHydrated}
       authSession={state.authSession}
       onChangeProfile={state.onChangeProfile}
       onUploadAvatar={state.onUploadProfileAvatar}

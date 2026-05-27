@@ -23,6 +23,15 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
     },
   })
 
+  React.useEffect(() => {
+    form.reset({
+      school: profile.school || '',
+      studyType: profile.studyType || '',
+      studyMajor: profile.studyMajor || '',
+      studyYear: profile.studyYear || '',
+    })
+  }, [form, profile.school, profile.studyType, profile.studyMajor, profile.studyYear])
+
   const watchedValues = form.watch()
 
   React.useEffect(() => {

@@ -274,13 +274,9 @@ export function DesktopFilesScreen({
           </div>
         </section>
 
-        <section className="rounded-xl border shadow-sm bg-card p-6 flex flex-col gap-4 text-center items-center justify-center border-dashed border-2 bg-muted/20 hover:bg-muted/50 transition-colors cursor-pointer max-w-2xl mx-auto w-full" onClick={() => fileInputRef.current?.click()}>
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl mb-2">☁️</div>
-          <h3 className="font-semibold text-lg m-0">Rychlé nahrávání</h3>
-          <p className="text-sm text-muted-foreground mb-2">Přetáhněte soubory sem nebo klikněte pro výběr z počítače.</p>
-          <Button type="button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-            Procházet soubory
-          </Button>
+        <section className="rounded-xl border shadow-sm bg-card px-6 py-4 flex flex-col gap-2 text-center items-center justify-center border-dashed border-2 bg-muted/20 hover:bg-muted/50 transition-colors cursor-pointer w-fit mx-auto" onClick={() => fileInputRef.current?.click()}>
+          <h3 className="font-semibold text-lg m-0">Nahrávání souborů</h3>
+          <p className="text-sm text-muted-foreground mb-2">Klikněte pro výběr souboru ze zařízení.</p>
           <HiddenFileInput
             inputRef={fileInputRef}
             multiple
