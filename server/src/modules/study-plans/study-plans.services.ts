@@ -1,16 +1,17 @@
 import { studyPlanRepository } from './study-plans.repository'
 import { AppError } from '../../middleware/error-handler'
 
-import { subjects, tasks, lessons } from '../../db/schema'
+import { subjects, tasks, lessons, users } from '../../db/schema'
+import { db } from '../../db/client'
+import { Resend } from 'resend'
+import { env } from '../../env'
 
 export class StudyPlansService {
   async getStudyPlans(actor: { id: number, role: string }, filters: { includeInactive?: boolean }) {
     const plans = await studyPlanRepository.findAll(actor, filters)
     
     const mappedPlans = await Promise.all(plans.map(async (plan) => {
-      const collaboratorRole = actor.role !== 'PUBLIC' 
-        ? await studyPlanRepository.getCollaboratorRole(plan.id, BigInt(actor.id))
-        : null
+      const collaboratorRole = await studyPlanRepository.getCollaboratorRole(plan.id, BigInt(actor.id))
 
       return {
         id: Number(plan.id),
@@ -21,12 +22,11 @@ export class StudyPlansService {
         isActive: plan.isActive,
         isShared: plan.isShared,
         collaboratorRole,
-        canEditMetadata: actor.role !== 'PUBLIC' && (actor.role === 'ADMIN' || plan.userId === BigInt(actor.id)),
+        canEditMetadata: actor.role === 'ADMIN' || plan.userId === BigInt(actor.id),
         canCreateSubjects:
-          actor.role !== 'PUBLIC' &&
-          (actor.role === 'ADMIN' ||
-            plan.userId === BigInt(actor.id) ||
-            collaboratorRole === 'CONTRIBUTOR'),
+          actor.role === 'ADMIN' ||
+          plan.userId === BigInt(actor.id) ||
+          collaboratorRole === 'CONTRIBUTOR',
         subjectsCount: await studyPlanRepository.countByStudyPlan(subjects, plan.id),
         createdAt: plan.createdAt.toISOString(),
         updatedAt: plan.updatedAt.toISOString(),
@@ -137,7 +137,7 @@ export class StudyPlansService {
     }))
   }
 
-  async shareStudyPlan(studyPlanId: bigint, actor: { id: number, role: string }, data: { email: string, role: string }) {
+  async shareStudyPlan(studyPlanId: bigint, actor: { id: number, role: string, fullName?: string, email?: string }, data: { email: string, role: string }) {
     const plan = await studyPlanRepository.findById(studyPlanId)
     if (!plan) throw new AppError('Studijni plan nebyl nalezen.', 404)
 
@@ -147,24 +147,62 @@ export class StudyPlansService {
     }
 
     const user = await studyPlanRepository.findUserByEmail(data.email)
-    if (!user) {
-      throw new AppError('Uzivatel s danym emailem nebyl nalezen.', 404)
+    let targetUser = user
+    let isNewUser = false
+    if (!targetUser) {
+      const [newDbUser] = await db
+        .insert(users)
+        .values({
+          fullName: data.email.split('@')[0],
+          email: data.email.toLowerCase(),
+          role: 'PUBLIC',
+        })
+        .returning({ id: users.id, fullName: users.fullName, email: users.email })
+      targetUser = newDbUser
+      isNewUser = true
     }
 
-    if (user.id === plan.userId) {
+    if (targetUser.id === plan.userId) {
       throw new AppError('Vlastnika planu nelze pridat jako spolupracovnika.', 400)
     }
 
-    const collaborator = await studyPlanRepository.addCollaborator(studyPlanId, user.id, data.role)
+    const collaborator = await studyPlanRepository.addCollaborator(studyPlanId, targetUser.id, data.role)
+
+    if (isNewUser && env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(env.RESEND_API_KEY)
+        const registerUrl = 'http://localhost:5173/login?mode=register'
+        await resend.emails.send({
+          from: 'Planner <onboarding@resend.dev>',
+          to: data.email,
+          subject: `Pozvánka do aplikace Planner`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #3b82f6;">Pozvánka do aplikace Planner!</h2>
+              <p>Ahoj,</p>
+              <p>Uživatel <strong>${actor.fullName || actor.email}</strong> s tebou chce sdílet studijní plán <strong>${plan.name}</strong> v aplikaci Planner.</p>
+              <p>Tento e-mail k dané adrese nemá založený účet. Pro zobrazení sdíleného obsahu se prosím nejprve zaregistruj.</p>
+              <div style="margin: 30px 0;">
+                <a href="${registerUrl}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Zaregistrovat se</a>
+              </div>
+              <p style="color: #666; font-size: 14px;">Tento e-mail byl automaticky vygenerován aplikací Planner.</p>
+            </div>
+          `
+        })
+      } catch (err) {
+        console.error('Nepodařilo se odeslat pozvánku studijního plánu:', err)
+      }
+    }
+
     return {
       id: Number(collaborator.id),
       studyPlanId: Number(collaborator.studyPlanId),
       userId: Number(collaborator.userId),
       role: collaborator.role,
       user: {
-        id: Number(user.id),
-        fullName: user.fullName,
-        email: user.email,
+        id: Number(targetUser.id),
+        fullName: targetUser.fullName,
+        email: targetUser.email,
       },
     }
   }

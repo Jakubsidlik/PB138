@@ -97,7 +97,7 @@ export function DesktopStudyPlan({
   onRateLesson,
   onRateFile,
 }: DesktopStudyPlanProps) {
-  const { authSession } = useDashboard()
+  const { authSession, apiFetch } = useDashboard()
   const [selectedSubjectId, setSelectedSubjectId] = React.useState<number | null>(null)
   const selectedSubject = desktopSubjects.find(s => s.id === selectedSubjectId) || null
 
@@ -148,6 +148,11 @@ export function DesktopStudyPlan({
   const [planToDelete, setPlanToDelete] = useState<number | null>(null)
 
   const [editingPlanId, setEditingPlanId] = useState<number | null>(null)
+  const [inviteState, setInviteState] = useState<{
+    email: string
+    itemName: string
+    itemType: 'plan' | 'subject'
+  } | null>(null)
 
   const editingSubject = desktopSubjects.find(s => s.id === editingSubjectId)
   const editingPlan = studyPlans.find(p => p.id === editingPlanId)
@@ -217,7 +222,16 @@ export function DesktopStudyPlan({
         await onShareStudyPlan?.(sharingPlanId, data.email)
         setSharingPlanId(null)
       } catch (err: any) {
-        toast.error(err.message || 'Nepodařilo se nasdílet studijní plán.')
+        if (err.message?.toLowerCase().includes('nebyl nalezen')) {
+          setInviteState({
+            email: data.email,
+            itemName: studyPlans.find(p => p.id === sharingPlanId)?.name || 'studijní plán',
+            itemType: 'plan'
+          })
+          setSharingPlanId(null)
+        } else {
+          toast.error(err.message || 'Nepodařilo se nasdílet studijní plán.')
+        }
       }
     }
   }
@@ -228,7 +242,16 @@ export function DesktopStudyPlan({
         await onShareSubject?.(sharingSubjectId, data.email)
         setSharingSubjectId(null)
       } catch (err: any) {
-        toast.error(err.message || 'Nepodařilo se nasdílet předmět.')
+        if (err.message?.toLowerCase().includes('nebyl nalezen')) {
+          setInviteState({
+            email: data.email,
+            itemName: desktopSubjects.find(s => s.id === sharingSubjectId)?.name || 'předmět',
+            itemType: 'subject'
+          })
+          setSharingSubjectId(null)
+        } else {
+          toast.error(err.message || 'Nepodařilo se nasdílet předmět.')
+        }
       }
     }
   }
@@ -875,6 +898,48 @@ export function DesktopStudyPlan({
           </form>
         </DialogContent>
       </Dialog>
+      {/* Invite User Dialog */}
+      <AlertDialog open={inviteState !== null} onOpenChange={(open) => !open && setInviteState(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Uživatel není v databázi</AlertDialogTitle>
+            <AlertDialogDescription>
+              Uživatel s e-mailem <strong>{inviteState?.email}</strong> nemá v aplikaci založený účet. Chcete mu poslat e-mail s pozvánkou k registraci, kde bude uveden odkaz na registrační stránku?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (inviteState) {
+                  try {
+                    const res = await apiFetch('/api/invite', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        email: inviteState.email,
+                        itemName: inviteState.itemName,
+                        itemType: inviteState.itemType
+                      })
+                    })
+                    if (res.ok) {
+                      toast.success('Pozvánka k registraci byla úspěšně odeslána.')
+                    } else {
+                      const data = await res.json().catch(() => null)
+                      toast.error(data?.error || 'Nepodařilo se odeslat pozvánku.')
+                    }
+                  } catch (e) {
+                    toast.error('Nepodařilo se odeslat pozvánku.')
+                  }
+                }
+                setInviteState(null)
+              }}
+            >
+              Poslat pozvánku
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

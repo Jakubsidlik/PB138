@@ -8,7 +8,8 @@ import { asyncHandler, AppError } from '../../middleware/error-handler'
 export const subjectsRouter: express.Router = express.Router()
 
 subjectsRouter.get('/', asyncHandler(async (req, res) => {
-  const actor = await getActorFromRequest(req)
+  const actor = await requireRegisteredActor(req, res)
+  if (!actor) return
   const pagination = parseCursorPagination(req, { defaultLimit: 20, maxLimit: 100 })
   
   const filters = {

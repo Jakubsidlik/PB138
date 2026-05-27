@@ -30,26 +30,24 @@ export class LessonsRepository {
   }) {
     const { subjectId, includeDeleted } = filters
 
-    const visibility = actor.role === 'PUBLIC'
-      ? or(eq(lessons.isShared, true), eq(subjects.isShared, true), eq(studyPlans.isShared, true))
-      : or(
-          eq(lessons.isShared, true),
-          eq(subjects.userId, BigInt(actor.id)),
-          eq(subjects.isShared, true),
-          eq(studyPlans.isShared, true),
-          exists(
-            db
-              .select({ id: studyPlanCollaborators.id })
-              .from(studyPlanCollaborators)
-              .where(and(eq(studyPlanCollaborators.studyPlanId, subjects.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
-          ),
-          exists(
-            db
-              .select({ id: subjectShares.id })
-              .from(subjectShares)
-              .where(and(eq(subjectShares.subjectId, lessons.subjectId), eq(subjectShares.userId, BigInt(actor.id)))),
-          )
-        )
+    const visibility = or(
+      eq(lessons.isShared, true),
+      eq(subjects.userId, BigInt(actor.id)),
+      eq(subjects.isShared, true),
+      eq(studyPlans.isShared, true),
+      exists(
+        db
+          .select({ id: studyPlanCollaborators.id })
+          .from(studyPlanCollaborators)
+          .where(and(eq(studyPlanCollaborators.studyPlanId, subjects.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
+      ),
+      exists(
+        db
+          .select({ id: subjectShares.id })
+          .from(subjectShares)
+          .where(and(eq(subjectShares.subjectId, lessons.subjectId), eq(subjectShares.userId, BigInt(actor.id)))),
+      )
+    )
 
     const whereParts = [
       subjectId ? eq(lessons.subjectId, subjectId) : undefined,

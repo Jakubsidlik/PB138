@@ -101,7 +101,7 @@ export const profileSchema = z.object({
   fullName: z.string().trim().min(1, 'Pole fullName je povinne.'),
   email: z.string().trim().email('Neplatny format emailu.'),
   password: z.string().optional(),
-  role: z.enum(['REGISTERED', 'ADMIN']).optional(),
+  role: z.enum(['REGISTERED', 'ADMIN', 'PUBLIC']).optional(),
   school: z.string().trim().nullable().optional(),
   studyMajor: z.string().trim().nullable().optional(),
   studyYear: z.string().trim().nullable().optional(),
@@ -119,7 +119,7 @@ export const updateProfileSchema = z.object({
     z.string().trim().email('Neplatny format emailu.').optional()
   ),
   password: z.string().optional(),
-  role: z.enum(['REGISTERED', 'ADMIN']).optional(),
+  role: z.enum(['REGISTERED', 'ADMIN', 'PUBLIC']).optional(),
   school: z.string().trim().nullable().optional(),
   studyMajor: z.string().trim().nullable().optional(),
   studyYear: z.string().trim().nullable().optional(),

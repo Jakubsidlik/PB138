@@ -20,7 +20,7 @@ export type AuthActor = {
   id: number
   fullName: string
   email: string
-  role: UserRole | 'PUBLIC'
+  role: UserRole
 }
 
 export type CursorPagination = {

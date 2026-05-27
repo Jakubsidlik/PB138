@@ -8,7 +8,8 @@ import { asyncHandler, AppError } from '../../middleware/error-handler'
 export const studyPlansRouter: express.Router = express.Router()
 
 studyPlansRouter.get('/', asyncHandler(async (req, res) => {
-  const actor = await getActorFromRequest(req)
+  const actor = await requireRegisteredActor(req, res)
+  if (!actor) return
   const includeInactive = req.query.includeInactive === 'true'
 
   const result = await studyPlansService.getStudyPlans(actor, { includeInactive })

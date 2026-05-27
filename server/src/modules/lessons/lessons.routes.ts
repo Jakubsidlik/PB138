@@ -8,7 +8,8 @@ import { asyncHandler, AppError } from '../../middleware/error-handler'
 export const lessonsRouter: express.Router = express.Router()
 
 lessonsRouter.get('/', asyncHandler(async (req, res) => {
-  const actor = await getActorFromRequest(req)
+  const actor = await requireRegisteredActor(req, res)
+  if (!actor) return
   const filters = {
     subjectId: asBigInt(req.query.subjectId),
     includeDeleted: req.query.includeDeleted === 'true',

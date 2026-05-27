@@ -115,4 +115,24 @@ describe('Users API E2E', () => {
       expect(response.status).toBe(400)
     })
   })
+
+  describe('POST /api/invite', () => {
+    it('should return 200 on valid email invitation request', async () => {
+      const response = await request(app).post('/api/invite').send({
+        email: 'invited-user@example.com',
+        itemName: 'Kalkulus 1',
+        itemType: 'subject'
+      })
+      expect(response.status).toBe(200)
+      expect(response.body).toHaveProperty('success', true)
+    })
+
+    it('should return 400 when email is missing', async () => {
+      const response = await request(app).post('/api/invite').send({
+        itemName: 'Kalkulus 1',
+        itemType: 'subject'
+      })
+      expect(response.status).toBe(400)
+    })
+  })
 })

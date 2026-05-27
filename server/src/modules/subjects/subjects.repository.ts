@@ -42,15 +42,13 @@ export class SubjectsRepository {
   }) {
     const { pagination, includeDeleted, studyPlanId } = filters
 
-    const visibility = actor.role === 'PUBLIC'
-      ? or(eq(subjects.isShared, true), eq(studyPlans.isShared, true))
-      : or(
-          eq(subjects.userId, BigInt(actor.id)),
-          eq(subjects.isShared, true),
-          eq(studyPlans.isShared, true),
-          isNotNull(studyPlanCollaborators.id),
-          isNotNull(subjectShares.id),
-        )
+    const visibility = or(
+      eq(subjects.userId, BigInt(actor.id)),
+      eq(subjects.isShared, true),
+      eq(studyPlans.isShared, true),
+      isNotNull(studyPlanCollaborators.id),
+      isNotNull(subjectShares.id),
+    )
 
     const whereParts = [
       includeDeleted ? undefined : isNull(subjects.deletedAt),

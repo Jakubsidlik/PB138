@@ -26,6 +26,10 @@ export function AuthScreen() {
   const [globalError, setGlobalError] = React.useState('')
   const [forgotPasswordStep, setForgotPasswordStep] = React.useState<'send_code' | 'reset_password' | null>(null)
   const [resetEmail, setResetEmail] = React.useState('')
+  const [activeTab, setActiveTab] = React.useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('mode') === 'register' ? 'register' : 'login'
+  })
 
   const signUpForm = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
@@ -363,7 +367,7 @@ export function AuthScreen() {
             </CardContent>
           </Card>
         ) : (
-          <Tabs defaultValue="login" className="w-full flex-col flex" onValueChange={() => setGlobalError('')}>
+          <Tabs value={activeTab} className="w-full flex-col flex" onValueChange={(val) => { setActiveTab(val); setGlobalError('') }}>
             <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-slate-800/40 rounded-2xl">
               <TabsTrigger value="login" className="text-sm rounded-xl transition-all duration-300 data-active:bg-[#242f49] data-active:text-white data-active:shadow-lg hover:bg-slate-700/50 py-2">Přihlášení</TabsTrigger>
               <TabsTrigger value="register" className="text-sm rounded-xl transition-all duration-300 data-active:bg-[#242f49] data-active:text-white data-active:shadow-lg hover:bg-slate-700/50 py-2">Registrace</TabsTrigger>

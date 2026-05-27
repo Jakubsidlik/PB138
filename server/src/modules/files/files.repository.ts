@@ -50,35 +50,31 @@ export class FilesRepository {
       pagination.enabled && pagination.cursor ? gt(fileRecords.id, pagination.cursor) : undefined,
     ].filter(Boolean)
 
-    const explicitShares = actor.role !== 'PUBLIC'
-      ? db.select({ fileId: fileShares.fileId }).from(fileShares).where(eq(fileShares.userId, BigInt(actor.id)))
-      : undefined
+    const explicitShares = db.select({ fileId: fileShares.fileId }).from(fileShares).where(eq(fileShares.userId, BigInt(actor.id)))
 
-    const visibility = actor.role === 'PUBLIC'
-      ? or(eq(fileRecords.isShared, true), eq(subjects.isShared, true), eq(studyPlans.isShared, true))
-      : or(
-          eq(fileRecords.userId, BigInt(actor.id)),
-          eq(fileRecords.isShared, true),
-          explicitShares ? sql`${fileRecords.id} IN ${explicitShares}` : undefined,
-          eq(subjects.userId, BigInt(actor.id)),
-          eq(subjects.isShared, true),
-          eq(studyPlans.isShared, true),
-          exists(
-            db
-              .select({ id: studyPlanCollaborators.id })
-              .from(studyPlanCollaborators)
-              .where(and(eq(studyPlanCollaborators.studyPlanId, subjects.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
-          ),
-          exists(
-            db
-              .select({ id: subjectShares.id })
-              .from(subjectShares)
-              .where(and(eq(subjectShares.subjectId, fileRecords.subjectId), eq(subjectShares.userId, BigInt(actor.id)))),
-          )
-        )
+    const visibility = or(
+      eq(fileRecords.userId, BigInt(actor.id)),
+      eq(fileRecords.isShared, true),
+      sql`${fileRecords.id} IN ${explicitShares}`,
+      eq(subjects.userId, BigInt(actor.id)),
+      eq(subjects.isShared, true),
+      eq(studyPlans.isShared, true),
+      exists(
+        db
+          .select({ id: studyPlanCollaborators.id })
+          .from(studyPlanCollaborators)
+          .where(and(eq(studyPlanCollaborators.studyPlanId, subjects.studyPlanId), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
+      ),
+      exists(
+        db
+          .select({ id: subjectShares.id })
+          .from(subjectShares)
+          .where(and(eq(subjectShares.subjectId, fileRecords.subjectId), eq(subjectShares.userId, BigInt(actor.id)))),
+      )
+    )
 
     const sharedFilter = shared === 'true' 
-      ? or(eq(fileRecords.isShared, true), explicitShares ? sql`${fileRecords.id} IN ${explicitShares}` : undefined) 
+      ? or(eq(fileRecords.isShared, true), sql`${fileRecords.id} IN ${explicitShares}`) 
       : shared === 'false' 
         ? eq(fileRecords.isShared, false)
         : undefined
@@ -97,16 +93,6 @@ export class FilesRepository {
       : await query.where(whereClause).orderBy(desc(fileRecords.createdAt))
 
     return rows
-  }
-
-  async findPublic() {
-    return db
-      .select(fileSelect(0))
-      .from(fileRecords)
-      .leftJoin(fileRatings, eq(fileRecords.id, fileRatings.fileId))
-      .where(and(eq(fileRecords.isShared, true), isNull(fileRecords.deletedAt)))
-      .groupBy(fileRecords.id)
-      .orderBy(desc(fileRecords.updatedAt), desc(fileRecords.createdAt))
   }
 
   async findAdminAll(includeDeleted: boolean) {

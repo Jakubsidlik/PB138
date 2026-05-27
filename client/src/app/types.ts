@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'registered' | 'public'
+export type UserRole = 'student' | 'registered'
 export interface AuthSession {
   userId: number | string
   role: 'REGISTROVANÝ UŽIVATEL' | 'ADMIN'

@@ -32,5 +32,19 @@ describe('auth.ts', () => {
       expect(actor.id).toBe(456)
       expect(actor.role).toBe('ADMIN')
     })
+
+    it('should handle public roles', () => {
+      const dbUser = {
+        id: 789n,
+        fullName: 'Public User',
+        email: 'public@example.com',
+        role: 'PUBLIC' as const,
+      }
+
+      const actor = toAuthActor(dbUser)
+
+      expect(actor.id).toBe(789)
+      expect(actor.role).toBe('PUBLIC')
+    })
   })
 })

@@ -21,7 +21,7 @@ export const toAuthActor = (user: { id: bigint; fullName: string; email: string;
   role: user.role,
 })
 
-export const getActorFromRequest = async (req: express.Request): Promise<AuthActor> => {
+export const getActorFromRequest = async (req: express.Request): Promise<AuthActor | null> => {
   const auth = getAuth(req)
   const requestedUserId = asBigInt(req.header('x-user-id'))
 
@@ -82,6 +82,7 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
               clerkId: auth.userId,
               deletedAt: null,
               fullName: fullName !== 'Uživatel' ? fullName : user.fullName,
+              role: user.role === 'PUBLIC' ? 'REGISTERED' : user.role,
             })
             .where(eq(users.id, user.id))
             .returning({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
@@ -146,14 +147,12 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
   }
 
 
-  return { id: 0, fullName: 'Verejnost', email: '', role: 'PUBLIC' }
+  return null
 }
-
-export const isPublicActor = (actor: AuthActor) => actor.role === 'PUBLIC'
 
 export const requireRegisteredActor = async (req: express.Request, res: express.Response) => {
   const actor = await getActorFromRequest(req)
-  if (isPublicActor(actor)) {
+  if (!actor) {
     res.status(401).json({ error: 'Tato akce vyzaduje prihlaseni.' })
     return null
   }

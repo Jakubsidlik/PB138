@@ -13,7 +13,8 @@ export const filesRouter: express.Router = express.Router()
 export const adminFilesRouter: express.Router = express.Router()
 
 filesRouter.get('/', asyncHandler(async (req, res) => {
-  const actor = await getActorFromRequest(req)
+  const actor = await requireRegisteredActor(req, res)
+  if (!actor) return
   const pagination = parseCursorPagination(req, { defaultLimit: 25, maxLimit: 100 })
   
   const filters = {
@@ -24,11 +25,6 @@ filesRouter.get('/', asyncHandler(async (req, res) => {
   }
 
   const result = await filesService.getFiles(actor, filters)
-  res.json(result)
-}))
-
-filesRouter.get('/public', asyncHandler(async (_req, res) => {
-  const result = await filesService.getPublicFiles()
   res.json(result)
 }))
 

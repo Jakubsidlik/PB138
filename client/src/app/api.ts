@@ -241,10 +241,6 @@ class ApiClient {
     return this.request<PaginatedResponse<FileRecord>>('GET', `/api/files?paginated=true`)
   }
 
-  async getPublicFiles() {
-    return this.request<PaginatedResponse<FileRecord>>('GET', '/api/files/public?paginated=true')
-  }
-
   async getAdminFiles() {
     return this.request<PaginatedResponse<FileRecord>>('GET', '/api/admin/files?paginated=true')
   }

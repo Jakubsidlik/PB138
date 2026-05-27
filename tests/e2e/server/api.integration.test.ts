@@ -80,15 +80,8 @@ describe('api integration', () => {
     expect(payload.fileKey).toContain('-integration_test_file.pdf')
   })
 
-  it('returns publicly readable files via real API call', async () => {
-    const response = await fetch(`${baseUrl}/api/files/public`)
-    expect(response.status).toBe(200)
-
-    const payload = (await response.json()) as Array<{ isShared?: boolean }>
-    expect(Array.isArray(payload)).toBe(true)
-
-    for (const file of payload) {
-      expect(file.isShared).toBe(true)
-    }
+  it('rejects unauthenticated files access with 401', async () => {
+    const response = await fetch(`${baseUrl}/api/files`)
+    expect(response.status).toBe(401)
   })
 })

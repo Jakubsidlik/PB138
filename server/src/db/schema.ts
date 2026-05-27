@@ -17,7 +17,7 @@ export const taskPriorityValues = ['NONE', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'] as
 export type TaskPriority = (typeof taskPriorityValues)[number]
 export const taskPriorityEnum = pgEnum('TaskPriority', taskPriorityValues)
 
-export const userRoleValues = ['REGISTERED', 'ADMIN'] as const
+export const userRoleValues = ['REGISTERED', 'ADMIN', 'PUBLIC'] as const
 export type UserRole = (typeof userRoleValues)[number]
 export const userRoleEnum = pgEnum('UserRole', userRoleValues)
 

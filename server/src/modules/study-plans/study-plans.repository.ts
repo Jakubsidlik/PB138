@@ -16,18 +16,16 @@ const studyPlanSelect = {
 
 export class StudyPlanRepository {
   async findAll(actor: { id: number, role: string }, filters: { includeInactive?: boolean }) {
-    const visibility = actor.role === 'PUBLIC'
-      ? eq(studyPlans.isShared, true)
-      : or(
-          eq(studyPlans.userId, BigInt(actor.id)),
-          eq(studyPlans.isShared, true),
-          exists(
-            db
-              .select({ id: studyPlanCollaborators.id })
-              .from(studyPlanCollaborators)
-              .where(and(eq(studyPlanCollaborators.studyPlanId, studyPlans.id), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
-          ),
-        )
+    const visibility = or(
+      eq(studyPlans.userId, BigInt(actor.id)),
+      eq(studyPlans.isShared, true),
+      exists(
+        db
+          .select({ id: studyPlanCollaborators.id })
+          .from(studyPlanCollaborators)
+          .where(and(eq(studyPlanCollaborators.studyPlanId, studyPlans.id), eq(studyPlanCollaborators.userId, BigInt(actor.id)))),
+      ),
+    )
 
     const whereClause = and(
       filters.includeInactive ? undefined : eq(studyPlans.isActive, true),

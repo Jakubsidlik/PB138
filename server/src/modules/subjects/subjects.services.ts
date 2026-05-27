@@ -5,6 +5,8 @@ import { fileRecords, tasks, events, lessons, studyPlans, studyPlanCollaborators
 import { db } from '../../db/client'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { tags, subjectTags } from '../../db/schema'
+import { Resend } from 'resend'
+import { env } from '../../env'
 export class SubjectsService {
   async getSubjects(actor: { id: number, role: string }, filters: {
     pagination: any
@@ -261,7 +263,7 @@ export class SubjectsService {
     return subjectsRepository.delete(subjectId)
   }
 
-  async shareSubject(subjectId: bigint, actor: { id: number, role: string }, data: { email: string }) {
+  async shareSubject(subjectId: bigint, actor: { id: number, role: string, fullName?: string, email?: string }, data: { email: string }) {
     const [existing] = await db
       .select({
         id: subjects.id,
@@ -286,13 +288,27 @@ export class SubjectsService {
       .where(and(eq(users.email, data.email.toLowerCase()), isNull(users.deletedAt)))
       .limit(1)
 
-    if (!recipient) throw new AppError('Uživatel s daným e-mailem nebyl nalezen.', 404)
-    if (recipient.id === existing.userId) throw new AppError('Nelze sdílet předmět sám sobě.', 400)
+    let recipientUser = recipient
+    let isNewUser = false
+    if (!recipientUser) {
+      const [newDbUser] = await db
+        .insert(users)
+        .values({
+          fullName: data.email.split('@')[0],
+          email: data.email.toLowerCase(),
+          role: 'PUBLIC',
+        })
+        .returning({ id: users.id, email: users.email, fullName: users.fullName })
+      recipientUser = newDbUser
+      isNewUser = true
+    }
+
+    if (recipientUser.id === existing.userId) throw new AppError('Nelze sdílet předmět sám sobě.', 400)
 
     const [alreadyShared] = await db
       .select({ id: subjectShares.id })
       .from(subjectShares)
-      .where(and(eq(subjectShares.subjectId, subjectId), eq(subjectShares.userId, recipient.id)))
+      .where(and(eq(subjectShares.subjectId, subjectId), eq(subjectShares.userId, recipientUser.id)))
       .limit(1)
 
     if (alreadyShared) {
@@ -301,18 +317,44 @@ export class SubjectsService {
 
     await db.insert(subjectShares).values({
       subjectId,
-      userId: recipient.id,
+      userId: recipientUser.id,
       isArchived: false,
     })
 
     await db.update(subjects).set({ isShared: true }).where(eq(subjects.id, subjectId))
 
+    if (isNewUser && env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(env.RESEND_API_KEY)
+        const registerUrl = 'http://localhost:5173/login?mode=register'
+        await resend.emails.send({
+          from: 'Planner <onboarding@resend.dev>',
+          to: data.email,
+          subject: `Pozvánka do aplikace Planner`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #3b82f6;">Pozvánka do aplikace Planner!</h2>
+              <p>Ahoj,</p>
+              <p>Uživatel <strong>${actor.fullName || actor.email}</strong> s tebou chce sdílet předmět <strong>${existing.name}</strong> v aplikaci Planner.</p>
+              <p>Tento e-mail k dané adrese nemá založený účet. Pro zobrazení sdíleného obsahu se prosím nejprve zaregistruj.</p>
+              <div style="margin: 30px 0;">
+                <a href="${registerUrl}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Zaregistrovat se</a>
+              </div>
+              <p style="color: #666; font-size: 14px;">Tento e-mail byl automaticky vygenerován aplikací Planner.</p>
+            </div>
+          `
+        })
+      } catch (err) {
+        console.error('Nepodařilo se odeslat pozvánku předmětu:', err)
+      }
+    }
+
     const [filesCount] = await db.select({ count: sql<number>`count(*)::int` }).from(fileRecords).where(and(eq(fileRecords.subjectId, subjectId), isNull(fileRecords.deletedAt)))
     const [notesCount] = await db.select({ count: sql<number>`count(*)::int` }).from(lessons).where(and(eq(lessons.subjectId, subjectId), isNull(lessons.deletedAt)))
 
     return {
-      recipientEmail: recipient.email,
-      recipientFullName: recipient.fullName,
+      recipientEmail: recipientUser.email,
+      recipientFullName: recipientUser.fullName,
       newSubjectId: Number(subjectId),
       copiedFiles: filesCount?.count ?? 0,
       copiedLessons: notesCount?.count ?? 0,
