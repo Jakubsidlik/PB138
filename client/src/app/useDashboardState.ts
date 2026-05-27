@@ -1412,5 +1412,6 @@ export function useDashboardState(fetchAll = false) {
     deleteTag,
     rateLesson,
     rateFile,
+    apiFetch,
   }
 }

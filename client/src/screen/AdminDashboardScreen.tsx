@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
-import { apiClient } from '../app/api'
+import { useEffect, useState, useCallback } from 'react'
 import { User, FileRecord } from '../app/types'
 import { Shield, Trash2, UserMinus, ImageOff, RefreshCw, AlertTriangle } from 'lucide-react'
-import { useAuth } from '@clerk/clerk-react'
+import { useDashboard } from '../app/DashboardContext'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,72 +25,67 @@ export function AdminDashboardScreen() {
   const [fileToDelete, setFileToDelete] = useState<number | null>(null)
   const [userToDelete, setUserToDelete] = useState<number | null>(null)
   const [avatarToDelete, setAvatarToDelete] = useState<number | null>(null)
-  const { getToken, isLoaded } = useAuth()
 
-  useEffect(() => {
-    if (!isLoaded) return
+  const { apiFetch } = useDashboard()
 
-    const updateToken = async () => {
-      try {
-        const sessionData = localStorage.getItem('pb138-auth-session')
-        if (sessionData) {
-          const session = JSON.parse(sessionData)
-          if (session.userId) {
-            apiClient.setUserId(Number(session.userId))
-          }
-        }
-
-        const token = await getToken()
-        apiClient.setToken(token)
-        loadUsers()
-        loadFiles()
-      } catch (err) {
-        console.error('Failed to get token:', err)
-        setError('Nepodařilo se ověřit přihlášení.')
-      }
-    }
-    updateToken()
-  }, [getToken, isLoaded])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoadingUsers(true)
     setError(null)
     try {
-      const data = await apiClient.getUsers()
+      const res = await apiFetch('/api/users')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null)
+        throw new Error(errData?.error || `Chyba ${res.status}`)
+      }
+      const data = await res.json()
       setUsers(data)
-    } catch (error: any) {
-      console.error('Failed to load users:', error)
+    } catch (err: any) {
+      console.error('Failed to load users:', err)
       setError('Nepodařilo se načíst uživatele. Pravděpodobně nemáte oprávnění admina.')
     } finally {
       setLoadingUsers(false)
     }
-  }
+  }, [apiFetch])
 
-  const loadFiles = async () => {
+  const loadFiles = useCallback(async () => {
     setLoadingFiles(true)
     try {
-      const data = await apiClient.getAdminFiles()
-      console.log('Admin files data:', data)
-      if ('data' in data) {
-        setFiles(data.data)
-      } else {
-        setFiles(data as unknown as FileRecord[])
+      const res = await apiFetch('/api/admin/files')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null)
+        throw new Error(errData?.error || `Chyba ${res.status}`)
       }
-    } catch (error) {
-      console.error('Failed to load files:', error)
-      if (!error) setError('Nepodařilo se načíst soubory.')
+      const data = await res.json()
+      if (Array.isArray(data)) {
+        setFiles(data)
+      } else if (data && 'data' in data && Array.isArray(data.data)) {
+        setFiles(data.data)
+      }
+    } catch (err) {
+      console.error('Failed to load files:', err)
     } finally {
       setLoadingFiles(false)
     }
-  }
+  }, [apiFetch])
+
+  useEffect(() => {
+    loadUsers()
+    loadFiles()
+  }, [loadUsers, loadFiles])
 
   const confirmDeleteAvatar = async () => {
     if (!avatarToDelete) return
     try {
-      await apiClient.adminUpdateUser(avatarToDelete, { avatarDataUrl: null })
-      setUsers(users.map(u => u.id === avatarToDelete ? { ...u, avatarDataUrl: null } : u))
-    } catch (error) {
-      console.error('Failed to delete avatar:', error)
+      const res = await apiFetch(`/api/users/${avatarToDelete}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarDataUrl: null }),
+      })
+      if (res.ok) {
+        setUsers(users.map(u => u.id === avatarToDelete ? { ...u, avatarDataUrl: null } : u))
+      }
+    } catch (err) {
+      console.error('Failed to delete avatar:', err)
     } finally {
       setAvatarToDelete(null)
     }
@@ -100,10 +94,12 @@ export function AdminDashboardScreen() {
   const confirmDeleteUser = async () => {
     if (!userToDelete) return
     try {
-      await apiClient.adminDeleteUser(userToDelete)
-      setUsers(users.filter(u => u.id !== userToDelete))
-    } catch (error) {
-      console.error('Failed to delete user:', error)
+      const res = await apiFetch(`/api/users/${userToDelete}`, { method: 'DELETE' })
+      if (res.ok) {
+        setUsers(users.filter(u => u.id !== userToDelete))
+      }
+    } catch (err) {
+      console.error('Failed to delete user:', err)
     } finally {
       setUserToDelete(null)
     }
@@ -112,10 +108,12 @@ export function AdminDashboardScreen() {
   const confirmDeleteFile = async () => {
     if (!fileToDelete) return
     try {
-      await apiClient.deleteFile(fileToDelete)
-      setFiles(files.filter(f => f.id !== fileToDelete))
-    } catch (error) {
-      console.error('Failed to delete file:', error)
+      const res = await apiFetch(`/api/files/${fileToDelete}`, { method: 'DELETE' })
+      if (res.ok) {
+        setFiles(files.filter(f => f.id !== fileToDelete))
+      }
+    } catch (err) {
+      console.error('Failed to delete file:', err)
     } finally {
       setFileToDelete(null)
     }
@@ -258,13 +256,6 @@ export function AdminDashboardScreen() {
                     </td>
                   </tr>
                 ))}
-                {files.length === 0 && !loadingFiles && !error && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
-                      Žádné soubory nenalezeny.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </CardContent>
