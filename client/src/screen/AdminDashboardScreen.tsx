@@ -33,11 +33,11 @@ export function AdminDashboardScreen() {
 
     const updateToken = async () => {
       try {
-        const localData = localStorage.getItem('pb138.profile')
-        if (localData) {
-          const localProfile = JSON.parse(localData)
-          if (localProfile.id !== 0) {
-            apiClient.setUserId(localProfile.id)
+        const sessionData = localStorage.getItem('pb138-auth-session')
+        if (sessionData) {
+          const session = JSON.parse(sessionData)
+          if (session.userId) {
+            apiClient.setUserId(Number(session.userId))
           }
         }
 
