@@ -33,6 +33,14 @@ export function AdminDashboardScreen() {
 
     const updateToken = async () => {
       try {
+        const localData = localStorage.getItem('user_profile')
+        if (localData) {
+          const localProfile = JSON.parse(localData)
+          if (localProfile.id !== 0) {
+            apiClient.setUserId(localProfile.id)
+          }
+        }
+
         const token = await getToken()
         apiClient.setToken(token)
         loadUsers()
