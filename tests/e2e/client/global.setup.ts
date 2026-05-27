@@ -1,4 +1,4 @@
-import { webkit, FullConfig } from '@playwright/test';
+import { chromium, FullConfig } from '@playwright/test';
 import { clerkSetup, clerk } from '@clerk/testing/playwright';
 import * as fs from 'fs';
 
@@ -18,7 +18,7 @@ async function globalSetup(config: FullConfig) {
     console.log('Setting up Clerk Testing Token...');
     await clerkSetup();
 
-    const browser = await webkit.launch();
+    const browser = await chromium.launch();
     const context = await browser.newContext();
     const page = await context.newPage();
     
