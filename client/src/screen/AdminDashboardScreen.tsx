@@ -26,7 +26,71 @@ export function AdminDashboardScreen() {
   const [userToDelete, setUserToDelete] = useState<number | null>(null)
   const [avatarToDelete, setAvatarToDelete] = useState<number | null>(null)
 
+  // Sorting states for users
+  type UserSortField = 'fullName' | 'email'
+  type UserSortOrder = 'asc' | 'desc'
+  const [userSortField, setUserSortField] = useState<UserSortField>('fullName')
+  const [userSortOrder, setUserSortOrder] = useState<UserSortOrder>('asc')
+
+  // Sorting states for files
+  type FileSortField = 'name' | 'size' | 'owner'
+  type FileSortOrder = 'asc' | 'desc'
+  const [fileSortField, setFileSortField] = useState<FileSortField>('name')
+  const [fileSortOrder, setFileSortOrder] = useState<FileSortOrder>('asc')
+
   const { apiFetch } = useDashboard()
+
+  const handleUserSort = (field: UserSortField) => {
+    if (userSortField === field) {
+      setUserSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setUserSortField(field)
+      setUserSortOrder('asc')
+    }
+  }
+
+  const renderUserSortIcon = (field: UserSortField) => {
+    if (userSortField !== field) return <span className="opacity-30 ml-1 text-xs">↕</span>
+    return userSortOrder === 'asc' ? <span className="text-primary ml-1 text-xs">↑</span> : <span className="text-primary ml-1 text-xs">↓</span>
+  }
+
+  const handleFileSort = (field: FileSortField) => {
+    if (fileSortField === field) {
+      setFileSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setFileSortField(field)
+      setFileSortOrder('asc')
+    }
+  }
+
+  const renderFileSortIcon = (field: FileSortField) => {
+    if (fileSortField !== field) return <span className="opacity-30 ml-1 text-xs">↕</span>
+    return fileSortOrder === 'asc' ? <span className="text-primary ml-1 text-xs">↑</span> : <span className="text-primary ml-1 text-xs">↓</span>
+  }
+
+  const sortedUsers = [...users].sort((a, b) => {
+    let comparison = 0
+    if (userSortField === 'fullName') {
+      comparison = a.fullName.localeCompare(b.fullName, 'cs')
+    } else if (userSortField === 'email') {
+      comparison = a.email.localeCompare(b.email, 'cs')
+    }
+    return userSortOrder === 'asc' ? comparison : -comparison
+  })
+
+  const sortedFiles = [...files].sort((a, b) => {
+    let comparison = 0
+    if (fileSortField === 'name') {
+      comparison = a.name.localeCompare(b.name, 'cs')
+    } else if (fileSortField === 'size') {
+      comparison = (a.sizeBytes || 0) - (b.sizeBytes || 0)
+    } else if (fileSortField === 'owner') {
+      const ownerA = a.userEmail || String(a.userId || '')
+      const ownerB = b.userEmail || String(b.userId || '')
+      comparison = ownerA.localeCompare(ownerB, 'cs')
+    }
+    return fileSortOrder === 'asc' ? comparison : -comparison
+  })
 
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true)
@@ -160,13 +224,27 @@ export function AdminDashboardScreen() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-3 text-left">Jméno</th>
-                  <th className="px-4 py-3 text-left">Email</th>
+                  <th className="px-4 py-3 text-left">
+                    <div
+                      className="flex items-center cursor-pointer hover:text-foreground transition-colors select-none"
+                      onClick={() => handleUserSort('fullName')}
+                    >
+                      Jméno {renderUserSortIcon('fullName')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left">
+                    <div
+                      className="flex items-center cursor-pointer hover:text-foreground transition-colors select-none"
+                      onClick={() => handleUserSort('email')}
+                    >
+                      Email {renderUserSortIcon('email')}
+                    </div>
+                  </th>
                   <th className="px-4 py-3 text-right">Akce</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {users.map(user => (
+                {sortedUsers.map(user => (
                   <tr key={user.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 font-medium">{user.fullName}</td>
                     <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
@@ -224,9 +302,30 @@ export function AdminDashboardScreen() {
             <table className="w-full text-sm table-fixed">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-3 text-left">Název</th>
-                  <th className="px-4 py-3 text-left hidden lg:table-cell w-24">Velikost</th>
-                  <th className="px-4 py-3 text-left hidden lg:table-cell">Vlastník</th>
+                  <th className="px-4 py-3 text-left">
+                    <div
+                      className="flex items-center cursor-pointer hover:text-foreground transition-colors select-none"
+                      onClick={() => handleFileSort('name')}
+                    >
+                      Název {renderFileSortIcon('name')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left hidden lg:table-cell w-24">
+                    <div
+                      className="flex items-center cursor-pointer hover:text-foreground transition-colors select-none"
+                      onClick={() => handleFileSort('size')}
+                    >
+                      Velikost {renderFileSortIcon('size')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left hidden lg:table-cell">
+                    <div
+                      className="flex items-center cursor-pointer hover:text-foreground transition-colors select-none"
+                      onClick={() => handleFileSort('owner')}
+                    >
+                      Vlastník {renderFileSortIcon('owner')}
+                    </div>
+                  </th>
                   <th className="px-4 py-3 text-right w-16">Akce</th>
                 </tr>
               </thead>
@@ -238,7 +337,7 @@ export function AdminDashboardScreen() {
                     </td>
                   </tr>
                 )}
-                {files.map(file => (
+                {sortedFiles.map(file => (
                   <tr key={file.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 font-medium truncate">{file.name}</td>
                     <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{file.size}</td>
