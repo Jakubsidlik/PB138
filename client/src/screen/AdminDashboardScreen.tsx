@@ -220,14 +220,14 @@ export function AdminDashboardScreen() {
             </Button>
           </CardHeader>
           
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
+          <CardContent className="p-0 overflow-hidden">
+            <table className="w-full text-sm table-fixed">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
                 <tr>
                   <th className="px-4 py-3 text-left">Název</th>
-                  <th className="px-4 py-3 text-left">Velikost</th>
-                  <th className="px-4 py-3 text-left">Vlastník</th>
-                  <th className="px-4 py-3 text-right">Akce</th>
+                  <th className="px-4 py-3 text-left hidden lg:table-cell w-24">Velikost</th>
+                  <th className="px-4 py-3 text-left hidden lg:table-cell">Vlastník</th>
+                  <th className="px-4 py-3 text-right w-16">Akce</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -240,9 +240,9 @@ export function AdminDashboardScreen() {
                 )}
                 {files.map(file => (
                   <tr key={file.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-medium">{file.name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{file.size}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{file.userEmail || file.userId}</td>
+                    <td className="px-4 py-3 font-medium truncate">{file.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{file.size}</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell truncate">{file.userEmail || file.userId}</td>
                     <td className="px-4 py-3 text-right">
                       <Button 
                         variant="ghost"

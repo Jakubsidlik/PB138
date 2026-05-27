@@ -63,7 +63,7 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
     if (!user) {
       try {
         const clerkUser = await clerkClient.users.getUser(auth.userId)
-        const email = clerkUser.emailAddresses[0]?.emailAddress || ''
+        const email = (clerkUser.emailAddresses[0]?.emailAddress || '').toLowerCase()
         const fullName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Uživatel'
 
         if (email) {
@@ -91,7 +91,7 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
             const [createdUser] = await db
               .insert(users)
               .values({ clerkId: auth.userId, email, fullName, role: 'REGISTERED' })
-              .onConflictDoNothing({ target: users.clerkId })
+              .onConflictDoNothing()
               .returning({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
             user = createdUser ?? null
             
@@ -103,6 +103,18 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
                 .limit(1)
               user = fallbackUser ?? null
             }
+
+            if (!user && email) {
+              const [emailFallback] = await db
+                .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+                .from(users)
+                .where(eq(users.email, email))
+                .limit(1)
+              if (emailFallback) {
+                await db.update(users).set({ clerkId: auth.userId }).where(eq(users.id, emailFallback.id))
+                user = emailFallback
+              }
+            }
           } catch (insertErr) {
             console.error('Konflikt při ukládání uživatele z Clerku:', insertErr)
             const [fallbackUser] = await db
@@ -111,6 +123,18 @@ export const getActorFromRequest = async (req: express.Request): Promise<AuthAct
               .where(eq(users.clerkId, auth.userId))
               .limit(1)
             user = fallbackUser ?? null
+
+            if (!user && email) {
+              const [emailFallback] = await db
+                .select({ id: users.id, fullName: users.fullName, email: users.email, role: users.role, deletedAt: users.deletedAt })
+                .from(users)
+                .where(eq(users.email, email))
+                .limit(1)
+              if (emailFallback) {
+                await db.update(users).set({ clerkId: auth.userId }).where(eq(users.id, emailFallback.id))
+                user = emailFallback
+              }
+            }
           }
         }
 
