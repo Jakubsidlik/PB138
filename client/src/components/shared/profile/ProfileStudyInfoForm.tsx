@@ -1,5 +1,5 @@
 import React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { UserProfile } from '../../../app/types'
 import { studyTypeOptions, getYearsForStudyType } from './profileConstants'
@@ -69,28 +69,34 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">Typ studia</span>
-        <Select
-          value={form.watch('studyType') || undefined}
-          onValueChange={(value) => {
-            const newType = value || ''
-            form.setValue('studyType', newType)
-            const validYears = getYearsForStudyType(newType)
-            if (form.watch('studyYear') && !validYears.includes(form.watch('studyYear') as string)) {
-              form.setValue('studyYear', '')
-            }
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Vyberte typ studia" />
-          </SelectTrigger>
-          <SelectContent>
-            {studyTypeOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Controller
+          control={form.control}
+          name="studyType"
+          render={({ field }) => (
+            <Select
+              value={field.value || ''}
+              onValueChange={(value) => {
+                const newType = value || ''
+                field.onChange(newType)
+                const validYears = getYearsForStudyType(newType)
+                if (form.watch('studyYear') && !validYears.includes(form.watch('studyYear') as string)) {
+                  form.setValue('studyYear', '')
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Vyberte typ studia" />
+              </SelectTrigger>
+              <SelectContent>
+                {studyTypeOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
         {form.formState.errors.studyType && (
           <p className="text-sm font-medium text-destructive">{form.formState.errors.studyType.message}</p>
         )}
@@ -110,18 +116,28 @@ export function ProfileStudyInfoForm({ profile, onChangeProfile }: ProfileStudyI
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">Ročník</span>
-        <Select value={form.watch('studyYear') || undefined} onValueChange={(value) => form.setValue('studyYear', value || '')}>
-          <SelectTrigger>
-            <SelectValue placeholder="Vyberte ročník" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableYears.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Controller
+          control={form.control}
+          name="studyYear"
+          render={({ field }) => (
+            <Select
+              disabled={!form.watch('studyType')}
+              value={field.value || ''}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Vyberte ročník" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
         {form.formState.errors.studyYear && (
           <p className="text-sm font-medium text-destructive">{form.formState.errors.studyYear.message}</p>
         )}

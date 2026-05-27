@@ -1,16 +1,3 @@
-export const studyYearOptions = [
-  '1. ročník',
-  '2. ročník',
-  '3. ročník',
-  '4. ročník',
-  '5. ročník',
-  '6. ročník',
-  '7. ročník',
-  '8. ročník',
-  '9. ročník',
-  '10. ročník',
-]
-
 export const studyTypeOptions = [
   'Základní škola',
   'Střední škola',
@@ -32,8 +19,8 @@ export const studyTypeYearsMap: Record<string, string[]> = {
 }
 
 export function getYearsForStudyType(studyType: string | null | undefined): string[] {
-  if (!studyType) return studyYearOptions
-  return studyTypeYearsMap[studyType] || studyYearOptions
+  if (!studyType) return []
+  return studyTypeYearsMap[studyType] || []
 }
 
 export function initialsFromName(fullName: string): string {

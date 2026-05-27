@@ -339,12 +339,16 @@ export function useDashboardState(fetchAll = false) {
 
     setIsSavingProfile(true)
     try {
+      const payload = { ...profile }
+      if (!payload.fullName) delete (payload as any).fullName
+      if (!payload.email) delete (payload as any).email
+
       const response = await apiFetch('/api/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(profile),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {

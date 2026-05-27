@@ -109,7 +109,23 @@ export const profileSchema = z.object({
 
   avatarDataUrl: z.string().nullable().optional(),
 })
-export const updateProfileSchema = profileSchema.partial()
+export const updateProfileSchema = z.object({
+  fullName: z.preprocess(
+    (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+    z.string().trim().min(1, 'Pole fullName je povinne.').optional()
+  ),
+  email: z.preprocess(
+    (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+    z.string().trim().email('Neplatny format emailu.').optional()
+  ),
+  password: z.string().optional(),
+  role: z.enum(['REGISTERED', 'ADMIN']).optional(),
+  school: z.string().trim().nullable().optional(),
+  studyMajor: z.string().trim().nullable().optional(),
+  studyYear: z.string().trim().nullable().optional(),
+  studyType: z.string().trim().nullable().optional(),
+  avatarDataUrl: z.string().nullable().optional(),
+})
 
 export const shareStudyPlanSchema = z.object({
   email: z.string().trim().min(1, 'Pole email je povinne.'),
