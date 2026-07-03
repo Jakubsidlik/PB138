@@ -92,6 +92,20 @@
       "when": 1779918143118,
       "tag": "0012_young_beyonder",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1781910957878,
+      "tag": "0013_majestic_magdalene",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1781988505100,
+      "tag": "0014_left_mysterio",
+      "breakpoints": true
     }
   ]
 }

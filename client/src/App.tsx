@@ -54,8 +54,13 @@ function App() {
 
   if (!isLoaded) {
     return (
-      <div className="h-screen flex items-center justify-center text-white">
-        Načítám...
+      <div className="h-screen flex items-center justify-center text-white" style={{ background: '#0f0f1a' }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' }}>
+            <span className="text-white font-bold text-lg">C</span>
+          </div>
+          <span className="text-gray-400">Načítám Car-Y-list...</span>
+        </div>
       </div>
     )
   }

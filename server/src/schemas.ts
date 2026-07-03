@@ -160,3 +160,35 @@ export const bulkEventsSchema = z.object({
     isShared: z.boolean().optional().default(false),
   }))
 })
+
+// ── Car-Y-list schemas ────────────────────────────────────────────────
+
+export const groupSchema = z.object({
+  name: z.string().trim().min(1, 'Název skupiny je povinný.').min(2, 'Název skupiny musí mít alespoň 2 znaky').max(100),
+})
+export const updateGroupSchema = groupSchema.partial()
+
+export const inviteSchema = z.object({
+  email: z.string().email('Neplatný e-mail'),
+})
+
+const tierEnum = z.enum(['S', 'A', 'B', 'C', 'D', 'E', 'F'])
+
+export const setTierSchema = z.object({
+  tier: tierEnum,
+})
+
+export const imageSchema = z.object({
+  name: z.string().trim().min(1, 'Název obrázku je povinný.').max(255),
+  size: z.number().optional().default(0),
+  fileKey: z.string().nullable().optional(),
+  fileUrl: z.string().nullable().optional(),
+})
+
+export const commentSchema = z.object({
+  content: z.string().min(1, 'Komentář nesmí být prázdný').max(500, 'Komentář je příliš dlouhý').trim(),
+})
+
+export const rateImageSchema = z.object({
+  tier: tierEnum,
+})

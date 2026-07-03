@@ -255,6 +255,84 @@ export const subjectTags = pgTable('SubjectTag', {
   tagIdIdx: index('SubjectTag_tagId_idx').on(table.tagId),
 }))
 
+// ── Car-Y-list: Tier List ──────────────────────────────────────────────
+
+export const tierValues = ['S', 'A', 'B', 'C', 'D', 'E', 'F'] as const
+export type Tier = (typeof tierValues)[number]
+export const tierEnum = pgEnum('Tier', tierValues)
+
+export const groupRoleValues = ['OWNER', 'MEMBER'] as const
+export type GroupRole = (typeof groupRoleValues)[number]
+export const groupRoleEnum = pgEnum('GroupRole', groupRoleValues)
+
+export const groups = pgTable('Group', {
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+  name: text('name').notNull(),
+  ownerId: bigint('ownerId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  ownerIdIdx: index('Group_ownerId_idx').on(table.ownerId),
+}))
+
+export const groupMembers = pgTable('GroupMember', {
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+  groupId: bigint('groupId', { mode: 'bigint' }).notNull().references(() => groups.id, { onDelete: 'cascade' }),
+  userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  role: groupRoleEnum('role').notNull().default('MEMBER'),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  uniqueGroupUser: uniqueIndex('GroupMember_groupId_userId_unique').on(table.groupId, table.userId),
+  groupIdIdx: index('GroupMember_groupId_idx').on(table.groupId),
+  userIdIdx: index('GroupMember_userId_idx').on(table.userId),
+}))
+
+export const images = pgTable('Image', {
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+  groupId: bigint('groupId', { mode: 'bigint' }).notNull().references(() => groups.id, { onDelete: 'cascade' }),
+  uploadedById: bigint('uploadedById', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  fileKey: text('fileKey'),
+  fileUrl: text('fileUrl'),
+  size: integer('size').notNull().default(0),
+  tier: tierEnum('tier'),
+  ratedById: bigint('ratedById', { mode: 'bigint' }).references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  groupIdIdx: index('Image_groupId_idx').on(table.groupId),
+  uploadedByIdIdx: index('Image_uploadedById_idx').on(table.uploadedById),
+  tierIdx: index('Image_tier_idx').on(table.tier),
+}))
+
+// Individual member ratings per image (for group result feature)
+export const imageRatings = pgTable('ImageRating', {
+  imageId: bigint('imageId', { mode: 'bigint' }).notNull().references(() => images.id, { onDelete: 'cascade' }),
+  userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  tier: tierEnum('tier').notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.imageId, table.userId] }),
+  imageIdIdx: index('ImageRating_imageId_idx').on(table.imageId),
+  userIdIdx: index('ImageRating_userId_idx').on(table.userId),
+}))
+
+// Comments on images (discussion feature)
+export const imageComments = pgTable('ImageComment', {
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+  imageId: bigint('imageId', { mode: 'bigint' }).notNull().references(() => images.id, { onDelete: 'cascade' }),
+  userId: bigint('userId', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  imageIdIdx: index('ImageComment_imageId_idx').on(table.imageId),
+  userIdIdx: index('ImageComment_userId_idx').on(table.userId),
+}))
+
+// ── Legacy type exports (kept for migration compatibility) ────────────
+
 export type DbUser = typeof users.$inferSelect
 export type DbStudyPlan = typeof studyPlans.$inferSelect
 export type DbStudyPlanCollaborator = typeof studyPlanCollaborators.$inferSelect
@@ -266,3 +344,11 @@ export type DbEvent = typeof events.$inferSelect
 export type DbTag = typeof tags.$inferSelect
 export type DbSubjectTag = typeof subjectTags.$inferSelect
 export type DbSubjectShare = typeof subjectShares.$inferSelect
+
+// ── Car-Y-list type exports ───────────────────────────────────────────
+
+export type DbGroup = typeof groups.$inferSelect
+export type DbGroupMember = typeof groupMembers.$inferSelect
+export type DbImage = typeof images.$inferSelect
+export type DbImageRating = typeof imageRatings.$inferSelect
+export type DbImageComment = typeof imageComments.$inferSelect

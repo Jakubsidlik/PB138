@@ -1,14 +1,9 @@
-import { useRouter } from '@tanstack/react-router'
-import { getDailyMotto } from '../../../app/utils'
+import { useRouterState } from '@tanstack/react-router'
 import { Button } from '../../ui/button'
 import { SidebarTrigger } from './Sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar'
 
 type TopbarProps = {
-  isCalendarScreen: boolean
-  isFilesScreen: boolean
-  isTasksScreen: boolean
-  isStudyPlanScreen: boolean
   isProfileScreen: boolean
   profileName: string
   profileAvatarDataUrl: string | null
@@ -16,16 +11,14 @@ type TopbarProps = {
 }
 
 export function Topbar({
-  isCalendarScreen,
-  isFilesScreen,
-  isTasksScreen,
-  isStudyPlanScreen,
   isProfileScreen,
   profileName,
   profileAvatarDataUrl,
   onOpenProfile,
 }: TopbarProps) {
-  const router = useRouter()
+  const pathname = useRouterState({
+    select: (s) => s.location.pathname,
+  })
 
   const initials =
     profileName
@@ -36,128 +29,22 @@ export function Topbar({
       .join('')
       .toUpperCase() || 'U'
 
-  const handleBackClick = () => {
-    router.navigate({ to: '/' })
+  // Determine current page title for mobile header
+  const getPageTitle = (): string => {
+    if (isProfileScreen) return 'Nastavení profilu'
+    if (pathname.match(/^\/group\/\d+\/tier\/[A-Z]$/)) return 'Galerie'
+    if (pathname.match(/^\/group\/\d+$/)) return 'Tier List'
+    return 'Car-Y-list'
   }
 
   const renderMobileHeader = () => {
-    if (isProfileScreen) {
-      return (
-        <>
-          <div className="flex items-center gap-1">
-            <SidebarTrigger />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mobile-header-icon"
-              aria-label="Zpět"
-              onClick={handleBackClick}
-            >
-              ←
-            </Button>
-          </div>
-          <h2 className="mobile-subjects-title">Nastavení profilu</h2>
-          <div className="w-20" />
-        </>
-      )
-    }
-
-    if (isCalendarScreen) {
-      return (
-        <>
-          <div className="flex items-center gap-1">
-            <SidebarTrigger />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mobile-header-icon"
-              aria-label="Zpět"
-              onClick={handleBackClick}
-            >
-              ←
-            </Button>
-          </div>
-          <h2 className="mobile-subjects-title">Kalendář</h2>
-          <div className="w-20" />
-        </>
-      )
-    }
-
-    if (isTasksScreen) {
-      return (
-        <>
-          <div className="flex items-center gap-1">
-            <SidebarTrigger />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mobile-header-icon"
-              aria-label="Zpět"
-              onClick={handleBackClick}
-            >
-              ←
-            </Button>
-          </div>
-          <h2 className="mobile-subjects-title">Úkoly</h2>
-          <div className="w-20" />
-        </>
-      )
-    }
-
-    if (isStudyPlanScreen) {
-      return (
-        <>
-          <div className="flex items-center gap-1">
-            <SidebarTrigger />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mobile-header-icon"
-              aria-label="Zpět"
-              onClick={handleBackClick}
-            >
-              ←
-            </Button>
-          </div>
-          <h2 className="mobile-subjects-title">Studijní plán</h2>
-          <div className="w-20" />
-        </>
-      )
-    }
-
-    if (isFilesScreen) {
-      return (
-        <>
-          <div className="flex items-center gap-1">
-            <SidebarTrigger />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mobile-header-icon"
-              aria-label="Zpět"
-              onClick={handleBackClick}
-            >
-              ←
-            </Button>
-          </div>
-          <h2 className="mobile-subjects-title">Soubory</h2>
-          <div className="w-20" />
-        </>
-      )
-    }
-
     return (
       <>
         <div className="flex items-center gap-3">
           <SidebarTrigger />
           <div className="mobile-greeting">
             <div>
-              <h1>Lonely Student</h1>
+              <h1>{getPageTitle()}</h1>
             </div>
           </div>
         </div>
@@ -169,14 +56,11 @@ export function Topbar({
     <header className="topbar min-h-16 shrink-0">
       <div className="topbar-mobile">
         {renderMobileHeader()}
-
       </div>
 
       <div className="topbar-desktop">
         <div className="desktop-title-wrap">
-          <p className="name">
-            Motto dne: <span>{getDailyMotto()}</span>
-          </p>
+          <SidebarTrigger />
         </div>
         <Button 
           type="button" 

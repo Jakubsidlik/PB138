@@ -3,28 +3,17 @@ import React from 'react'
 type HiddenFileInputProps = {
   inputRef: React.RefObject<HTMLInputElement>
   accept?: string
-  multiple?: boolean
   onChange: (files: FileList | null) => void
 }
 
-export function HiddenFileInput({
-  inputRef,
-  accept,
-  multiple = false,
-  onChange,
-}: HiddenFileInputProps) {
+export function HiddenFileInput({ inputRef, accept, onChange }: HiddenFileInputProps) {
   return (
     <input
       ref={inputRef}
       type="file"
       accept={accept}
-      multiple={multiple}
-      className="hidden-file-input"
       style={{ display: 'none' }}
-      onChange={(event) => {
-        onChange(event.target.files)
-        event.currentTarget.value = ''
-      }}
+      onChange={(e) => onChange(e.target.files)}
     />
   )
 }
