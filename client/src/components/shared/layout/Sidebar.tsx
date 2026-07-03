@@ -20,7 +20,6 @@ import {
   LogOut,
   Shield,
   AlertCircle,
-  ImageIcon,
 } from 'lucide-react'
 import {
   AlertDialog,
