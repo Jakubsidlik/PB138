@@ -16,6 +16,7 @@ import {
 export function TierGalleryScreen({ groupId, tier }: { groupId: number; tier: Tier }) {
   const state = useDashboard()
   const navigate = useNavigate()
+  const images: TierImage[] = state.tierImages[tier] ?? []
   const [lightboxImage, setLightboxImage] = useState<TierImage | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<TierImage | null>(null)
   const [changeTierImage, setChangeTierImage] = useState<TierImage | null>(null)
@@ -59,13 +60,13 @@ export function TierGalleryScreen({ groupId, tier }: { groupId: number; tier: Ti
         <div className="gallery-header-info">
           <h1 className="gallery-title">Tier {tier}</h1>
           <span className="gallery-subtitle">
-            {state.tierImages.length} {state.tierImages.length === 1 ? 'obrázek' : state.tierImages.length < 5 ? 'obrázky' : 'obrázků'}
+            {images.length} {images.length === 1 ? 'obrázek' : images.length < 5 ? 'obrázky' : 'obrázků'}
           </span>
         </div>
       </div>
 
       {/* Gallery grid */}
-      {state.tierImages.length === 0 ? (
+      {images.length === 0 ? (
         <div className="gallery-empty">
           <p>V této kategorii zatím nejsou žádné obrázky.</p>
           <Button variant="outline" onClick={() => navigate({ to: `/group/${groupId}` })}>
@@ -74,7 +75,7 @@ export function TierGalleryScreen({ groupId, tier }: { groupId: number; tier: Ti
         </div>
       ) : (
         <div className="gallery-grid">
-          {state.tierImages.map((img) => (
+          {images.map((img) => (
             <div
               key={img.id}
               className="gallery-card"
