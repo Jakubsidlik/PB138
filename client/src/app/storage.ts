@@ -1,147 +1,35 @@
-import {
-  AccentPalette,
-  CalendarEvent,
-  Task,
-  ThemeMode,
-  UserProfile,
-} from './types'
-import {
-  EVENTS_STORAGE_KEY,
-  PALETTE_STORAGE_KEY,
-  PROFILE_STORAGE_KEY,
-  TASKS_STORAGE_KEY,
-  THEME_STORAGE_KEY,
-  userProfileSeed,
-} from './data'
-
-const isTask = (value: unknown): value is Task => {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-
-  const task = value as Task
-  return (
-    typeof task.id === 'number' &&
-    typeof task.title === 'string' &&
-    typeof task.done === 'boolean'
-  )
-}
-
-const isCalendarEvent = (value: unknown): value is CalendarEvent => {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-
-  const event = value as CalendarEvent
-  return (
-    typeof event.id === 'number' &&
-    typeof event.title === 'string' &&
-    typeof event.date === 'string'
-  )
-}
-
-const isProfilePayload = (value: unknown): value is Partial<UserProfile> => {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-
-  const profile = value as Partial<UserProfile>
-
-  return (
-    typeof profile.fullName === 'string' &&
-    (typeof profile.email === 'string' || profile.email === undefined) &&
-    (typeof profile.school === 'string' || profile.school === undefined) &&
-    (typeof profile.studyMajor === 'string' || profile.studyMajor === undefined) &&
-    (typeof profile.studyYear === 'string' || profile.studyYear === undefined) &&
-    (typeof profile.studyType === 'string' || profile.studyType === undefined) &&
-    (typeof profile.avatarDataUrl === 'string' || profile.avatarDataUrl === null)
-  )
-}
-
-export const readTasksFromStorage = (): Task[] | null => {
-  const raw = localStorage.getItem(TASKS_STORAGE_KEY)
-
-  if (!raw) {
-    return null
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (Array.isArray(parsed) && parsed.every(isTask)) {
-      return parsed
-    }
-  } catch {
-    return null
-  }
-
-  return null
-}
-
-export const readEventsFromStorage = (): CalendarEvent[] | null => {
-  const raw = localStorage.getItem(EVENTS_STORAGE_KEY)
-
-  if (!raw) {
-    return null
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (Array.isArray(parsed) && parsed.every(isCalendarEvent)) {
-      return parsed
-    }
-  } catch {
-    return null
-  }
-
-  return null
-}
+import { AccentPalette, ThemeMode, UserProfile } from './types'
+import { PALETTE_STORAGE_KEY, THEME_STORAGE_KEY, PROFILE_STORAGE_KEY } from './data'
 
 export const readThemeFromStorage = (): ThemeMode => {
-  const raw = localStorage.getItem(THEME_STORAGE_KEY)
-  return raw === 'dark' ? 'dark' : 'light'
+  const t = localStorage.getItem(THEME_STORAGE_KEY)
+  if (t === 'light' || t === 'dark') return t
+  return 'dark'
 }
 
 export const readPaletteFromStorage = (): AccentPalette => {
-  const raw = localStorage.getItem(PALETTE_STORAGE_KEY)
-
-  if (raw === 'emerald' || raw === 'rose' || raw === 'amber' || raw === 'mono') {
-    return raw
-  }
-
-  if (raw === 'red') {
-    return 'rose'
-  }
-
-  if (raw === 'orange') {
-    return 'amber'
-  }
-
-  if (raw === 'violet' || raw === 'cyan') {
-    return 'blue'
-  }
-
-  return 'blue'
+  const p = localStorage.getItem(PALETTE_STORAGE_KEY)
+  if (p && p.startsWith('yellow-') || p?.startsWith('mono-')) return p as AccentPalette
+  return 'yellow-1'
 }
 
 export const readProfileFromStorage = (): UserProfile | null => {
   const raw = localStorage.getItem(PROFILE_STORAGE_KEY)
-
-  if (!raw) {
-    return null
-  }
-
+  if (!raw) return null
   try {
-    const parsed: unknown = JSON.parse(raw)
-
-    if (isProfilePayload(parsed)) {
-      return {
-        ...userProfileSeed,
-        ...parsed,
-      }
-    }
+    const parsed = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    return {
+      fullName: parsed.fullName || '',
+      email: parsed.email || '',
+      role: parsed.role || 'REGISTERED',
+      school: parsed.school || null,
+      studyMajor: parsed.studyMajor || null,
+      studyYear: parsed.studyYear || null,
+      studyType: parsed.studyType || null,
+      avatarDataUrl: parsed.avatarDataUrl || null,
+    } as UserProfile
   } catch {
     return null
   }
-
-  return null
 }

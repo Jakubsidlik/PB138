@@ -1,30 +1,13 @@
 import type {
   ApiError,
   AuthResponse,
-  CalendarEvent,
-  CreateEventRequest,
-  CreateFileRequest,
-  CreateLessonRequest,
-  CreateStudyPlanRequest,
-  CreateSubjectRequest,
-  CreateTaskRequest,
-  FileRecord,
-  Lesson,
+  Group,
+  GroupMember,
   LoginRequest,
-  PaginatedResponse,
   RegisterRequest,
-  ShareStudyPlanRequest,
-  StudyPlan,
-  StudyPlanCollaborator,
-  Subject,
-  Task,
-  Tag,
-  UpdateEventRequest,
-  UpdateFileRequest,
-  UpdateLessonRequest,
-  UpdateStudyPlanRequest,
-  UpdateSubjectRequest,
-  UpdateTaskRequest,
+  TierImage,
+  TierCounts,
+  Tier,
   User,
 } from './types'
 
@@ -85,19 +68,23 @@ class ApiClient {
     return data
   }
 
+  // ── Health ────────────────────────────────────────────────────────────
+
   async health() {
     return this.request('GET', '/api/health')
   }
 
+  // ── Auth ──────────────────────────────────────────────────────────────
+
   async register(payload: RegisterRequest) {
-    const response = await this.request<AuthResponse>('POST', '/api/auth/register', payload)
-    return response
+    return this.request<AuthResponse>('POST', '/api/auth/register', payload)
   }
 
   async login(payload: LoginRequest) {
-    const response = await this.request<AuthResponse>('POST', '/api/auth/login', payload)
-    return response
+    return this.request<AuthResponse>('POST', '/api/auth/login', payload)
   }
+
+  // ── Users / Profile ───────────────────────────────────────────────────
 
   async getUsers() {
     return this.request<User[]>('GET', '/api/users')
@@ -127,165 +114,100 @@ class ApiClient {
     return this.request('DELETE', '/api/profile')
   }
 
-  async getStudyPlans() {
-    return this.request<PaginatedResponse<StudyPlan>>('GET', '/api/study-plans?paginated=true')
+  // ── Groups ────────────────────────────────────────────────────────────
+
+  async getGroups() {
+    return this.request<Group[]>('GET', '/api/groups')
   }
 
-  async getStudyPlansPaginated(cursor?: string) {
-    const query = cursor ? `?paginated=true&cursor=${cursor}` : '?paginated=true'
-    return this.request<PaginatedResponse<StudyPlan>>('GET', `/api/study-plans${query}`)
+  async getGroup(id: number) {
+    return this.request<Group>('GET', `/api/groups/${id}`)
   }
 
-  async createStudyPlan(payload: CreateStudyPlanRequest) {
-    return this.request<StudyPlan>('POST', '/api/study-plans', payload)
+  async createGroup(payload: { name: string }) {
+    return this.request<Group>('POST', '/api/groups', payload)
   }
 
-  async updateStudyPlan(id: number, payload: UpdateStudyPlanRequest) {
-    return this.request<StudyPlan>('PATCH', `/api/study-plans/${id}`, payload)
+  async updateGroup(id: number, payload: { name?: string }) {
+    return this.request<Group>('PATCH', `/api/groups/${id}`, payload)
   }
 
-  async deleteStudyPlan(id: number) {
-    return this.request('DELETE', `/api/study-plans/${id}`)
+  async deleteGroup(id: number) {
+    return this.request<{ success: boolean }>('DELETE', `/api/groups/${id}`)
   }
 
-  async getStudyPlanCollaborators(id: number) {
-    return this.request<StudyPlanCollaborator[]>('GET', `/api/study-plans/${id}/collaborators`)
+  async getGroupMembers(id: number) {
+    return this.request<GroupMember[]>('GET', `/api/groups/${id}/members`)
   }
 
-  async shareStudyPlan(id: number, payload: ShareStudyPlanRequest) {
-    return this.request<StudyPlanCollaborator>('POST', `/api/study-plans/${id}/share`, payload)
+  async inviteToGroup(id: number, payload: { email: string }) {
+    return this.request<GroupMember>('POST', `/api/groups/${id}/invite`, payload)
   }
 
-  async removeStudyPlanCollaborator(id: number, userId: number) {
-    return this.request('DELETE', `/api/study-plans/${id}/share/${userId}`)
+  async removeGroupMember(groupId: number, userId: number) {
+    return this.request<{ success: boolean }>('DELETE', `/api/groups/${groupId}/members/${userId}`)
   }
 
-  async getSubjects(studyPlanId?: number | null) {
-    const query = studyPlanId ? `?studyPlanId=${studyPlanId}` : '?paginated=true'
-    return this.request<PaginatedResponse<Subject>>('GET', `/api/subjects${query}`)
+  // ── Images ────────────────────────────────────────────────────────────
+
+  async getGroupImages(groupId: number, tier?: Tier) {
+    const query = tier ? `?tier=${tier}` : ''
+    return this.request<TierImage[]>('GET', `/api/groups/${groupId}/images${query}`)
   }
 
-  async createSubject(payload: CreateSubjectRequest) {
-    return this.request<Subject>('POST', '/api/subjects', payload)
+  async getUnratedImages(groupId: number) {
+    return this.request<TierImage[]>('GET', `/api/groups/${groupId}/images/unrated`)
   }
 
-  async updateSubject(id: number, payload: UpdateSubjectRequest) {
-    return this.request<Subject>('PUT', `/api/subjects/${id}`, payload)
+  async getTierCounts(groupId: number) {
+    return this.request<TierCounts>('GET', `/api/groups/${groupId}/images/counts`)
   }
 
-  async deleteSubject(id: number) {
-    return this.request('DELETE', `/api/subjects/${id}`)
+  async getImageUploadUrl(groupId: number, payload: { filename: string; contentType: string }) {
+    return this.request<{ uploadUrl: string; fileKey: string; fileUrl: string }>(
+      'POST', `/api/groups/${groupId}/images/upload-url`, payload
+    )
   }
 
-  async getTags() {
-    return this.request<Tag[]>('GET', '/api/tags')
+  async createImage(groupId: number, payload: { name: string; size: number; fileKey?: string; fileUrl?: string }) {
+    return this.request<TierImage>('POST', `/api/groups/${groupId}/images`, payload)
   }
 
-  async createTag(payload: { name: string, color: string }) {
-    return this.request<Tag>('POST', '/api/tags', payload)
+  async setImageTier(groupId: number, imageId: number, tier: Tier) {
+    return this.request<TierImage>('PATCH', `/api/groups/${groupId}/images/${imageId}/tier`, { tier })
   }
 
-  async deleteTag(id: number) {
-    return this.request('DELETE', `/api/tags/${id}`)
+  async deleteImage(groupId: number, imageId: number) {
+    return this.request<{ success: boolean }>('DELETE', `/api/groups/${groupId}/images/${imageId}`)
   }
 
-  async getTasks() {
-    return this.request<PaginatedResponse<Task>>('GET', `/api/tasks?paginated=true`)
+  // ── Comments ──────────────────────────────────────────────────────────
+
+  async getComments(groupId: number, imageId: number) {
+    return this.request<import('./types').ImageComment[]>('GET', `/api/groups/${groupId}/images/${imageId}/comments`)
   }
 
-  async createTask(payload: CreateTaskRequest) {
-    return this.request<Task>('POST', '/api/tasks', payload)
+  async addComment(groupId: number, imageId: number, payload: { content: string }) {
+    return this.request<import('./types').ImageComment>('POST', `/api/groups/${groupId}/images/${imageId}/comments`, payload)
   }
 
-  async updateTask(id: number, payload: UpdateTaskRequest) {
-    return this.request<Task>('PATCH', `/api/tasks/${id}`, payload)
+  async deleteComment(groupId: number, imageId: number, commentId: number) {
+    return this.request<{ success: boolean }>('DELETE', `/api/groups/${groupId}/images/${imageId}/comments/${commentId}`)
   }
 
-  async archiveTask(id: number) {
-    return this.request<Task>('POST', `/api/tasks/${id}/archive`)
+  // ── Ratings ───────────────────────────────────────────────────────────
+
+  async rateImage(groupId: number, imageId: number, tier: Tier) {
+    return this.request<import('./types').ImageRating>('POST', `/api/groups/${groupId}/images/${imageId}/rate`, { tier })
   }
 
-  async deleteTask(id: number) {
-    return this.request('DELETE', `/api/tasks/${id}`)
+  async getGroupResult(groupId: number) {
+    return this.request<import('./types').GroupResult>('GET', `/api/groups/${groupId}/result`)
   }
 
-  async updateTasksBatch(tasks: Task[]) {
-    return this.request<Task[]>('PUT', '/api/tasks', tasks)
+  async getMyRatings(groupId: number) {
+    return this.request<import('./types').ImageRating[]>('GET', `/api/groups/${groupId}/my-ratings`)
   }
-
-  async getTaskArchive() {
-    return this.request<PaginatedResponse<Task>>('GET', '/api/task-archive?paginated=true')
-  }
-
-  async getEvents() {
-    return this.request<PaginatedResponse<CalendarEvent>>('GET', `/api/events?paginated=true`)
-  }
-
-  async createEvent(payload: CreateEventRequest) {
-    return this.request<CalendarEvent>('POST', '/api/events', payload)
-  }
-
-  async updateEvent(id: number, payload: UpdateEventRequest) {
-    return this.request<CalendarEvent>('PATCH', `/api/events/${id}`, payload)
-  }
-
-  async deleteEvent(id: number) {
-    return this.request('DELETE', `/api/events/${id}`)
-  }
-
-  async updateEventsBatch(events: CalendarEvent[]) {
-    return this.request<CalendarEvent[]>('PUT', '/api/events', events)
-  }
-
-  async getFiles() {
-    return this.request<PaginatedResponse<FileRecord>>('GET', `/api/files?paginated=true`)
-  }
-
-  async getAdminFiles() {
-    return this.request<PaginatedResponse<FileRecord>>('GET', '/api/admin/files?paginated=true')
-  }
-
-  async createFile(payload: CreateFileRequest) {
-    return this.request<FileRecord>('POST', '/api/files', payload)
-  }
-
-  async updateFile(id: number, payload: UpdateFileRequest) {
-    return this.request<FileRecord>('PUT', `/api/files/${id}`, payload)
-  }
-
-  async deleteFile(id: number) {
-    return this.request('DELETE', `/api/files/${id}`)
-  }
-
-  async approveFile(id: number) {
-    return this.request<FileRecord>('PATCH', `/api/admin/files/${id}/moderation`, {
-      status: 'APPROVED',
-    })
-  }
-
-  async rejectFile(id: number, reason?: string) {
-    return this.request<FileRecord>('PATCH', `/api/admin/files/${id}/moderation`, {
-      status: 'REJECTED',
-      reason,
-    })
-  }
-
-  async getLessons() {
-    return this.request<PaginatedResponse<Lesson>>('GET', `/api/lessons?paginated=true`)
-  }
-
-  async createLesson(payload: CreateLessonRequest) {
-    return this.request<Lesson>('POST', '/api/lessons', payload)
-  }
-
-  async updateLesson(id: number, payload: UpdateLessonRequest) {
-    return this.request<Lesson>('PATCH', `/api/lessons/${id}`, payload)
-  }
-
-  async deleteLesson(id: number) {
-    return this.request('DELETE', `/api/lessons/${id}`)
-  }
-
 }
 
 export const apiClient = new ApiClient()

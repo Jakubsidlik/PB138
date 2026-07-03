@@ -1,5 +1,4 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import ghostLogo from '../../../assets/ghostLogo.jpg'
 import { useDashboard } from '../../../app/DashboardContext'
 import { useUser } from '@clerk/clerk-react'
 import {
@@ -17,14 +16,11 @@ import {
 } from '@/components/ui/sidebar'
 import {
   Home,
-  Calendar,
-  CheckSquare,
-  FolderOpen,
-  BookOpen,
   Settings,
   LogOut,
   Shield,
   AlertCircle,
+  ImageIcon,
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -43,11 +39,7 @@ type AppSidebarProps = {
 }
 
 const navItems = [
-  { to: '/', label: 'Hlavní stránka', icon: Home },
-  { to: '/calendar', label: 'Kalendář', icon: Calendar },
-  { to: '/tasks', label: 'Úkoly', icon: CheckSquare },
-  { to: '/files', label: 'Soubory', icon: FolderOpen },
-  { to: '/study', label: 'Studijní plán', icon: BookOpen },
+  { to: '/', label: 'Skupiny', icon: Home },
 ] as const
 
 function AppSidebar({ onLogout }: AppSidebarProps) {
@@ -74,16 +66,9 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
               className="h-16"
               render={
                 <Link to="/">
-                  <div className="flex aspect-square size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground overflow-hidden">
-                    <img
-                      src={ghostLogo}
-                      alt="Lonely Student Logo"
-                      className="size-full object-cover"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1 leading-none">
-                    <span className="font-semibold text-base">Lonely Student</span>
-                    <span className="text-sm text-muted-foreground">Study Planner</span>
+                  <img src="/logo.png" alt="Car-Y-list Logo" className="size-10 object-contain" />
+                  <div className="flex flex-col gap-1 leading-none ml-2">
+                    <span className="groups-title" style={{ fontSize: '1.6rem' }}>Car-Y-list</span>
                   </div>
                 </Link>
               }

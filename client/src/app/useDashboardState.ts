@@ -1,12 +1,8 @@
-import { Subject } from "./types"
 import React from 'react'
 import { toast } from 'sonner'
 import {
-  desktopSubjectMetaByCode,
-  EVENTS_STORAGE_KEY,
   PALETTE_STORAGE_KEY,
   PROFILE_STORAGE_KEY,
-  TASKS_STORAGE_KEY,
   THEME_STORAGE_KEY,
   userProfileSeed,
 } from './data'
@@ -14,146 +10,87 @@ import { useAuth } from '@clerk/clerk-react'
 import {
   AccentPalette,
   AuthSession,
-  CalendarEvent,
-  EventMeta,
-  FileTab,
-  Lesson,
-  ManagedFile,
-  MobileNavItem,
-  StudyPlan,
-  Task,
-  Tag,
-  TaskPriority,
+  Group,
+  GroupMember,
+  TierImage,
+  TierCounts,
+  Tier,
   ThemeMode,
   UserProfile,
 } from './types'
 import {
-  readEventsFromStorage,
   readPaletteFromStorage,
   readProfileFromStorage,
-  readTasksFromStorage,
   readThemeFromStorage,
 } from './storage'
-import {
-  buildCalendarCells,
-  formatDateIso,
-  formatFileSize,
-  getDefaultMetaForTitle,
-  getManagedFileCategory,
-} from './utils'
 
-type SubjectFilter = 'all' | 'active' | 'archived' | 'shared'
 const AUTH_SESSION_STORAGE_KEY = 'pb138-auth-session'
 
 const readAuthSessionFromStorage = (): AuthSession | null => {
   const raw = localStorage.getItem(AUTH_SESSION_STORAGE_KEY)
-  if (!raw) {
-    return null
-  }
+  if (!raw) return null
 
   try {
     const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null) {
-      return null
-    }
-
+    if (typeof parsed !== 'object' || parsed === null) return null
     const session = parsed as Partial<AuthSession>
     if (
       (typeof session.userId !== 'number' && typeof session.userId !== 'string') ||
       (session.role !== 'REGISTROVANÝ UŽIVATEL' && session.role !== 'ADMIN') ||
       typeof session.fullName !== 'string' ||
       typeof session.email !== 'string'
-    ) {
-      return null
-    }
-
-    return {
-      userId: session.userId,
-      role: session.role,
-      fullName: session.fullName,
-      email: session.email,
-    }
+    ) return null
+    return { userId: session.userId, role: session.role, fullName: session.fullName, email: session.email }
   } catch {
     return null
   }
 }
 
-const toEventMeta = (event: CalendarEvent, fallbackTitle: string): EventMeta => {
-  const fallback = getDefaultMetaForTitle(fallbackTitle)
-
-  return {
-    time: event.time ?? fallback.time,
-    location: event.location ?? fallback.location,
-    icon: fallback.icon,
-    accent: fallback.accent,
-  }
-}
-
 export function useDashboardState(fetchAll = false) {
-  const [tasks, setTasks] = React.useState<Task[]>(() => readTasksFromStorage() ?? [])
-  const [events, setEvents] = React.useState<CalendarEvent[]>(() => readEventsFromStorage() ?? [])
-  const [subjects, setSubjects] = React.useState<Subject[]>([])
+  // ── Theme & Profile ─────────────────────────────────────────────────
   const [themeMode, setThemeMode] = React.useState<ThemeMode>(() => readThemeFromStorage())
-  const [lessons, setLessons] = React.useState<Lesson[]>([])
   const [accentPalette, setAccentPalette] = React.useState<AccentPalette>(() => readPaletteFromStorage())
-  const [activeMobileNav, setActiveMobileNav] = React.useState<MobileNavItem>('home')
-  const [displayMonth, setDisplayMonth] = React.useState(() => new Date())
-  const [selectedDateIso, setSelectedDateIso] = React.useState(() => formatDateIso(new Date()))
-  const [eventMetaById, setEventMetaById] = React.useState<Record<number, EventMeta>>({})
-  const [fileTab, setFileTab] = React.useState<FileTab>('all')
-  const [fileTypeFilter, setFileTypeFilter] = React.useState<'all' | 'folder' | 'pdf' | 'image'>('all')
-  const [managedFiles, setManagedFiles] = React.useState<ManagedFile[]>([])
-  const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([])
-  const [activeStudyPlanId, setActiveStudyPlanId] = React.useState<number | null>(null)
-  const [subjectSearch, setSubjectSearch] = React.useState('')
-  const [subjectFilter, setSubjectFilter] = React.useState<SubjectFilter>('all')
-  const [tagFilter, setTagFilter] = React.useState<number | null>(null)
-  const [isDragActive, setIsDragActive] = React.useState(false)
-  const [isHydrated, setIsHydrated] = React.useState(false)
-  const [tags, setTags] = React.useState<Tag[]>([])
   const [profile, setProfile] = React.useState<UserProfile>(userProfileSeed)
   const [savedProfile, setSavedProfile] = React.useState<UserProfile>(userProfileSeed)
   const [authSession, setAuthSession] = React.useState<AuthSession | null>(() => readAuthSessionFromStorage())
   const [authAlertOpen, setAuthAlertOpen] = React.useState(false)
   const [isBanned, setIsBanned] = React.useState(false)
   const [isSavingProfile, setIsSavingProfile] = React.useState(false)
+  const [isHydrated, setIsHydrated] = React.useState(false)
   const { getToken, isLoaded, isSignedIn, signOut } = useAuth()
 
+  // ── Car-Y-list State ────────────────────────────────────────────────
+  const [groups, setGroups] = React.useState<Group[]>([])
+  const [activeGroupId, setActiveGroupId] = React.useState<number | null>(null)
+  const [activeGroup, setActiveGroup] = React.useState<Group | null>(null)
+  const [groupMembers, setGroupMembers] = React.useState<GroupMember[]>([])
+  const [tierCounts, setTierCounts] = React.useState<TierCounts>({ S: 0, A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, unrated: 0 })
+  const [unratedImages, setUnratedImages] = React.useState<TierImage[]>([])
+  const [tierImages, setTierImages] = React.useState<Record<string, TierImage[]>>({})
+  const [activeTier, setActiveTier] = React.useState<Tier | null>(null)
+
+  // ── API fetch helper ────────────────────────────────────────────────
   const apiFetch = React.useCallback(
     async (input: string, init?: RequestInit) => {
       const headers = new Headers(init?.headers)
-      
       let token = null
-      try {
-        token = await getToken()
-      } catch {
-      }
-
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`)
-      } else {
-        console.warn('apiFetch: Přístupový token nenalezen, přesto odesílám požadavek.');
-      }
-
-      return fetch(input, {
-        cache: 'no-store',
-        ...init,
-        headers,
-      })
+      try { token = await getToken() } catch {}
+      if (token) headers.set('Authorization', `Bearer ${token}`)
+      return fetch(input, { cache: 'no-store', ...init, headers })
     },
     [getToken],
   )
 
+  // ── Theme effects ───────────────────────────────────────────────────
   React.useEffect(() => {
     localStorage.setItem(THEME_STORAGE_KEY, themeMode)
     if (themeMode === 'dark') {
       document.documentElement.classList.add('theme-dark', 'dark')
-      document.body.style.backgroundColor = '#161e2f'
+      document.body.style.backgroundColor = '#0f0f1a'
     } else {
       document.documentElement.classList.remove('theme-dark', 'dark')
-      document.body.style.backgroundColor = '#fffdf6'
+      document.body.style.backgroundColor = '#fafafa'
     }
-
     const rootEl = document.querySelector('.dashboard-root')
     if (rootEl) {
       rootEl.classList.remove('theme-light', 'theme-dark')
@@ -163,35 +100,30 @@ export function useDashboardState(fetchAll = false) {
 
   React.useEffect(() => {
     localStorage.setItem(PALETTE_STORAGE_KEY, accentPalette)
-
     const rootEl = document.querySelector('.dashboard-root')
     if (rootEl) {
       rootEl.classList.forEach((cls) => {
-        if (cls.startsWith('palette-')) {
-          rootEl.classList.remove(cls)
-        }
+        if (cls.startsWith('palette-')) rootEl.classList.remove(cls)
       })
       rootEl.classList.add(`palette-${accentPalette}`)
     }
-
     document.body.classList.forEach((cls) => {
-      if (cls.startsWith('palette-')) {
-        document.body.classList.remove(cls)
-      }
+      if (cls.startsWith('palette-')) document.body.classList.remove(cls)
     })
     document.body.classList.add(`palette-${accentPalette}`)
   }, [accentPalette])
 
+  // ── Auth session persistence ────────────────────────────────────────
   React.useEffect(() => {
     if (authSession) {
       localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(authSession))
       return
     }
-
     localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
     setIsHydrated(false)
   }, [authSession])
 
+  // ── Data hydration ──────────────────────────────────────────────────
   React.useEffect(() => {
     if (!isLoaded || isHydrated || !fetchAll) return
 
@@ -201,166 +133,67 @@ export function useDashboardState(fetchAll = false) {
         return
       }
 
-      const localTasks = authSession ? (readTasksFromStorage() ?? []) : []
-      const localEvents = authSession ? (readEventsFromStorage() ?? []) : []
       const localProfile = readProfileFromStorage() ?? userProfileSeed
-
-      let loadedTasks = localTasks
-      let loadedEvents = localEvents
-      let loadedSubjects: Subject[] = []
-      let loadedFiles: ManagedFile[] = []
-      let loadedLessons: Lesson[] = []
-      let loadedStudyPlans: StudyPlan[] = []
       let loadedProfile = localProfile
+      let loadedGroups: Group[] = []
 
       try {
-        const [
-          tasksRes,
-          eventsRes,
-          subjectsRes,
-          filesRes,
-          lessonsRes,
-          studyPlansRes,
-          profileRes,
-          tagsRes
-        ] = await Promise.allSettled([
-          apiFetch('/api/tasks'),
-          apiFetch('/api/events'),
-          apiFetch('/api/subjects'),
-          apiFetch('/api/files'),
-          apiFetch('/api/lessons'),
-          apiFetch('/api/study-plans?includeInactive=true'),
+        const [profileRes, groupsRes] = await Promise.allSettled([
           apiFetch('/api/profile'),
-          apiFetch('/api/tags')
+          apiFetch('/api/groups'),
         ])
 
-        if (tasksRes.status === 'fulfilled' && tasksRes.value.ok) {
-          const serverTasks = await tasksRes.value.json()
-          if (Array.isArray(serverTasks)) loadedTasks = serverTasks as Task[]
-        }
-        if (eventsRes.status === 'fulfilled' && eventsRes.value.ok) {
-          const serverEvents = await eventsRes.value.json()
-          if (Array.isArray(serverEvents)) loadedEvents = serverEvents as CalendarEvent[]
-        }
-        if (subjectsRes.status === 'fulfilled' && subjectsRes.value.ok) {
-          const serverSubjects = await subjectsRes.value.json()
-          if (Array.isArray(serverSubjects)) loadedSubjects = serverSubjects as Subject[]
-        }
-        if (studyPlansRes.status === 'fulfilled' && studyPlansRes.value.ok) {
-          const serverStudyPlans = await studyPlansRes.value.json()
-          if (Array.isArray(serverStudyPlans)) loadedStudyPlans = serverStudyPlans as StudyPlan[]
-        }
-        if (filesRes.status === 'fulfilled' && filesRes.value.ok) {
-          const serverFiles = await filesRes.value.json()
-          if (Array.isArray(serverFiles)) loadedFiles = serverFiles as ManagedFile[]
-        }
-        if (lessonsRes.status === 'fulfilled' && lessonsRes.value.ok) {
-          const serverLessons = await lessonsRes.value.json()
-          if (Array.isArray(serverLessons)) loadedLessons = serverLessons as Lesson[]
-        }
         if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
           const serverProfile = await profileRes.value.json()
           setAuthSession({
             userId: serverProfile.id,
             fullName: serverProfile.fullName,
             email: serverProfile.email,
-            role: serverProfile.role
+            role: serverProfile.role,
           })
           loadedProfile = serverProfile
         } else if (profileRes.status === 'fulfilled' && profileRes.value.status === 401) {
-            setAuthSession(null)
-            if (isSignedIn) {
-              setIsBanned(true)
-              localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
-              localStorage.removeItem(PROFILE_STORAGE_KEY)
-              localStorage.removeItem(TASKS_STORAGE_KEY)
-            }
+          setAuthSession(null)
+          if (isSignedIn) {
+            setIsBanned(true)
+            localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
+            localStorage.removeItem(PROFILE_STORAGE_KEY)
+          }
         }
-        if (tagsRes.status === 'fulfilled' && tagsRes.value.ok) {
-          const serverTags = await tagsRes.value.json()
-          if (Array.isArray(serverTags)) setTags(serverTags)
+
+        if (groupsRes.status === 'fulfilled' && groupsRes.value.ok) {
+          const serverGroups = await groupsRes.value.json()
+          if (Array.isArray(serverGroups)) loadedGroups = serverGroups
         }
       } catch (e) {
         console.error('Hydration error:', e)
       }
 
-      const nextMetaById = loadedEvents.reduce<Record<number, EventMeta>>((acc, event) => {
-        acc[event.id] = toEventMeta(event, event.title)
-        return acc
-      }, {})
-
-      setTasks(loadedTasks)
-      setEvents(loadedEvents)
-      setSubjects(loadedSubjects)
-      setManagedFiles(loadedFiles)
-      setLessons(loadedLessons)
-      setStudyPlans(loadedStudyPlans)
       setProfile(loadedProfile)
       setSavedProfile(loadedProfile)
-      setEventMetaById(nextMetaById)
+      setGroups(loadedGroups)
       setIsHydrated(true)
     }
 
     void hydrateData()
   }, [apiFetch, authSession, isLoaded, isSignedIn, isHydrated, signOut])
 
+  // ── Profile persistence ─────────────────────────────────────────────
   React.useEffect(() => {
     if (!isHydrated || !authSession) return
-    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks))
-  }, [tasks, isHydrated, authSession])
-
-  React.useEffect(() => {
-    if (!isHydrated || !authSession) return
-    localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events))
-  }, [events, isHydrated, authSession])
-
-  React.useEffect(() => {
-    if (!isHydrated || !authSession) {
-      return
-    }
-
     if (authSession && (!profile.fullName || !profile.email)) {
-      setProfile((prevProfile) => ({
-        ...prevProfile,
-        fullName: prevProfile.fullName || authSession.fullName || '',
-        email: prevProfile.email || authSession.email || '',
+      setProfile((prev) => ({
+        ...prev,
+        fullName: prev.fullName || authSession.fullName || '',
+        email: prev.email || authSession.email || '',
       }))
       return
     }
-
     const { avatarDataUrl: _, ...profileWithoutAvatar } = profile
     localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileWithoutAvatar))
   }, [profile, isHydrated, authSession])
 
-  const onSaveProfile = async () => {
-    if (!ensureAuthenticated() || isSavingProfile) {
-      return
-    }
-
-    setIsSavingProfile(true)
-    try {
-      const payload = { ...profile }
-      if (!payload.fullName) delete (payload as any).fullName
-      if (!payload.email) delete (payload as any).email
-
-      const response = await apiFetch('/api/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
-        setSavedProfile(profile)
-      }
-    } catch (error) {
-      console.error('Chyba při ukládání profilu:', error)
-    } finally {
-      setIsSavingProfile(false)
-    }
-  }
-
+  // ── Auth helper ─────────────────────────────────────────────────────
   const ensureAuthenticated = () => {
     if (!authSession) {
       setAuthAlertOpen(true)
@@ -369,1050 +202,387 @@ export function useDashboardState(fetchAll = false) {
     return true
   }
 
-  const refreshSubjects = async () => {
-    const response = await apiFetch('/api/subjects')
-    if (!response.ok) {
-      return
-    }
-
-    const payload: unknown = await response.json()
-    if (Array.isArray(payload)) {
-      setSubjects(payload as Subject[])
-    }
-  }
-
-  const refreshStudyPlans = async () => {
-    const response = await apiFetch('/api/study-plans?includeInactive=true')
-    if (!response.ok) {
-      return
-    }
-
-    const payload: unknown = await response.json()
-    if (Array.isArray(payload)) {
-      setStudyPlans(payload as StudyPlan[])
-    }
-  }
-
-  const refreshFiles = async () => {
-    const response = await apiFetch('/api/files')
-    if (!response.ok) {
-      return
-    }
-
-    const payload: unknown = await response.json()
-    if (Array.isArray(payload)) {
-      setManagedFiles(payload as ManagedFile[])
-    }
-  }
-
-  const refreshLessons = async () => {
-    const response = await apiFetch('/api/lessons')
-    if (!response.ok) {
-      return
-    }
-
-    const payload = await response.json()
-    if (Array.isArray(payload)) {
-      setLessons(payload)
-    }
-  }
-
-  const refreshTags = async () => {
-    const response = await apiFetch('/api/tags')
-    if (!response.ok) return
-    const payload = await response.json()
-    if (Array.isArray(payload)) {
-      setTags(payload)
-    }
-  }
-
-
-  const toggleTask = async (taskId: number) => {
-    if (!ensureAuthenticated()) return
-
-    const task = tasks.find((t) => t.id === taskId)
-    if (!task) return
-
-    const newDone = !task.done
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: newDone } : t)))
-
+  // ── Profile actions ─────────────────────────────────────────────────
+  const onSaveProfile = async () => {
+    if (!ensureAuthenticated() || isSavingProfile) return
+    setIsSavingProfile(true)
     try {
-      await apiFetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
+      const payload = { ...profile }
+      if (!payload.fullName) delete (payload as any).fullName
+      if (!payload.email) delete (payload as any).email
+      const response = await apiFetch('/api/profile', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ done: newDone }),
+        body: JSON.stringify(payload),
       })
-    } catch (e) {
-      console.error('Failed to toggle task:', e)
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: !newDone } : t)))
+      if (response.ok) setSavedProfile(profile)
+    } catch (error) {
+      console.error('Chyba při ukládání profilu:', error)
+    } finally {
+      setIsSavingProfile(false)
     }
   }
 
-  const addTask = (title: string, priority: TaskPriority = 'NONE') => {
-    if (!ensureAuthenticated()) return
-
-    const trimmedTitle = title.trim()
-    if (!trimmedTitle) return
-
-    const tempId = Date.now()
-    const tempTask: Task = { id: tempId, title: trimmedTitle, done: false, priority }
-    setTasks((prev) => [...prev, tempTask])
-
-    apiFetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, done: false, priority }),
-    }).then((res) => {
-      if (res.ok) {
-        return res.json().then((serverTask: Task) => {
-          setTasks((prev) => prev.map((t) => (t.id === tempId ? serverTask : t)))
-        })
-      }
-      console.error('Failed to create task, status:', res.status)
-      setTasks((prev) => prev.filter((t) => t.id !== tempId))
-    }).catch((e) => {
-      console.error('Failed to create task:', e)
-      setTasks((prev) => prev.filter((t) => t.id !== tempId))
-    })
+  const onChangeProfile = (key: string, value: string) => {
+    setProfile((prev) => ({ ...prev, [key]: value }))
   }
 
-  const updateTask = async (taskId: number, title: string, priority?: TaskPriority) => {
-    if (!ensureAuthenticated()) return
-
-    const trimmedTitle = title.trim()
-    if (!trimmedTitle) return
-
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, title: trimmedTitle, ...(priority !== undefined && { priority }) } : t)))
-
-    try {
-      await apiFetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: trimmedTitle, ...(priority !== undefined && { priority }) }),
-      })
-    } catch (e) {
-      console.error('Failed to update task:', e)
-    }
-  }
-
-  const deleteTask = async (taskId: number) => {
-    if (!ensureAuthenticated()) return
-
-    const prev = tasks
-    setTasks((p) => p.filter((t) => t.id !== taskId))
-
-    try {
-      await apiFetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
-    } catch (e) {
-      console.error('Failed to delete task:', e)
-      setTasks(prev)
-    }
-  }
-
-  const removeEvent = async (eventId: number) => {
-    if (!ensureAuthenticated()) return
-
-    const prev = events
-    setEvents((p) => p.filter((e) => e.id !== eventId))
-    setEventMetaById((prevMeta) => {
-      const updatedMeta = { ...prevMeta }
-      delete updatedMeta[eventId]
-      return updatedMeta
-    })
-
-    try {
-      await apiFetch(`/api/events/${eventId}`, { method: 'DELETE' })
-    } catch (e) {
-      console.error('Failed to delete event:', e)
-      setEvents(prev)
-    }
-  }
-
-  const addDesktopEvent = (eventData: { title: string, time: string, location: string, priority: 'low' | 'medium' | 'high' }) => {
-    if (!ensureAuthenticated()) return
-
-    const title = eventData.title.trim()
-    if (!title) return
-
-    const { time, location, priority } = eventData
-
-    const tempId = Date.now()
-    const defaultMeta = getDefaultMetaForTitle(title)
-    const nextEvent: CalendarEvent = {
-      id: tempId,
-      title,
-      date: selectedDateIso,
-      time: time?.trim() || defaultMeta.time,
-      location: location?.trim() || '',
-      priority,
-    }
-
-    setEvents((prevEvents) => [...prevEvents, nextEvent])
-    setEventMetaById((prevMeta) => ({
-      ...prevMeta,
-      [tempId]: {
-        ...defaultMeta,
-        time: time?.trim() || defaultMeta.time,
-        location: location?.trim() || '',
-      },
-    }))
-
-    apiFetch('/api/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        date: selectedDateIso,
-        time: time?.trim() || null,
-        location: location?.trim() || null,
-      }),
-    }).then((res) => {
-      if (res.ok) {
-        return res.json().then((body: any) => {
-          const serverEvent: CalendarEvent = body.event ?? body
-          setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...serverEvent, priority } : e)))
-          setEventMetaById((prevMeta) => {
-            const updated = { ...prevMeta }
-            const meta = updated[tempId]
-            delete updated[tempId]
-            if (meta) updated[serverEvent.id] = meta
-            return updated
-          })
-        })
-      }
-      console.error('Failed to create event, status:', res.status)
-      setEvents((prev) => prev.filter((e) => e.id !== tempId))
-      setEventMetaById((prevMeta) => {
-        const updated = { ...prevMeta }
-        delete updated[tempId]
-        return updated
-      })
-    }).catch((e) => {
-      console.error('Failed to create event:', e)
-      setEvents((prev) => prev.filter((e) => e.id !== tempId))
-      setEventMetaById((prevMeta) => {
-        const updated = { ...prevMeta }
-        delete updated[tempId]
-        return updated
-      })
-    })
-  }
-
-  const onUploadFiles = async (incomingFiles: FileList | File[] | null, options?: { subjectId?: number }) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    if (!incomingFiles || incomingFiles.length === 0) {
-      return
-    }
-
-    const filesArray = incomingFiles instanceof FileList ? Array.from(incomingFiles) : incomingFiles
-
-    const now = new Date()
-    const formattedTime = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
-
-    const tempFiles = filesArray.map((file) => ({
-      id: Date.now() + Math.floor(Math.random() * 100000),
-      name: file.name,
-      size: formatFileSize(file.size),
-      sizeBytes: file.size,
-      addedLabel: formattedTime,
-      category: getManagedFileCategory(file.name),
-      shared: false,
-      subjectId: options?.subjectId ?? null,
-    }))
-
-    setManagedFiles((prevFiles) => [...tempFiles, ...prevFiles])
-
-    for (const file of filesArray) {
-      try {
-        const urlRes = await apiFetch('/api/files/upload-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: file.name, contentType: file.type || 'application/octet-stream' }),
-        })
-
-        if (!urlRes.ok) {
-          const errData = await urlRes.json().catch(() => null)
-          throw new Error(errData?.error || `Chyba ze serveru: ${urlRes.status} ${urlRes.statusText}`)
-        }
-        const { uploadUrl, fileKey, fileUrl } = await urlRes.json()
-
-        const s3Res = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': file.type || 'application/octet-stream' },
-          body: file,
-        })
-
-        if (!s3Res.ok) throw new Error('Chyba při nahrávání na S3')
-
-        await apiFetch('/api/files', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: file.name,
-            size: file.size,
-            addedLabel: formattedTime,
-            shared: false,
-            fileKey,
-            fileUrl,
-            subjectId: options?.subjectId,
-          }),
-        })
-      } catch (err) {
-        console.error(`Chyba při nahrávání souboru ${file.name}:`, err)
-      }
-    }
-
-    void refreshFiles()
-  }
-
-  const addSubjectNote = async (subjectId: number, note: string) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    const title = note.length > 50 ? note.slice(0, 50) + '...' : note
-    
-    try {
-      const res = await apiFetch('/api/lessons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subjectId, title, content: note }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null)
-        toast.error(errorData?.error || 'Nepodařilo se přidat poznámku.')
-        console.error('Failed to add note:', errorData)
-        return
-      }
-
-      await refreshLessons()
-      await refreshSubjects()
-    } catch (e) {
-      toast.error('Došlo k chybě při přidávání poznámky.')
-      console.error('Failed to add note:', e)
-    }
-  }
-
-  const deleteSubjectNote = async (lessonId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    try {
-      const res = await apiFetch(`/api/lessons/${lessonId}`, {
-        method: 'DELETE',
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null)
-        toast.error(errorData?.error || 'Nepodařilo se smazat poznámku.')
-        console.error('Failed to delete note:', errorData)
-        return
-      }
-
-      toast.success('Poznámka byla smazána.')
-      await refreshLessons()
-      await refreshSubjects()
-    } catch (e) {
-      toast.error('Došlo k chybě při mazání poznámky.')
-      console.error('Failed to delete note:', e)
-    }
-  }
-
-  const updateSubjectNote = async (lessonId: number, noteText: string) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    const title = noteText.length > 50 ? noteText.slice(0, 50) + '...' : noteText
-
-    try {
-      const res = await apiFetch(`/api/lessons/${lessonId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content: noteText }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null)
-        toast.error(errorData?.error || 'Nepodařilo se upravit poznámku.')
-        console.error('Failed to update note:', errorData)
-        return
-      }
-
-      toast.success('Poznámka byla upravena.')
-      await refreshLessons()
-    } catch (e) {
-      toast.error('Došlo k chybě při úpravě poznámky.')
-      console.error('Failed to update note:', e)
-    }
-  }
-
-  const rateLesson = async (lessonId: number, vote: 'LIKE' | 'DISLIKE' | null) => {
-    if (!ensureAuthenticated()) return
-
-    const prevLessons = lessons
-    setLessons((prev) => prev.map(l => {
-      if (l.id === lessonId) {
-        let likes = Number(l.likes ?? 0)
-        let dislikes = Number(l.dislikes ?? 0)
-        const oldVote = l.userVote
-        
-        if (oldVote === 'LIKE') likes--
-        if (oldVote === 'DISLIKE') dislikes--
-        if (vote === 'LIKE') likes++
-        if (vote === 'DISLIKE') dislikes++
-        
-        return { ...l, userVote: vote, likes: Math.max(0, likes), dislikes: Math.max(0, dislikes) }
-      }
-      return l
-    }))
-
-    try {
-      const res = await apiFetch(`/api/lessons/${lessonId}/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vote }),
-      })
-      if (!res.ok) throw new Error('Nepodařilo se uložit hodnocení.')
-    } catch (e) {
-      toast.error('Došlo k chybě při ukládání hodnocení.')
-      console.error('Failed to rate lesson:', e)
-      setLessons(prevLessons)
-    }
-  }
-
-  const rateFile = async (fileId: number, vote: 'LIKE' | 'DISLIKE' | null) => {
-    if (!ensureAuthenticated()) return
-
-    const prevFiles = managedFiles
-    setManagedFiles((prev) => prev.map(f => {
-      if (f.id === fileId) {
-        let likes = Number(f.likes ?? 0)
-        let dislikes = Number(f.dislikes ?? 0)
-        const oldVote = f.userVote
-        
-        if (oldVote === 'LIKE') likes--
-        if (oldVote === 'DISLIKE') dislikes--
-        if (vote === 'LIKE') likes++
-        if (vote === 'DISLIKE') dislikes++
-        
-        return { ...f, userVote: vote, likes: Math.max(0, likes), dislikes: Math.max(0, dislikes) }
-      }
-      return f
-    }))
-
-    try {
-      const res = await apiFetch(`/api/files/${fileId}/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vote }),
-      })
-      if (!res.ok) throw new Error('Nepodařilo se uložit hodnocení.')
-    } catch (e) {
-      toast.error('Došlo k chybě při ukládání hodnocení.')
-      console.error('Failed to rate file:', e)
-      setManagedFiles(prevFiles)
-    }
-  }
-
-  const onDropToUpload = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    setIsDragActive(false)
-    onUploadFiles(event.dataTransfer.files)
-  }
-
-  const goToToday = () => {
-    const now = new Date()
-    setDisplayMonth(new Date(now.getFullYear(), now.getMonth(), 1))
-    setSelectedDateIso(formatDateIso(now))
-  }
-
-  const onOpenProfile = () => {
-    setActiveMobileNav('profile')
-  }
-
-  const onChangeProfile = (updates: Partial<UserProfile>) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    setProfile((prevProfile) => ({
-      ...prevProfile,
-      ...updates,
-    }))
-  }
-
-  const onUploadProfileAvatar = (files: FileList | null) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    const file = files?.[0]
-
-    if (!file) {
-      return
-    }
-
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : null
-      setProfile((prevProfile) => ({
-        ...prevProfile,
-        avatarDataUrl: result,
-      }))
-    }
-
-    reader.readAsDataURL(file)
+  const onUploadProfileAvatar = (dataUrl: string) => {
+    setProfile((prev) => ({ ...prev, avatarDataUrl: dataUrl }))
   }
 
   const onRemoveProfileAvatar = () => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    setProfile((prevProfile) => ({
-      ...prevProfile,
-      avatarDataUrl: null,
-    }))
+    setProfile((prev) => ({ ...prev, avatarDataUrl: null }))
   }
 
   const resetProfile = () => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    setProfile(userProfileSeed)
+    setProfile(savedProfile)
   }
 
-  const clearUserData = () => {
-    setIsHydrated(false)
-    setTasks([])
-    setEvents([])
-    setSubjects([])
-    setManagedFiles([])
-    setLessons([])
-    setStudyPlans([])
-    setTags([])
-    setProfile(userProfileSeed)
-    setSavedProfile(userProfileSeed)
-    localStorage.removeItem(TASKS_STORAGE_KEY)
-    localStorage.removeItem(EVENTS_STORAGE_KEY)
-    localStorage.removeItem(PROFILE_STORAGE_KEY)
-  }
-
-  const logout = async () => {
-    clearUserData()
-    setAuthSession(null)
-    await signOut()
-  }
-
-  const createTag = async (data: { name: string, color: string }) => {
-    if (!ensureAuthenticated()) return
-    const res = await apiFetch('/api/tags', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })
-    if (res.ok) void refreshTags()
-    return res
-  }
-
-  const deleteTag = async (id: number) => {
-    if (!ensureAuthenticated()) return
-    const res = await apiFetch(`/api/tags/${id}`, { method: 'DELETE' })
-    if (res.ok) void refreshTags()
-    return res
-  }
-
-  const createSubject = (subjectData: { name: string, teacher: string, code: string, tagIds?: number[] }) => {
-    if (!ensureAuthenticated()) return
-
-    const name = subjectData.name.trim()
-    const teacher = subjectData.teacher.trim()
-    const code = subjectData.code.trim().toUpperCase()
-
-    if (!name || !teacher || !code) return
-
-    void apiFetch('/api/subjects', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, teacher, code, studyPlanId: activeStudyPlanId === -1 ? null : activeStudyPlanId, tagIds: subjectData.tagIds || [] }),
-    }).then(() => {
-      void refreshSubjects()
-    })
-  }
-
-  const createStudyPlan = (studyPlanData: { name: string, description?: string }) => {
-    if (!ensureAuthenticated()) return
-
-    const name = studyPlanData.name.trim()
-    if (!name) return
-
-    void apiFetch('/api/study-plans', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, description: studyPlanData.description }),
-    }).then(() => {
-      void refreshStudyPlans()
-    })
-  }
-
-  const updateStudyPlan = (studyPlanId: number, data: { name: string, description?: string }) => {
-    if (!ensureAuthenticated()) return
-    void apiFetch(`/api/study-plans/${studyPlanId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }).then(() => {
-      void refreshStudyPlans()
-    })
-  }
-
-  const toggleStudyPlanArchived = (studyPlanId: number) => {
-    if (!ensureAuthenticated()) return
-    const plan = studyPlans.find((item) => item.id === studyPlanId)
-    if (!plan) return
-    void apiFetch(`/api/study-plans/${studyPlanId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive: !plan.isActive }),
-    }).then(() => {
-      void refreshStudyPlans()
-    })
-  }
-
-  const deleteStudyPlan = (studyPlanId: number) => {
-    if (!ensureAuthenticated()) return
-    void apiFetch(`/api/study-plans/${studyPlanId}`, {
-      method: 'DELETE',
-    }).then(() => {
-      void refreshStudyPlans()
-    })
-  }
-
-  const shareStudyPlan = async (studyPlanId: number, email: string) => {
-    if (!ensureAuthenticated()) return
-
-    const res = await apiFetch(`/api/study-plans/${studyPlanId}/share`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, role: 'VIEWER' }),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => null)
-      throw new Error(data?.error || 'Nepodařilo se nasdílet studijní plán.')
-    }
-    toast.success(`Studijní plán byl úspěšně nasdílen uživateli ${email}`)
-  }
-
-  const shareSubject = async (subjectId: number, email: string) => {
-    if (!ensureAuthenticated()) return
-
-    const res = await apiFetch(`/api/subjects/${subjectId}/share`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => null)
-      throw new Error(data?.error || 'Nepodařilo se nasdílet předmět.')
-    }
-    const result = await res.json()
-    const extras = []
-    if (result.copiedFiles > 0) extras.push(`${result.copiedFiles} souborů`)
-    if (result.copiedLessons > 0) extras.push(`${result.copiedLessons} poznámek`)
-    const detail = extras.length > 0 ? ` (včetně ${extras.join(' a ')})` : ''
-    toast.success(`Předmět byl úspěšně propojen a nasdílen uživateli ${result.recipientEmail}${detail}`)
-  }
-
-  const updateSubject = (subjectId: number, data: { name: string, teacher: string, code: string, tagIds?: number[], studyPlanId?: number | null }) => {
-    if (!ensureAuthenticated()) return
-
-    const subject = subjects.find((item) => item.id === subjectId)
-    if (!subject) return
-
-    const name = data.name.trim()
-    const teacher = data.teacher.trim()
-    const code = data.code.trim().toUpperCase()
-
-    if (!name || !teacher || !code) return
-
-    void apiFetch(`/api/subjects/${subjectId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, teacher, code, tagIds: data.tagIds, studyPlanId: 'studyPlanId' in data ? data.studyPlanId : undefined }),
-    }).then(() => {
-      void refreshSubjects()
-    })
-  }
-
-  const toggleSubjectArchived = (subjectId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    const subject = subjects.find((item) => item.id === subjectId)
-    if (!subject) {
-      return
-    }
-
-    void apiFetch(`/api/subjects/${subjectId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ archived: !subject.archived }),
-    }).then(() => {
-      void refreshSubjects()
-    })
-  }
-
-  const deleteSubject = async (subjectId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    const subject = subjects.find((item) => item.id === subjectId)
-    if (!subject) {
-      return
-    }
-
-    try {
-      const res = await apiFetch(`/api/subjects/${subjectId}`, { method: 'DELETE' })
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        toast.error(data?.error || 'Nepodařilo se smazat předmět.')
-        return
-      }
-      void refreshSubjects()
-    } catch (e) {
-      toast.error('Došlo k chybě při mazání předmětu.')
-      console.error('Failed to delete subject:', e)
-    }
-  }
-
-  const updateFile = (fileId: number, patch: Partial<ManagedFile>) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    setManagedFiles(prev => prev.map(f => f.id === fileId ? { ...f, ...patch } : f))
-
-    void apiFetch(`/api/files/${fileId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(patch),
-    }).then(() => {
-      void refreshFiles()
-    })
-  }
-
-  const removeFile = (fileId: number) => {
-    if (!ensureAuthenticated()) {
-      return
-    }
-
-    const file = managedFiles.find((item) => item.id === fileId)
-    if (!file) {
-      return
-    }
-
-    setManagedFiles(prev => prev.filter(f => f.id !== fileId))
-
-    void apiFetch(`/api/files/${fileId}`, { method: 'DELETE' }).then(() => {
-      void refreshFiles()
-    })
-  }
-
-  const renameFile = (fileId: number, newName: string) => {
-    const file = managedFiles.find((item) => item.id === fileId)
-    if (!file) return
-
-    const nextName = newName.trim()
-    if (!nextName || nextName === file.name) return
-
-    const getExt = (name: string) => {
-      const parts = name.split('.')
-      return parts.length > 1 ? '.' + parts.pop()?.toLowerCase() : ''
-    }
-
-    const oldExt = getExt(file.name)
-    const newExt = getExt(nextName)
-
-    if (oldExt !== newExt) {
-      toast.error('Změna typu nebo přípony souboru není povolena.')
-      return
-    }
-
-    updateFile(fileId, { name: nextName })
-  }
-
-  const changeFileSubject = (fileId: number, subjectId: number | null) => {
-    updateFile(fileId, { subjectId })
-  }
-
-  const toggleFileShared = async (fileId: number, email?: string) => {
-    const file = managedFiles.find((item) => item.id === fileId)
-    if (!file) {
-      return
-    }
-
-    if (email) {
-      try {
-        const res = await apiFetch(`/api/files/${fileId}/share`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ targetUserEmail: email, permission: 'read' }),
-        })
-        if (!res.ok) {
-          const data = await res.json()
-          throw new Error(data.error || 'Nepodařilo se nasdílet soubor.')
-        }
-        toast.success(`Soubor úspěšně nasdílen uživateli ${email}`)
-      } catch (err: any) {
-        toast.error(err.message)
-        throw err
-      }
-    } else {
-      updateFile(fileId, { shared: !file.shared })
-    }
-  }
-
-
-
-  const tasksDone = tasks.filter((task) => task.done).length
-  const isCalendarScreen = activeMobileNav === 'calendar'
-  const isFilesScreen = activeMobileNav === 'files'
-  const isTasksScreen = activeMobileNav === 'tasks'
-  const isStudyPlanScreen = activeMobileNav === 'study-plan'
-  const isProfileScreen = activeMobileNav === 'profile'
   const hasUnsavedProfileChanges = JSON.stringify(profile) !== JSON.stringify(savedProfile)
 
-  const monthLabel = new Intl.DateTimeFormat('cs-CZ', {
-    month: 'long',
-    year: 'numeric',
-  }).format(displayMonth)
+  const clearUserData = () => {
+    setGroups([])
+    setActiveGroupId(null)
+    setActiveGroup(null)
+    setGroupMembers([])
+    setUnratedImages([])
+    setTierImages({})
+    setTierCounts({ S: 0, A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, unrated: 0 })
+  }
 
-  const upcomingEvents = React.useMemo(
-    () => {
-      const today = formatDateIso(new Date())
-      return events
-        .filter((event) => event.date >= today)
-        .slice()
-        .sort((a, b) => a.date.localeCompare(b.date))
-    },
-    [events],
-  )
+  // ── Groups actions ──────────────────────────────────────────────────
+  const refreshGroups = async () => {
+    try {
+      const res = await apiFetch('/api/groups')
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) setGroups(data)
+      }
+    } catch (e) {
+      console.error('Failed to refresh groups:', e)
+    }
+  }
 
-  const eventsByDate = React.useMemo(
-    () =>
-      events.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
-        if (!acc[event.date]) {
-          acc[event.date] = []
+  const createGroup = async (name: string) => {
+    if (!ensureAuthenticated()) return
+    try {
+      const res = await apiFetch('/api/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      if (res.ok) {
+        toast.success('Skupina byla vytvořena.')
+        await refreshGroups()
+      } else {
+        const err = await res.json().catch(() => null)
+        toast.error(err?.error || 'Nepodařilo se vytvořit skupinu.')
+      }
+    } catch (e) {
+      toast.error('Chyba při vytváření skupiny.')
+      console.error('Failed to create group:', e)
+    }
+  }
+
+  const deleteGroup = async (groupId: number) => {
+    if (!ensureAuthenticated()) return
+    try {
+      const res = await apiFetch(`/api/groups/${groupId}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('Skupina byla smazána.')
+        if (activeGroupId === groupId) {
+          setActiveGroupId(null)
+          setActiveGroup(null)
         }
-        acc[event.date].push(event)
-        return acc
-      }, {}),
-    [events],
-  )
+        await refreshGroups()
+      } else {
+        const err = await res.json().catch(() => null)
+        toast.error(err?.error || 'Nepodařilo se smazat skupinu.')
+      }
+    } catch (e) {
+      toast.error('Chyba při mazání skupiny.')
+    }
+  }
 
-  const calendarCells = React.useMemo(() => buildCalendarCells(displayMonth), [displayMonth])
+  const inviteToGroup = async (groupId: number, email: string) => {
+    if (!ensureAuthenticated()) return
+    try {
+      const res = await apiFetch(`/api/groups/${groupId}/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (res.ok) {
+        toast.success('Pozvánka byla odeslána.')
+        await refreshGroupMembers(groupId)
+        await refreshGroups()
+      } else {
+        const err = await res.json().catch(() => null)
+        toast.error(err?.error || 'Nepodařilo se pozvat uživatele.')
+      }
+    } catch (e) {
+      toast.error('Chyba při odesílání pozvánky.')
+    }
+  }
 
-  const selectedDayEvents = React.useMemo(
-    () => (eventsByDate[selectedDateIso] ?? []).slice().sort((a, b) => a.title.localeCompare(b.title)),
-    [eventsByDate, selectedDateIso],
-  )
+  const removeGroupMember = async (groupId: number, userId: number) => {
+    if (!ensureAuthenticated()) return
+    try {
+      const res = await apiFetch(`/api/groups/${groupId}/members/${userId}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('Člen byl odebrán.')
+        await refreshGroupMembers(groupId)
+        await refreshGroups()
+      } else {
+        const err = await res.json().catch(() => null)
+        toast.error(err?.error || 'Nepodařilo se odebrat člena.')
+      }
+    } catch (e) {
+      toast.error('Chyba při odebírání člena.')
+    }
+  }
 
-  const filesInCurrentTab = React.useMemo(
-    () => managedFiles.filter((file) => (fileTab === 'shared' ? file.shared : true)),
-    [managedFiles, fileTab],
-  )
+  const refreshGroupMembers = async (groupId: number) => {
+    try {
+      const res = await apiFetch(`/api/groups/${groupId}/members`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) setGroupMembers(data)
+      }
+    } catch (e) {
+      console.error('Failed to refresh members:', e)
+    }
+  }
 
-  const filteredManagedFiles = React.useMemo(
-    () =>
-      filesInCurrentTab.filter((file) => {
-        if (fileTypeFilter === 'all' || fileTypeFilter === 'folder') {
-          return true
+  // ── Image actions ───────────────────────────────────────────────────
+  const refreshTierCounts = async (groupId: number) => {
+    try {
+      const res = await apiFetch(`/api/groups/${groupId}/images/counts`)
+      if (res.ok) setTierCounts(await res.json())
+    } catch (e) {
+      console.error('Failed to refresh tier counts:', e)
+    }
+  }
+
+  const refreshUnratedImages = async (groupId: number) => {
+    try {
+      const res = await apiFetch(`/api/groups/${groupId}/images/unrated`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) setUnratedImages(data)
+      }
+    } catch (e) {
+      console.error('Failed to refresh unrated images:', e)
+    }
+  }
+
+  const refreshTierImages = async (groupId: number, tier: Tier) => {
+    try {
+      const res = await apiFetch(`/api/groups/${groupId}/images?tier=${tier}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) setTierImages(prev => ({ ...prev, [tier]: data }))
+      }
+    } catch (e) {
+      console.error('Failed to refresh tier images:', e)
+    }
+  }
+
+  const loadGroupData = async (groupId: number) => {
+    setActiveGroupId(groupId)
+    try {
+      const [groupRes, membersRes, countsRes, unratedRes] = await Promise.allSettled([
+        apiFetch(`/api/groups/${groupId}`),
+        apiFetch(`/api/groups/${groupId}/members`),
+        apiFetch(`/api/groups/${groupId}/images/counts`),
+        apiFetch(`/api/groups/${groupId}/images/unrated`),
+      ])
+
+      if (groupRes.status === 'fulfilled' && groupRes.value.ok)
+        setActiveGroup(await groupRes.value.json())
+      if (membersRes.status === 'fulfilled' && membersRes.value.ok)
+        setGroupMembers(await membersRes.value.json())
+      if (countsRes.status === 'fulfilled' && countsRes.value.ok)
+        setTierCounts(await countsRes.value.json())
+      if (unratedRes.status === 'fulfilled' && unratedRes.value.ok)
+        setUnratedImages(await unratedRes.value.json())
+    } catch (e) {
+      console.error('Failed to load group data:', e)
+    }
+  }
+
+  const uploadImage = async (groupId: number, files: FileList | File[]) => {
+    if (!ensureAuthenticated()) return
+
+    const filesArray = files instanceof FileList ? Array.from(files) : files
+    if (filesArray.length === 0) return
+
+    for (const file of filesArray) {
+      try {
+        // Get presigned URL
+        const urlRes = await apiFetch(`/api/groups/${groupId}/images/upload-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name, contentType: file.type || 'image/jpeg' }),
+        })
+        if (!urlRes.ok) throw new Error('Nepodařilo se získat upload URL.')
+        const { uploadUrl, fileKey, fileUrl } = await urlRes.json()
+
+        // Upload to S3 / local
+        const s3Res = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type || 'image/jpeg' },
+          body: file,
+        })
+        if (!s3Res.ok) throw new Error('Chyba při nahrávání souboru.')
+
+        // Create image record
+        await apiFetch(`/api/groups/${groupId}/images`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: file.name, size: file.size, fileKey, fileUrl }),
+        })
+
+        toast.success(`Obrázek "${file.name}" byl nahrán.`)
+      } catch (err) {
+        console.error(`Chyba při nahrávání ${file.name}:`, err)
+        toast.error(`Nepodařilo se nahrát "${file.name}".`)
+      }
+    }
+
+    await refreshTierCounts(groupId)
+    await refreshUnratedImages(groupId)
+    await refreshGroups()
+  }
+
+  const setImageTier = async (groupId: number, imageId: number, tier: Tier) => {
+    if (!ensureAuthenticated()) return
+    try {
+      const res = await apiFetch(`/api/groups/${groupId}/images/${imageId}/tier`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
+      })
+      if (res.ok) {
+        toast.success(`Obrázek zařazen do tieru ${tier}.`)
+        await refreshTierCounts(groupId)
+        await refreshUnratedImages(groupId)
+        if (activeTier) await refreshTierImages(groupId, activeTier)
+      } else {
+        const err = await res.json().catch(() => null)
+        toast.error(err?.error || 'Nepodařilo se přiřadit tier.')
+      }
+    } catch (e) {
+      toast.error('Chyba při přiřazování tieru.')
+    }
+  }
+
+  const deleteImage = async (groupId: number, imageId: number) => {
+    if (!ensureAuthenticated()) return
+    try {
+      const res = await apiFetch(`/api/groups/${groupId}/images/${imageId}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('Obrázek byl smazán.')
+        await refreshTierCounts(groupId)
+        await refreshUnratedImages(groupId)
+        if (activeTier) await refreshTierImages(groupId, activeTier)
+      }
+    } catch (e) {
+      toast.error('Chyba při mazání obrázku.')
+    }
+  }
+
+    // Comments / Ratings
+    const [groupResult, setGroupResult] = React.useState<import('./types').GroupResult | null>(null)
+    const [myRatings, setMyRatings] = React.useState<import('./types').ImageRating[]>([])
+
+    const rateImage = async (groupId: number, imageId: number, tier: Tier) => {
+      if (!ensureAuthenticated()) return
+      try {
+        const res = await apiFetch(`/api/groups/${groupId}/images/${imageId}/rate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tier }),
+        })
+        if (res.ok) {
+          toast.success(`Osobní hodnocení uloženo: ${tier}`)
+          await refreshMyRatings(groupId)
+        } else {
+          const err = await res.json().catch(() => null)
+          toast.error(err?.error || 'Nepodařilo se uložit hodnocení.')
         }
+      } catch (e) {
+        toast.error('Chyba při ukládání hodnocení.')
+      }
+    }
 
-        return file.category === fileTypeFilter
-      }),
-    [filesInCurrentTab, fileTypeFilter],
-  )
+    const refreshGroupResult = async (groupId: number) => {
+      try {
+        const res = await apiFetch(`/api/groups/${groupId}/result`)
+        if (res.ok) setGroupResult(await res.json())
+      } catch (e) {
+        console.error('Failed to load group result', e)
+      }
+    }
 
-  const displayedRecentFiles = React.useMemo(
-    () => (fileTab === 'recent' ? filteredManagedFiles.slice(0, 4) : filteredManagedFiles),
-    [fileTab, filteredManagedFiles],
-  )
-
-  const filteredSubjects = React.useMemo(
-    () =>
-      subjects.filter((subject) => {
-        const matchesSearch = subject.name
-          .toLowerCase()
-          .includes(subjectSearch.trim().toLowerCase())
-
-        if (!matchesSearch) {
-          return false
-        }
-
-        const matchesStudyPlan = activeStudyPlanId
-          ? activeStudyPlanId === -1
-            ? subject.studyPlanId === null || subject.studyPlanId === undefined
-            : subject.studyPlanId === activeStudyPlanId
-          : true
-        if (!matchesStudyPlan) {
-          return false
-        }
-
-        if (tagFilter !== null) {
-          if (!subject.tags?.some((t: any) => t.id === tagFilter)) {
-            return false
-          }
-        }
-
-        if (subjectFilter === 'active') {
-          return !subject.archived
-        }
-
-        if (subjectFilter === 'archived') {
-          return Boolean(subject.archived)
-        }
-
-        if (subjectFilter === 'shared') {
-          return Boolean(subject.isShared) || (subject.userId !== undefined && subject.userId !== null && subject.userId !== Number(authSession?.userId))
-        }
-
-        return true
-      }),
-    [subjects, subjectSearch, subjectFilter, activeStudyPlanId, tagFilter, authSession],
-  )
-
-  const desktopSubjects = React.useMemo(
-    () =>
-      filteredSubjects.map((subject, index) => {
-        const meta = desktopSubjectMetaByCode[subject.code] ?? {
-          icon: '📘',
-          tone: 'amber',
-        }
-
-        return {
-          ...subject,
-          meta,
-          deadlineCount: Math.max(0, (subject.events ?? 3) - index),
-        }
-      }),
-    [filteredSubjects],
-  )
+    const refreshMyRatings = async (groupId: number) => {
+      try {
+        const res = await apiFetch(`/api/groups/${groupId}/my-ratings`)
+        if (res.ok) setMyRatings(await res.json())
+      } catch (e) {
+        console.error('Failed to load my ratings', e)
+      }
+    }
 
   return {
-    tasks,
-    themeMode,
-    setThemeMode,
-    accentPalette,
-    setAccentPalette,
-    activeMobileNav,
-    setActiveMobileNav,
-    displayMonth,
-    setDisplayMonth,
-    selectedDateIso,
-    setSelectedDateIso,
-    eventMetaById,
-    fileTab,
-    setFileTab,
-    fileTypeFilter,
-    setFileTypeFilter,
-    managedFiles,
-    lessons,
-    subjects,
-    subjectSearch,
-    setSubjectSearch,
-    subjectFilter,
-    setSubjectFilter,
-    tagFilter,
-    setTagFilter,
-    isDragActive,
-    setIsDragActive,
+    // Theme
+    themeMode, setThemeMode,
+    accentPalette, setAccentPalette,
+    // Auth
+    authSession, setAuthSession,
+    authAlertOpen, setAuthAlertOpen,
+    isBanned, setIsBanned,
     isHydrated,
-    profile,
-    authSession,
-    tasksDone,
-    isCalendarScreen,
-    isFilesScreen,
-    isTasksScreen,
-    isStudyPlanScreen,
-    isProfileScreen,
-    monthLabel,
-    upcomingEvents,
-    eventsByDate,
-    calendarCells,
-    selectedDayEvents,
-    displayedRecentFiles,
-    filteredSubjects,
-    desktopSubjects,
-    toggleTask,
-    addTask,
-    updateTask,
-    deleteTask,
-    removeEvent,
-    addDesktopEvent,
-    addSubjectNote,
-    deleteSubjectNote,
-    updateSubjectNote,
-    onUploadFiles,
-    onDropToUpload,
-    goToToday,
-    onOpenProfile,
+    // Profile
+    profile, setProfile,
     onChangeProfile,
-    onUploadProfileAvatar,
-    onRemoveProfileAvatar,
+    onUploadProfileAvatar: onUploadProfileAvatar,
+    onRemoveProfileAvatar: onRemoveProfileAvatar,
     resetProfile,
-    onSaveProfile,
     hasUnsavedProfileChanges,
+    onSaveProfile,
     isSavingProfile,
-    logout,
     clearUserData,
-    setAuthSession,
-    createSubject,
-    updateSubject,
-    toggleSubjectArchived,
-    deleteSubject,
-    renameFile,
-    removeFile,
-    toggleFileShared,
-    authAlertOpen,
-    setAuthAlertOpen,
-    isBanned,
-    setIsBanned,
-    changeFileSubject,
-    studyPlans,
-    activeStudyPlanId,
-    setActiveStudyPlanId,
-    createStudyPlan,
-    updateStudyPlan,
-    toggleStudyPlanArchived,
-    deleteStudyPlan,
-    shareStudyPlan,
-    shareSubject,
-    tags,
-    createTag,
-    deleteTag,
-    rateLesson,
-    rateFile,
+    // Groups
+    groups,
+    activeGroupId, setActiveGroupId,
+    activeGroup, setActiveGroup,
+    groupMembers,
+    createGroup,
+    deleteGroup,
+    inviteToGroup,
+    removeGroupMember,
+    loadGroupData,
+    refreshGroups,
+    refreshGroupMembers,
+    // Images / Tiers
+    tierCounts,
+    unratedImages,
+    tierImages,
+    activeTier, setActiveTier,
+    uploadImage,
+    setImageTier,
+    deleteImage,
+    refreshTierCounts,
+    refreshUnratedImages,
+    refreshTierImages,
+    // Ratings & Result
+    groupResult,
+    myRatings,
+    rateImage,
+    refreshGroupResult,
+    refreshMyRatings,
     apiFetch,
   }
 }
