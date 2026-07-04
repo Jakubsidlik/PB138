@@ -66,7 +66,7 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
               className="h-16"
               render={
                 <Link to="/">
-                  <img src="/logo.png" alt="Car-Y-list Logo" className="size-10 object-contain" />
+                  <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Car-Y-list Logo" className="size-10 object-contain" />
                   <div className="flex flex-col gap-1 leading-none ml-2">
                     <span className="groups-title" style={{ fontSize: '1.6rem' }}>Car-Y-list</span>
                   </div>
