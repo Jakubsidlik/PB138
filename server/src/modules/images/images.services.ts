@@ -84,9 +84,21 @@ export class ImagesService {
     })
 
     const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 })
-    const fileUrl = env.S3_ENDPOINT
-      ? `${env.S3_ENDPOINT}/${BUCKET_NAME}/${fileKey}`
-      : `https://${BUCKET_NAME}.s3.${env.S3_REGION}.amazonaws.com/${fileKey}`
+
+    let fileUrl: string
+    if (env.S3_ENDPOINT) {
+      // Supabase Storage: S3 endpoint is for uploads only.
+      // Public URL format: https://<project-ref>.supabase.co/storage/v1/object/public/<bucket>/<key>
+      const projectRef = env.S3_ENDPOINT.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1]
+      if (projectRef) {
+        fileUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/${BUCKET_NAME}/${fileKey}`
+      } else {
+        // Fallback for other S3-compatible providers
+        fileUrl = `${env.S3_ENDPOINT}/${BUCKET_NAME}/${fileKey}`
+      }
+    } else {
+      fileUrl = `https://${BUCKET_NAME}.s3.${env.S3_REGION}.amazonaws.com/${fileKey}`
+    }
 
     return { uploadUrl, fileKey, fileUrl }
   }
