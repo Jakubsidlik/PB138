@@ -1,5 +1,5 @@
 
-import { Outlet, useRouterState } from '@tanstack/react-router'
+import { Outlet, useRouterState, useNavigate } from '@tanstack/react-router'
 import { useDashboard } from '../../app/DashboardContext'
 import { AppSidebar, SidebarProvider, SidebarInset } from '../shared/layout/Sidebar'
 import { Topbar } from '../shared/layout/Topbar'
@@ -9,6 +9,7 @@ import { useClerk } from '@clerk/clerk-react'
 export function RootLayout() {
   const state = useDashboard()
   const { signOut } = useClerk()
+  const navigate = useNavigate()
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   })
@@ -19,7 +20,7 @@ export function RootLayout() {
     localStorage.removeItem('pb138-auth-session')
     localStorage.removeItem('pb138.profile')
     await signOut()
-    window.location.href = '/login'
+    navigate({ to: '/login' })
   }
 
   const isProfileScreen = pathname === '/profile'
@@ -35,7 +36,7 @@ export function RootLayout() {
             isProfileScreen={isProfileScreen}
             profileName={state.authSession?.fullName || state.profile.fullName}
             profileAvatarDataUrl={state.profile.avatarDataUrl}
-            onOpenProfile={() => window.location.href = '/profile'}
+            onOpenProfile={() => navigate({ to: '/profile' })}
           />
 
           <div className="flex-1">

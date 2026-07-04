@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { User, FileRecord } from '../app/types'
 import { Shield, Trash2, UserMinus, ImageOff, RefreshCw, AlertTriangle } from 'lucide-react'
 import { useDashboard } from '../app/DashboardContext'
@@ -17,6 +18,7 @@ import { Button } from '../components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 
 export function AdminDashboardScreen() {
+  const navigate = useNavigate()
   const [users, setUsers] = useState<User[]>([])
   const [files, setFiles] = useState<FileRecord[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
@@ -193,7 +195,7 @@ export function AdminDashboardScreen() {
           </div>
           <Button 
             variant="secondary"
-            onClick={() => window.location.href = '/'} 
+            onClick={() => navigate({ to: '/' })} 
           >
             Zpět na web
           </Button>
