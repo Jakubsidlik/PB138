@@ -89,7 +89,8 @@ export class ImagesService {
     if (env.S3_ENDPOINT) {
       // Supabase Storage: S3 endpoint is for uploads only.
       // Public URL format: https://<project-ref>.supabase.co/storage/v1/object/public/<bucket>/<key>
-      const projectRef = env.S3_ENDPOINT.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1]
+      const match = env.S3_ENDPOINT.match(/https:\/\/([a-z0-9-]+)(?:\.storage)?\.supabase\.co/)
+      const projectRef = match ? match[1] : null
       if (projectRef) {
         fileUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/${BUCKET_NAME}/${fileKey}`
       } else {
