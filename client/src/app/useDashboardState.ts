@@ -70,13 +70,15 @@ export function useDashboardState(fetchAll = false) {
   const [activeTier, setActiveTier] = React.useState<Tier | null>(null)
 
   // ── API fetch helper ────────────────────────────────────────────────
+  const API_BASE_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
   const apiFetch = React.useCallback(
     async (input: string, init?: RequestInit) => {
       const headers = new Headers(init?.headers)
       let token = null
       try { token = await getToken() } catch {}
       if (token) headers.set('Authorization', `Bearer ${token}`)
-      return fetch(input, { cache: 'no-store', ...init, headers })
+      const url = API_BASE_URL ? `${API_BASE_URL}${input}` : input
+      return fetch(url, { cache: 'no-store', ...init, headers })
     },
     [getToken],
   )

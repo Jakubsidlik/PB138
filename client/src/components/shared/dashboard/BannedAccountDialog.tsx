@@ -9,16 +9,18 @@ import {
 } from '../../ui/alert-dialog'
 import { useDashboard } from '../../../app/DashboardContext'
 import { useAuth } from '@clerk/clerk-react'
+import { useNavigate } from '@tanstack/react-router'
 
 export function BannedAccountDialog() {
   const { isBanned, setIsBanned, setAuthSession } = useDashboard()
   const { signOut } = useAuth()
+  const navigate = useNavigate()
 
   const handleSignOut = async () => {
     await signOut()
     setIsBanned(false)
     setAuthSession(null)
-    window.location.href = '/login'
+    navigate({ to: '/login' })
   }
 
   return (

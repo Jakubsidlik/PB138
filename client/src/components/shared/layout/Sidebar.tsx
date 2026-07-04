@@ -1,4 +1,4 @@
-import { Link, useRouterState } from '@tanstack/react-router'
+import { Link, useRouterState, useNavigate } from '@tanstack/react-router'
 import { useDashboard } from '../../../app/DashboardContext'
 import { useUser } from '@clerk/clerk-react'
 import {
@@ -45,6 +45,7 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
   const { authSession } = useDashboard()
   const { user } = useUser()
   const [showPermissionAlert, setShowPermissionAlert] = useState(false)
+  const navigate = useNavigate()
   const userEmail = user?.primaryEmailAddress?.emailAddress
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
@@ -107,7 +108,7 @@ function AppSidebar({ onLogout }: AppSidebarProps) {
               tooltip="Admin"
               onClick={() => {
                 if (authSession?.role === 'ADMIN' || userEmail?.toLowerCase() === 'admin.lonelystudent@proton.me') {
-                  window.location.href = '/admin'
+                  navigate({ to: '/admin' })
                 } else {
                   setShowPermissionAlert(true)
                 }
